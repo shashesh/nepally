@@ -77,13 +77,17 @@ Deno.serve(async (req: Request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (supabaseUrl.length === 0 || serviceRoleKey.length === 0) {
+    console.error('purge-deleted-accounts: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set');
+    return new Response('Server misconfigured', { status: 500 });
+  }
 
   try {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const summary = await purgeDueAccounts(buildDeps(supabase));
     console.log(`purge-deleted-accounts: ${JSON.stringify(summary)}`);
     return Response.json(summary);

@@ -17,6 +17,8 @@ type FakeOptions = {
   failStorageFor?: string[];
   failScrubFor?: string[];
   failDeleteFor?: string[];
+  /** Listing the due accounts fails, e.g. the RPC errors. */
+  failListDue?: boolean;
 };
 
 /** In-memory deps. Object paths start with `<userId>/`, like the real buckets. */
@@ -36,6 +38,7 @@ function fakeDeps(options: FakeOptions = {}) {
   const deps: PurgeDeps = {
     async listDueUserIds(limit) {
       calls.listDueUserIds.push(limit);
+      if (options.failListDue) throw new Error('rpc unavailable');
       return options.due ?? [];
     },
     async isStillDue(userId) {
@@ -91,6 +94,13 @@ test('does nothing when no account is due', async () => {
 
   assert.deepEqual(summary, { purged: 0, skipped: 0, failed: 0 });
   assert.deepEqual(calls.listDueUserIds, [PURGE_BATCH_SIZE]);
+  assert.deepEqual(calls.deleteAuthUser, []);
+});
+
+test('fails the run, rather than reporting nothing due, when listing due accounts fails', async () => {
+  const { deps, calls } = fakeDeps({ due: ['u1'], failListDue: true });
+
+  await assert.rejects(purgeDueAccounts(deps), /rpc unavailable/);
   assert.deepEqual(calls.deleteAuthUser, []);
 });
 

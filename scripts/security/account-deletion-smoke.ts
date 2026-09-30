@@ -48,6 +48,12 @@ const REAUTH_MAX_AGE_SECONDS = 600;
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Slack for clock drift between this machine and the database. Well under a day. */
 const SCHEDULE_TOLERANCE_MS = 10 * 60 * 1000;
+/**
+ * How far step 6 moves the date into the past: enough that cancel is refused,
+ * and well inside the purge's one-hour margin (050), so a real hourly purge on
+ * staging can't take this account mid-test.
+ */
+const JUST_PAST_MS = 5 * 60 * 1000;
 const DELETION_IN_PROGRESS = 'deletion_in_progress';
 const NOT_AUTHENTICATED = 'not_authenticated';
 
@@ -565,7 +571,7 @@ async function main(): Promise<void> {
       !secondRequestError,
       `A second request should succeed: ${secondRequestError?.message}`
     );
-    const pastDate = new Date(Date.now() - DAY_MS).toISOString();
+    const pastDate = new Date(Date.now() - JUST_PAST_MS).toISOString();
     const { error: backdateError } = await service
       .from('users')
       .update({ deletion_scheduled_for: pastDate })

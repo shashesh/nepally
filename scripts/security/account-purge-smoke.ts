@@ -1,9 +1,10 @@
 /**
  * Live smoke test: the purge-deleted-accounts edge function (migration 049).
  *
- * Against a real Supabase project where 048 to 051 are applied, the function
+ * Against a real Supabase project where 048 to 052 are applied, the function
  * is deployed and its secret is set:
- *   1. A POST without the right x-purge-secret is refused (401).
+ *   1. A POST without the right x-purge-secret is refused (401), and a GET
+ *      with 405.
  *   2. A member uploads an avatar and a post photo, requests deletion, and
  *      has the purge date moved into the past. After a POST with the secret,
  *      the auth user, the profile row and both storage objects are gone.
@@ -12,12 +13,16 @@
  *   4. A third member whose date passed 30 minutes ago is left alone too.
  *      The purge waits an hour past the date by the database's clock
  *      (migration 050), so no restore can race it.
- *   5. The due member's comment on the second member's post stops counting:
- *      that post's comments_count drops back (migration 051).
+ *   5. Comment counts (migration 051). The due member's live comment on the
+ *      second member's post stops counting, but a comment of theirs that was
+ *      soft-deleted earlier isn't counted down twice. The due member's own
+ *      post goes, with the second member's comment on it, and the purge
+ *      reports no failure.
  *   6. Copies of the due member's words in the second member's rows are
- *      scrubbed (migration 052): the message, comment and like notifications
- *      naming them are deleted, and their shared chat's preview falls back
- *      to the second member's own last message.
+ *      scrubbed (migration 052). The message, comment and like notifications
+ *      naming them are deleted. A chat preview they wrote falls back to the
+ *      second member's last message, or empties when the chat has none. A
+ *      chat the second member spoke last in is untouched.
  *
  * This runs a REAL purge: every account whose date has passed is deleted,
  * not only this test's.
@@ -196,6 +201,64 @@ async function copiesOf(
   return (data ?? []).length;
 }
 
+type ChatLine = { senderId: string; text: string; sentAt: string };
+type ChatPreview = { last_message: string | null; last_message_time: string | null };
+
+function minutesAgo(minutes: number): string {
+  return new Date(Date.now() - minutes * 60 * 1000).toISOString();
+}
+
+/** A two-member chat with these messages, previewing the last one the way sendMessage does. */
+async function createChat(
+  service: SupabaseClient,
+  members: { id: string; name: string }[],
+  lines: ChatLine[]
+): Promise<string> {
+  const conversationId = await insertRow(service, 'conversations', { creator_id: members[0].id });
+  const { error: participantsError } = await service
+    .from('conversation_participants')
+    .insert(
+      members.map(({ id, name }) => ({ conversation_id: conversationId, user_id: id, name }))
+    );
+  assertCondition(!participantsError, `Adding participants failed: ${participantsError?.message}`);
+  const { error: messagesError } = await service.from('messages').insert(
+    lines.map(({ senderId, text, sentAt }) => ({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      text,
+      timestamp: sentAt,
+    }))
+  );
+  assertCondition(!messagesError, `Sending messages failed: ${messagesError?.message}`);
+  const last = lines[lines.length - 1];
+  const { error: previewError } = await service
+    .from('conversations')
+    .update({ last_message: last.text, last_message_time: last.sentAt })
+    .eq('id', conversationId);
+  assertCondition(!previewError, `Setting the chat preview failed: ${previewError?.message}`);
+  return conversationId;
+}
+
+async function chatPreview(service: SupabaseClient, conversationId: string): Promise<ChatPreview> {
+  const { data, error } = await service
+    .from('conversations')
+    .select('last_message, last_message_time')
+    .eq('id', conversationId)
+    .single();
+  if (error || !data) {
+    throw new Error(`Reading the chat failed: ${error?.message || 'no row'}`);
+  }
+  return data as ChatPreview;
+}
+
+function previewIs(actual: ChatPreview, text: string | null, sentAt: string | null): boolean {
+  const sameTime =
+    actual.last_message_time === null || sentAt === null
+      ? actual.last_message_time === sentAt
+      : new Date(actual.last_message_time).getTime() === new Date(sentAt).getTime();
+  return actual.last_message === text && sameTime;
+}
+
 async function callPurge(url: string, secret: string): Promise<Response> {
   return fetch(`${url}/functions/v1/purge-deleted-accounts`, {
     method: 'POST',
@@ -222,12 +285,16 @@ async function main(): Promise<void> {
   );
   const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
   const createdUsers: string[] = [];
-  let conversationId: string | undefined;
+  const conversationIds: string[] = [];
 
   try {
-    // 1. Wrong secret.
+    // 1. Wrong secret, wrong method.
     const refused = await callPurge(url, `${purgeSecret}-wrong`);
     assertCondition(refused.status === 401, `A wrong secret should get 401, got ${refused.status}`);
+    const wrongMethod = await fetch(`${url}/functions/v1/purge-deleted-accounts`, {
+      method: 'GET',
+    });
+    assertCondition(wrongMethod.status === 405, `A GET should get 405, got ${wrongMethod.status}`);
 
     // 2. A due member with an avatar and a post photo.
     const due = await createUser(service, 'purge-due');
@@ -253,34 +320,68 @@ async function main(): Promise<void> {
     await requestDeletion(await signIn(url, anonKey, justPast));
     await setPurgeDate(service, justPast.id, new Date(Date.now() - JUST_PAST_MS));
 
-    // 5. The due member comments on the waiting member's post.
+    // 5. Comments (051). On the waiting member's post: the waiting member's
+    // own comment, the due member's comment, and a due member's comment that
+    // was soft-deleted (counted down once already, and must not be again).
+    // And the due member's own post, which the waiting member commented on:
+    // its comments go with it when the purge deletes the post.
     const location = await borrow(
       service,
       'posts',
       'metro_area_id, location_zip_code, location_city, location_state'
     );
-    const postId = await insertRow(service, 'posts', {
+    const newPost = (authorId: string, title: string) =>
+      insertRow(service, 'posts', {
+        author_id: authorId,
+        title,
+        description: `${title} body`,
+        status: 'active',
+        photos: [],
+        is_global: false,
+        ...location,
+      });
+    const postId = await newPost(waiting.id, 'Account purge smoke test');
+    await insertRow(service, 'post_comments', {
+      post_id: postId,
       author_id: waiting.id,
-      title: 'Account purge smoke test',
-      description: 'Account purge smoke test body',
-      status: 'active',
-      photos: [],
-      is_global: false,
-      ...location,
+      content: 'Account purge smoke test: the post author comments',
     });
     await insertRow(service, 'post_comments', {
       post_id: postId,
       author_id: due.id,
       content: 'Account purge smoke test comment',
     });
+    const softDeletedId = await insertRow(service, 'post_comments', {
+      post_id: postId,
+      author_id: due.id,
+      content: 'Account purge smoke test: a comment deleted before the purge',
+    });
+    const { error: softDeleteError } = await service
+      .from('post_comments')
+      .update({ is_deleted: true })
+      .eq('id', softDeletedId);
     assertCondition(
-      (await commentsCount(service, postId)) === 1,
-      'The comment should count before the purge'
+      !softDeleteError,
+      `Soft-deleting a comment failed: ${softDeleteError?.message}`
+    );
+    assertCondition(
+      (await commentsCount(service, postId)) === 2,
+      'Two live comments should count before the purge'
     );
 
-    // 6. More copies of the due member's words in the waiting member's rows:
-    // a like notification (every like notifies once notify_likes is 'all')
-    // and a chat whose preview is the due member's last message.
+    const duePostId = await newPost(due.id, 'Account purge smoke test (purged author)');
+    const commentOnDuePostId = await insertRow(service, 'post_comments', {
+      post_id: duePostId,
+      author_id: waiting.id,
+      content: "Account purge smoke test: a comment on the purged member's post",
+    });
+
+    // 6. More copies of the due member's words in the waiting member's rows
+    // (052): a like notification (every like notifies once notify_likes is
+    // 'all'), and three chats. In the first the due member spoke last, so its
+    // preview must fall back. In the second the waiting member spoke last, so
+    // it must stay as it is. The third holds only the due member's messages,
+    // so its preview must empty.
     const { error: settingsError } = await service
       .from('user_settings')
       .upsert({ user_id: waiting.id, notify_likes: 'all' }, { onConflict: 'user_id' });
@@ -290,42 +391,31 @@ async function main(): Promise<void> {
       .insert({ post_id: postId, user_id: due.id });
     assertCondition(!likeError, `Liking the post failed: ${likeError?.message}`);
 
-    conversationId = await insertRow(service, 'conversations', { creator_id: waiting.id });
-    const { error: participantsError } = await service.from('conversation_participants').insert([
-      { conversation_id: conversationId, user_id: waiting.id, name: 'Purge smoke waiting' },
-      { conversation_id: conversationId, user_id: due.id, name: 'Purge smoke due' },
+    const members = [
+      { id: waiting.id, name: 'Purge smoke waiting' },
+      { id: due.id, name: 'Purge smoke due' },
+    ];
+    const fallbackAt = minutesAgo(3);
+    const fallbackChat = await createChat(service, members, [
+      { senderId: waiting.id, text: WAITING_MESSAGE, sentAt: fallbackAt },
+      { senderId: due.id, text: DUE_MESSAGE, sentAt: minutesAgo(2) },
     ]);
-    assertCondition(
-      !participantsError,
-      `Adding participants failed: ${participantsError?.message}`
-    );
-    const waitingSentAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const dueSentAt = new Date(Date.now() - 60 * 1000).toISOString();
-    const { error: messagesError } = await service.from('messages').insert([
-      {
-        conversation_id: conversationId,
-        sender_id: waiting.id,
-        text: WAITING_MESSAGE,
-        timestamp: waitingSentAt,
-      },
-      {
-        conversation_id: conversationId,
-        sender_id: due.id,
-        text: DUE_MESSAGE,
-        timestamp: dueSentAt,
-      },
+    const untouchedAt = minutesAgo(2);
+    const untouchedChat = await createChat(service, members, [
+      { senderId: due.id, text: DUE_MESSAGE, sentAt: minutesAgo(3) },
+      { senderId: waiting.id, text: WAITING_MESSAGE, sentAt: untouchedAt },
     ]);
-    assertCondition(!messagesError, `Sending messages failed: ${messagesError?.message}`);
-    const { error: previewError } = await service
-      .from('conversations')
-      .update({ last_message: DUE_MESSAGE, last_message_time: dueSentAt })
-      .eq('id', conversationId);
-    assertCondition(!previewError, `Setting the chat preview failed: ${previewError?.message}`);
+    const dueOnlyChat = await createChat(service, members, [
+      { senderId: due.id, text: DUE_MESSAGE, sentAt: minutesAgo(2) },
+    ]);
+    conversationIds.push(fallbackChat, untouchedChat, dueOnlyChat);
 
+    // Three message notifications (one per chat), two comment notifications
+    // (the soft-deleted comment's is still there) and one like notification.
     const copiesBefore = await copiesOf(service, waiting.id, due.id);
     assertCondition(
-      copiesBefore === 3,
-      `The waiting member should hold message, comment and like notifications from the due member, found ${copiesBefore}`
+      copiesBefore === 6,
+      `The waiting member should hold 6 notifications naming the due member, found ${copiesBefore}`
     );
 
     const response = await callPurge(url, purgeSecret);
@@ -375,8 +465,22 @@ async function main(): Promise<void> {
 
     const countAfter = await commentsCount(service, postId);
     assertCondition(
-      countAfter === 0,
-      `The purged member's comment should stop counting, comments_count is ${countAfter}`
+      countAfter === 1,
+      `Only the purged member's live comment should stop counting (the soft-deleted one was counted down already), comments_count is ${countAfter}`
+    );
+    const { data: duePost } = await service
+      .from('posts')
+      .select('id')
+      .eq('id', duePostId)
+      .maybeSingle();
+    const { data: commentOnDuePost } = await service
+      .from('post_comments')
+      .select('id')
+      .eq('id', commentOnDuePostId)
+      .maybeSingle();
+    assertCondition(
+      !duePost && !commentOnDuePost,
+      "The purged member's post and the comments on it should be gone"
     );
 
     const copiesAfter = await copiesOf(service, waiting.id, due.id);
@@ -384,25 +488,27 @@ async function main(): Promise<void> {
       copiesAfter === 0,
       `Notifications naming the purged member should be scrubbed, found ${copiesAfter}`
     );
-    const { data: chat, error: chatError } = await service
-      .from('conversations')
-      .select('last_message, last_message_time')
-      .eq('id', conversationId)
-      .single();
-    if (chatError || !chat) {
-      throw new Error(`Reading the chat failed: ${chatError?.message || 'no row'}`);
-    }
+    const fallback = await chatPreview(service, fallbackChat);
     assertCondition(
-      chat.last_message === WAITING_MESSAGE &&
-        new Date(chat.last_message_time as string).getTime() === new Date(waitingSentAt).getTime(),
-      `The chat preview should fall back to the waiting member's message, got ${JSON.stringify(chat)}`
+      previewIs(fallback, WAITING_MESSAGE, fallbackAt),
+      `The chat preview should fall back to the waiting member's message, got ${JSON.stringify(fallback)}`
+    );
+    const untouched = await chatPreview(service, untouchedChat);
+    assertCondition(
+      previewIs(untouched, WAITING_MESSAGE, untouchedAt),
+      `A chat the waiting member spoke last in should be untouched, got ${JSON.stringify(untouched)}`
+    );
+    const dueOnly = await chatPreview(service, dueOnlyChat);
+    assertCondition(
+      previewIs(dueOnly, null, null),
+      `A chat with only the purged member's messages should have no preview, got ${JSON.stringify(dueOnly)}`
     );
 
     console.log('PASS: account purge smoke test verified.');
   } finally {
-    if (conversationId) {
-      // Conversations don't cascade from users; remove this one by hand.
-      await service.from('conversations').delete().eq('id', conversationId);
+    // Conversations don't cascade from users; remove these by hand.
+    for (const id of conversationIds) {
+      await service.from('conversations').delete().eq('id', id);
     }
     for (const userId of createdUsers) {
       const { data: leftovers } = await service.rpc('list_user_storage_objects', {

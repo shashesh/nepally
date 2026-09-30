@@ -34,9 +34,18 @@
 --     - for each of the member's conversations whose newest message is
 --       theirs, resets last_message and last_message_time from the newest
 --       message sent by someone else, or to NULL if there is none. Other
---       conversations are left as they are.
+--       conversations are left as they are. "Newest" breaks timestamp ties
+--       on id, so both lookups agree.
 --   Plain SECURITY INVOKER: service_role bypasses RLS and holds the table
 --   privileges it needs.
+--
+--   The notification DELETE scans the whole table: nothing indexes
+--   notifications.data. That's deliberate. The scrub runs once per purged
+--   member, in a background job, a few times a week at most, while an index
+--   on data would slow every notification insert (every message, comment and
+--   like). If notifications grows past about a million rows, add
+--   CREATE INDEX CONCURRENTLY ... USING gin (data jsonb_path_ops) in its own
+--   migration and match with data @> jsonb_build_object(...).
 --
 -- Grants (041): notify_on_new_like keeps its revoke (CREATE OR REPLACE keeps
 -- privileges; restated anyway). scrub_account_copies is service_role only.
@@ -114,35 +123,37 @@ BEGIN
       OR n.data ->> 'commenter_id' = p_user_id::text
       OR n.data ->> 'liker_id' = p_user_id::text;
 
+  -- The member's conversations whose newest message is theirs, each with the
+  -- newest message someone else sent (NULLs when there is none). Ties on
+  -- timestamp break on id, the same way in both lookups.
+  WITH newest AS (
+    SELECT DISTINCT ON (m.conversation_id) m.conversation_id, m.sender_id
+      FROM public.messages m
+     WHERE m.conversation_id IN (
+             SELECT cp.conversation_id
+               FROM public.conversation_participants cp
+              WHERE cp.user_id = p_user_id
+           )
+     ORDER BY m.conversation_id, m.timestamp DESC, m.id DESC
+  ),
+  replacement AS (
+    SELECT n.conversation_id, other.preview, other.sent_at
+      FROM newest n
+      LEFT JOIN LATERAL (
+             SELECT LEFT(m.text, 100) AS preview, m.timestamp AS sent_at
+               FROM public.messages m
+              WHERE m.conversation_id = n.conversation_id
+                AND m.sender_id <> p_user_id
+              ORDER BY m.timestamp DESC, m.id DESC
+              LIMIT 1
+           ) other ON true
+     WHERE n.sender_id = p_user_id
+  )
   UPDATE public.conversations c
-     SET last_message = (
-           SELECT LEFT(m.text, 100)
-             FROM public.messages m
-            WHERE m.conversation_id = c.id
-              AND m.sender_id <> p_user_id
-            ORDER BY m.timestamp DESC
-            LIMIT 1
-         ),
-         last_message_time = (
-           SELECT m.timestamp
-             FROM public.messages m
-            WHERE m.conversation_id = c.id
-              AND m.sender_id <> p_user_id
-            ORDER BY m.timestamp DESC
-            LIMIT 1
-         )
-   WHERE c.id IN (
-           SELECT cp.conversation_id
-             FROM public.conversation_participants cp
-            WHERE cp.user_id = p_user_id
-         )
-     AND (
-           SELECT m.sender_id
-             FROM public.messages m
-            WHERE m.conversation_id = c.id
-            ORDER BY m.timestamp DESC
-            LIMIT 1
-         ) = p_user_id;
+     SET last_message = r.preview,
+         last_message_time = r.sent_at
+    FROM replacement r
+   WHERE c.id = r.conversation_id;
 END;
 $$;
 

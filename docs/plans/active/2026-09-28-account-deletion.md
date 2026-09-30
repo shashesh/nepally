@@ -2050,7 +2050,16 @@ The full review of #111 (2026-09-30) found that other members keep copies of a p
   - `scrub_account_copies(p_user_id)`, `service_role` only, as spec §4.6 describes. It resets a chat preview only where the member wrote the newest message.
   - It parses with libpg-query 17.
 - [x] **Step 5: Docs.**
-- [ ] **Step 6: Gate, then a full review of #113** (code, security, database and test coverage), then `npm run ci:local`, because the PR is a draft.
+- [x] **Step 6: Gate, then a full review of #113** (code, security, database and test coverage), then `npm run ci:local`, because the PR is a draft.
+  - The gate passed, and so did `npm run ci:local`: lint, guards, type-check, unit tests with coverage, and web E2E.
+  - No reviewer found a CRITICAL issue. The security reviewer found nothing to fix: clients can't insert notifications, so no one can forge a row that the scrub would delete for someone else.
+  - Fixed in `fix: address the full #113 review`:
+    - 052's preview reset finds each chat's newest message once, instead of in three subqueries, and breaks timestamp ties on `id`.
+    - `index.ts` checks `SUPABASE_URL` and the service key, and creates the client inside the `try`.
+    - The deletion check backdates by 5 minutes, not a day. That's inside the purge's margin, so a real hourly purge on staging can't take its account mid-test.
+    - New node test: a failed due-list lookup fails the run.
+    - The purge check covers GET → 405; a soft-deleted comment not counted down twice; the purged member's own post taking its comments with it; a chat the other member spoke last in staying untouched; and a chat with only the purged member's messages emptying its preview.
+  - Kept, with the reason in 052's header: the notification DELETE scans the table (see Risks).
 - [ ] **Step 7: Staging (needs the user).**
   1. Apply 052 (`scrub_account_copies`) and realign the tracker row to `052`.
   2. Redeploy `purge-deleted-accounts`. It calls `scrub_account_copies`, so it must go after 052.
@@ -2238,6 +2247,7 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - **The fix** (from the #112 database review): a `STABLE SECURITY DEFINER` function `pending_deletion_user_ids() RETURNS uuid[]`, reading the 048 partial index. The policies then use `NOT (author_id = ANY ((SELECT public.pending_deletion_user_ids())))`. The subselect is uncorrelated, so Postgres runs it once per query as an InitPlan.
   - Recorded here, not scheduled.
 - **Web has no central route guard.** The restore gate is new ground (3.5). Keep it one component with its own test, not scattered page checks.
+- **The scrub scans notifications.** `scrub_account_copies` matches `notifications.data` with no index, once per purged member. An index would slow every notification insert (every message, comment and like) for a job that runs a few times a week. If `notifications` grows past about a million rows, add `CREATE INDEX CONCURRENTLY … USING gin (data jsonb_path_ops)` in its own migration, and match with `data @> jsonb_build_object(…)`.
 - **Purge secrets are manual per environment.** Until the runbook is followed, the cron job fails and nobody is purged. The production launch checklist must include the runbook.
 - **Google re-auth can't force a password.** `prompt: 'select_account'` makes Google show its chooser, so re-auth never completes silently. But Google has no `prompt` that demands a password. Whoever holds a browser signed in to that Google account passes. That still needs that Google account on that device, which is what the ADR asks for (spec §6).
 
