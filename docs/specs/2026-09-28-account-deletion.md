@@ -23,21 +23,21 @@ Both app stores require apps that create accounts to let people delete them in t
 app. Google Play also wants a web page where people can ask for deletion without
 the app. Today Nepally only offers deletion by email to support.
 
-This spec adds a delete flow to web and mobile. A request starts a 30-day grace
+This spec adds a delete flow to web and mobile. A request starts a 29-day grace
 period. During it the account is hidden from other members, and signing in offers
-a choice to restore it. After 30 days a scheduled job deletes the auth user, which
+a choice to restore it. After 29 days a scheduled job deletes the auth user, which
 cascades to all of their data, and removes their photos from storage.
 
 ## 2. Decisions
 
 | #   | Decision                                                                                                         | Why                                                                                                                                                                                                                                                                                                                                           |
 | --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | 30-day grace period, then a hard delete                                                                          | Accidental deletions can be undone. The privacy policy already promises removal "within 30 days". Restoring is possible until the date, not after it (§4.4).                                                                                                                                                                                  |
+| D1  | 29-day grace period, then a hard delete                                                                          | Accidental deletions can be undone. The privacy policy promises removal "within 30 days". 29 days plus an hourly purge keeps that promise (§4.4). Restoring is possible until the date, not after it.                                                                                                                                         |
 | D2  | During the grace period the account is hidden: profile, posts, comments, listings, events, likes, RSVPs, follows | A "deleted" person's posts shouldn't stay up for a month. Chats keep their history and show the person as an unavailable account. Photos stay at their public URLs until the purge (§6).                                                                                                                                                      |
 | D3  | Signing in during the grace period asks: restore, or keep the deletion and sign out                              | A stray sign-in, or someone else with the password, can't silently undo the request.                                                                                                                                                                                                                                                          |
 | D4  | Before a request, the user must have signed in within the last 10 minutes. The database checks this.             | The long-lived sessions ADR makes deletion a sensitive action. The check reads the JWT `amr` claim, so a stolen, still-open session can't delete the account.                                                                                                                                                                                 |
 | D5  | Email accounts re-enter their password. Google-only accounts redo Google sign-in.                                | `supabase.auth.reauthenticate()` sends a code, but the code can only be checked by a password change (`updateUser`), so it can't gate deletion. Emailed sign-in codes would need custom SMTP, which isn't set up yet. This amends the ADR (see §9).                                                                                           |
-| D6  | Request and cancel are Postgres functions. The purge is an edge function run daily by pg_cron.                   | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                                                                                                                 |
+| D6  | Request and cancel are Postgres functions. The purge is an edge function run hourly by pg_cron.                  | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                                                                                                                 |
 | D7  | Stripe is the payment record. Our promotion rows go at the purge.                                                | No Stripe customer is stored and there are no subscriptions. `listing_promotions` holds each promotion's cost and its Stripe checkout session and payment intent ids. They stay during the grace period and the purge's cascade deletes them. Stripe keeps the payment records, which covers the privacy policy's "may keep payment records". |
 
 ## 3. What exists today
@@ -47,7 +47,8 @@ cascades to all of their data, and removes their photos from storage.
 - **Storage doesn't cascade.** There are four public buckets. Every object has `owner_id` set. A public bucket serves files by URL with no RLS check (027).
   - `avatars`: `<uid>.jpg` at the root
   - `post-photos`, `event-photos`, `listing-photos`: `<uid>/<file>`
-- **Delete triggers keep counters right:** `event_rsvps`, `post_likes`, `saved_listings` and `user_follows` each have one.
+- **Delete triggers keep most counters right:** `event_rsvps`, `post_likes`, `saved_listings` and `user_follows` each have one. `post_comments` has only an INSERT trigger and a soft-delete UPDATE trigger. So a hard delete, which is what the purge's cascade does, leaves `posts.comments_count` too high. Migration 051 adds the missing trigger (§4.5).
+- **Chat names are copies.** `conversation_participants.name` holds each member's name, and `getConversations` shows the partner's name from it. Only the photo and trust level come from `users`. It also drops a conversation whose partner has no participant row.
 - **Feed, search and metro pulse** queries run as the caller (security invoker), so RLS applies to them.
 - **Scheduling infrastructure:** `pg_cron`, `pg_net` and `supabase_vault` are installed on staging.
 - **No Settings screen on either platform.** Web uses the profile page's "Settings & more" list (`getSettingsLinks` in `apps/web/src/components/layout/navItems.ts`). Mobile uses the Profile dropdown menu (`ProfileScreen.tsx`) and `ProfileNavigator`.
@@ -111,15 +112,16 @@ by `authenticated` only (the 041 grant pattern).
    `P0001` and message `reauth_required`.
 3. If deletion is already pending, return the existing date. The function is
    idempotent.
-4. Set `deletion_scheduled_for = now() + interval '30 days'`.
+4. Set `deletion_scheduled_for = now() + interval '30 days'`. Migration 050 changes
+   this to 29 days (§4.4).
 5. Delete the user's `device_tokens` rows, which covers mobile and web push.
 6. Return the date.
 
 **`cancel_account_deletion() RETURNS void`.** `SECURITY DEFINER`, `authenticated`
 only. It sets `deletion_scheduled_for = NULL` for `auth.uid()`. It needs no recent
 sign-in check, because reaching the restore screen already required signing in.
-Push registration happens again on the next app start. Migration 050 (§4.4) makes it
-refuse once the date has passed.
+The apps register for push again only after a restore (§5.3, §5.4). Migration 050
+(§4.4) makes it refuse once the date has passed.
 
 **`get_my_profile()`** also returns `deletion_scheduled_for`.
 
@@ -161,25 +163,43 @@ The URL and secret are read at run time from `vault.decrypted_secrets`:
 `project_url` and `account_purge_secret`. No secret goes in the repo. The Vault
 secrets and the `ACCOUNT_PURGE_SECRET` function secret are set by hand in each
 environment, following a runbook added to `supabase-setup.md` (§5, Scheduled jobs). Until they are
-set, the job's HTTP call fails harmlessly and nothing is deleted.
+set, the job's HTTP call fails harmlessly and nothing is deleted. Migration 050 makes
+the job hourly (§4.4).
 
-### 4.4 Migration `050_account_restore_deadline.sql`
+### 4.4 Migration `050_account_deletion_timing.sql`
 
-`cancel_account_deletion()` clears the date only while `deletion_scheduled_for >
-now()`. After that it raises `deletion_in_progress` (SQLSTATE `P0001`) and changes
-nothing. Signing in after the date, before the purge has run, shows "Your account
-is being deleted" (§5.5).
+Review of the design, after 048 and 049 were applied to staging, found two timing
+problems. Both are fixed in one new migration.
 
-It is a separate migration because 048 was already applied to staging when the race
-came up. Under 048 alone, a restore could land after the purge's last re-read and
-still lose the account.
+- **Restore closes at the date.** `cancel_account_deletion()` clears the date only
+  while `deletion_scheduled_for > now()`. After that it raises
+  `deletion_in_progress` (SQLSTATE `P0001`) and changes nothing. Signing in after
+  the date, before the purge has run, shows "Your account is being deleted" (§5.5).
+  Under 048 alone, a restore could land after the purge's last re-read and still
+  lose the account.
+- **"Within 30 days" holds.** `request_account_deletion()` sets the date 29 days
+  out instead of 30, and the job runs hourly (`'0 * * * *'`) instead of daily. An
+  account is purged at most about two hours after its date: the one-hour margin
+  plus the wait for the next run. So removal lands about 29 days after the request.
+  A failed purge is retried an hour later, well inside the 30 days. With a daily
+  run, removal could land up to 25 hours after the date.
+
+### 4.5 Migration `051_post_comments_delete_count.sql`
+
+An `AFTER DELETE` trigger on `post_comments` decrements `posts.comments_count` when
+the deleted comment wasn't already soft-deleted. The soft-delete trigger has already
+counted those. It clamps at zero, like the soft-delete trigger. It covers the purge's
+cascade and any other hard delete.
 
 ## 5. Client design
 
 ### 5.1 Shared (`packages/shared`)
 
-- **Constants:** `ACCOUNT_DELETION_GRACE_DAYS = 30`, `REAUTH_MAX_AGE_SECONDS = 600`.
-- **Types:** `deletion_scheduled_for: string | null` on the profile type.
+- **Constants:** `ACCOUNT_DELETION_GRACE_DAYS = 29`, `REAUTH_MAX_AGE_SECONDS = 600`.
+- **Types:** `deletion_scheduled_for: string | null` on `User`, and left out of
+  `PublicUser`.
+- **Chat:** `getConversations` returns `other_user_available` and keeps
+  conversations whose partner is gone (§5.6).
 - **API** (`src/api/accountDeletion.ts`), taking a `SupabaseClient` and returning
   the usual `{ data, error }`:
   - `requestAccountDeletion(supabase)` returns the scheduled date. It maps
@@ -226,12 +246,15 @@ still lose the account.
     `/delete-account?step=confirm`.
   - Signed out: explains the process and offers "Sign in to delete your account",
     which returns to this page. It also gives the email fallback
-    (`SUPPORT_EMAIL`).
+    (`SUPPORT_EMAIL`). Login has no return path today: `/login` and the Google
+    callback always go to `/feed`. This work adds a validated, same-origin return
+    parameter to both.
 - **Entry point:** a "Delete account" item in `getSettingsLinks`, pointing to
   `/delete-account`.
 - **Restore gate:** web has no central route guard (pages redirect one by one). The
   app shell renders the restore screen in place of the page whenever the signed-in
-  profile has `deletion_scheduled_for`. Public legal pages stay reachable.
+  profile has `deletion_scheduled_for`. Public legal pages stay reachable. Web push
+  registration waits until the profile has loaded and isn't pending.
 
 ### 5.4 Mobile
 
@@ -243,7 +266,10 @@ still lose the account.
   - Google reuses `services/auth/googleAuth.ts`.
 - **Restore gate:** `RootNavigator` gains a branch. When the user's profile has
   `deletion_scheduled_for`, it shows `AccountRestoreScreen` in place of onboarding
-  or the main tabs.
+  or the main tabs. Mobile `AuthContext` copies a fixed list of profile fields, so
+  it must add this one.
+- **Push:** today mobile registers a push token on every sign-in, before the
+  profile loads. It must wait for the profile and skip a pending account.
 
 ### 5.5 Restore screen (both platforms)
 
@@ -257,14 +283,23 @@ only Sign out. A restore that gets `deletion_in_progress` switches to that state
 
 ### 5.6 Chat fallback (both platforms)
 
-When a conversation's other participant comes back empty, show "Unavailable
-account" with a neutral avatar and no profile link. This happens while their
-deletion is pending (hidden by RLS) and after the purge (their participant row and
-the messages they sent are gone).
+The partner's participant row can't signal this. It keeps their name while they are
+pending, and it is gone after the purge, which today drops the whole conversation
+(§3). So `getConversations` decides instead:
+
+- The partner is **unavailable** when their `users` row isn't visible. That covers
+  pending (hidden by RLS) and purged (deleted).
+- A conversation with no partner row is kept, with `other_user_id: null`, instead of
+  dropped.
+- It returns `other_user_available: false` for both.
+
+The list and the thread show "Unavailable account" with a neutral avatar and no
+profile link. After the purge the thread has no composer, since nobody would get the
+message. While the partner is pending, messages can still be sent (§6).
 
 ### 5.7 Legal copy
 
-- `/privacy`: add the in-app steps, the 30-day grace period and restoring by
+- `/privacy`: add the in-app steps, the 29-day grace period and restoring by
   signing in. Say that photos are removed at the end of the grace period. Keep
   "within 30 days" and the paragraph on records kept by law.
 - `/help`: add the same steps, and link to `/delete-account`.
@@ -285,8 +320,12 @@ the messages they sent are gone).
 - **Paid promotions:** hidden with the listing during the grace period, deleted at
   the purge. Refund wording belongs to the lawyer's promotion refund text, not
   this flow.
-- **Counters:** follower and like counts include a pending user until the purge,
-  when the delete triggers decrement them. This is accepted.
+- **Counters:** follower, like, RSVP, save and comment counts include a pending
+  user until the purge, when the delete triggers decrement them (comments from
+  051). This is accepted.
+- **Push while pending:** the request deletes the device tokens. Signing in during
+  the grace period doesn't register them again until the member restores. So
+  "Keep deletion and sign out" leaves no token behind.
 - **Signing in after the date, before the purge runs:** restore is closed
   (§4.4). The restore screen says the account is being deleted.
 - **Messages sent to a pending user** stay in the conversation. The pending user
@@ -295,8 +334,8 @@ the messages they sent are gone).
   and `conversation_participants.user_id` delete the purged user's own messages
   and participant row.
 - **Photos during the grace period.** The buckets are public, so hiding the rows
-  doesn't lock the files. The apps stop showing the photos, because the rows that
-  hold their URLs are hidden. But anyone who saved a photo's URL can still open it
+  doesn't lock the files. The apps stop showing the profile, post, event and
+  listing photos, because the rows that hold their URLs are hidden. But anyone who saved a photo's URL can still open it
   until the purge removes the file. That includes the avatar URL
   (`avatars/<uid>.jpg`) for anyone who knows the user id. Locking the files would
   mean moving them to a private bucket and back on restore. That is a follow-up,
@@ -323,6 +362,12 @@ the messages they sent are gone).
   - cancelling restores visibility
   - once the date has passed, cancelling raises `deletion_in_progress` and keeps
     the date (050)
+  - a new request's date is 29 days out (050)
+- **Live purge check** `npm run test:security:account-purge`: besides removing the
+  user, their files and their rows, a purged member's comment on another member's
+  post lowers that post's `comments_count` (051).
+- **Shared unit tests for chat:** `getConversations` marks a hidden or purged partner
+  unavailable and keeps the conversation.
 - **Edge function unit tests** with injected clients:
   - nothing is due
   - the due cutoff is an hour before now
@@ -346,18 +391,20 @@ the messages they sent are gone).
 | PR  | Contents                                                                                                            | Notes                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | 1   | Migration 048 and the `test:security:account-deletion` check                                                        | Apply to staging when the user asks, then realign the tracker row to `048`.       |
-| 2   | `purge-deleted-accounts` edge function, `config.toml` entry, migrations 049 and 050, and the Vault runbook          | Deploy the function and set the secrets on staging. Then do the manual purge run. |
+| 2   | `purge-deleted-accounts` edge function, `config.toml` entry, migrations 049 to 051, and the Vault runbook           | Deploy the function and set the secrets on staging. Then do the manual purge run. |
 | 3   | Shared constants, types, API and logic; the web flow, `/delete-account`, restore gate, chat fallback and legal copy | Needs PR 1 applied on staging.                                                    |
 | 4   | Mobile `DeleteAccountScreen`, `AccountRestoreScreen`, the `RootNavigator` gate, menu entry and chat fallback        | Needs PRs 1 and 3.                                                                |
 
 The production Supabase project doesn't exist yet. When it is created, migrations
-048 to 050, the function and the secrets go with the rest of the setup.
+048 to 051, the function and the secrets go with the rest of the setup.
 
 ## 9. Documentation changes
 
 - **Amend** `decisions/2026-09-18-long-lived-sessions.md`: Google and Apple accounts
   confirm who they are by redoing their provider sign-in, not with
-  `reauthenticate()`, which can only gate password changes.
+  `reauthenticate()`, which can only gate password changes. Fix the same claim in
+  `plans/active/2026-09-18-production-launch.md` (lines 33 and 221) and
+  `plans/active/mobile-usability-security-hardening.md` (line 142).
 - **Add** `product/features/account-deletion.md` when PR 4 ships, then archive
   this spec.
 - **Update** `architecture/database-schema.md` (the new column, functions and
