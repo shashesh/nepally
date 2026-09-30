@@ -54,13 +54,13 @@ The same chunked process as the [mobile marketplace fixes](../../archive/plans/2
 - Format a single Markdown file with `npx prettier --write <file>`. `npm run format -- <file>` reformats the whole repo.
 - Keep `git commit` in its own command. A hook rejects a command that has both `git commit` and a `-n` flag anywhere in it.
 
-| PR  | Branch                          | Theme                                                                                                                             | Needs      |
-| --- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 1   | `feat/account-deletion-db`      | Migration 048 and the `test:security:account-deletion` check                                                                      | spec PR    |
-| 2   | `feat/account-deletion-purge`   | `purge-deleted-accounts` edge function, migrations 049 (cron), 050 (deletion timing) and 051 (comment count), and a Vault runbook | 1 applied  |
-| 3   | `feat/account-deletion-web`     | Shared code, the web flow, `/delete-account`, restore gate, chat fallback, legal                                                  | 1 applied  |
-| 4   | `feat/account-deletion-mobile`  | Mobile flow, restore screen, `RootNavigator` gate, chat fallback                                                                  | 1, 3       |
-| 5   | `docs/account-deletion-shipped` | Feature doc, archive the spec and this plan, tick the launch plan                                                                 | 1–4 merged |
+| PR  | Branch                          | Theme                                                                                                                                                 | Needs           |
+| --- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1   | `feat/account-deletion-db`      | Migration 048 and the `test:security:account-deletion` check                                                                                          | spec PR         |
+| 2   | `feat/account-deletion-purge`   | `purge-deleted-accounts` edge function, migrations 049 (cron), 050 (deletion timing), 051 (comment count) and 052 (scrub copies), and a Vault runbook | 1 applied       |
+| 3   | `feat/account-deletion-web`     | Shared code, the web flow, `/delete-account`, login return path, restore gate, chat fallback, legal                                                   | 1, 2 applied    |
+| 4   | `feat/account-deletion-mobile`  | Mobile flow, restore screen, `RootNavigator` gate, chat fallback                                                                                      | 1, 2 applied; 3 |
+| 5   | `docs/account-deletion-shipped` | Feature doc, archive the spec and this plan, tick the launch plan                                                                                     | 1–4 merged      |
 
 PR 1 is broken into steps below. PRs 2–4 list their tasks, files, signatures and acceptance criteria. Each one gets its step breakdown when it starts, against the code as it is then.
 
@@ -1074,6 +1074,7 @@ Break this PR into steps when it starts. It needs 048 applied on staging.
 - Create: `supabase/migrations/049_purge_deleted_accounts_cron.sql`
 - Create: `supabase/migrations/050_account_deletion_timing.sql`: restore closes at the date, the grace period becomes 29 days, the job runs hourly
 - Create: `supabase/migrations/051_post_comments_delete_count.sql`: the missing `comments_count` delete trigger
+- Create: `supabase/migrations/052_scrub_account_copies.sql`: `liker_id` on like notifications, and `scrub_account_copies(p_user_id)` for the purge
 - Modify: `scripts/security/account-deletion-smoke.ts`: a cancel after the date is refused; a new date is 29 days out
 - Modify: `scripts/security/account-purge-smoke.ts`: a purged member's comment lowers the other post's `comments_count`
 - Modify: `package.json`: `"functions:test": "node --test \"supabase/functions/*/*.test.ts\""`, and add `npm run functions:test` to `test`, `test:ci` and `test:coverage:ci`, next to `guards:test`
@@ -1150,7 +1151,13 @@ export function secretsMatch(provided: string, expected: string): boolean;
 - **2.4b Migration 051, test first.**
   - `scripts/security/account-purge-smoke.ts` gets a check. The throwaway user comments on another throwaway user's post. After the purge, that post's `comments_count` is back to what it was.
   - `decrement_post_comments_count_on_delete()`, `AFTER DELETE ON post_comments FOR EACH ROW`. When `OLD.is_deleted = false`, it runs `comments_count = GREATEST(0, comments_count - 1)` on `OLD.post_id`. Copy the existing `post_likes` delete trigger's form and grants (041: trigger functions get no grant).
-  - Add the function to `function-execute-smoke.ts` wherever that check lists trigger functions.
+  - `function-execute-smoke.ts` doesn't list trigger functions (041's default privileges cover them), so it needs no change.
+- **2.4c Migration 052, test first (spec §4.6).**
+  - `account-purge-smoke.ts`: the waiting member gets a message and a comment notification from the due member, and their shared conversation's `last_message` is the due member's. After the purge, both notifications are gone, and `last_message` is the waiting member's own last message.
+  - `function-execute-smoke.ts` lists `scrub_account_copies` as internal.
+  - `CREATE OR REPLACE FUNCTION public.notify_on_new_like()` with 004's body, plus `'liker_id', NEW.user_id` in `data`.
+  - `scrub_account_copies(p_user_id uuid)`, `service_role` only, as the spec describes.
+  - The purge core gains a `scrubCopies(userId)` dep, called after the second re-read and before `deleteAuthUser`, with node tests for it: called once per purged user; a failure counts as failed and skips `deleteAuthUser`.
 - **2.5 Wire `functions:test`** into the root scripts listed under Files.
 - **2.6 The runbook** in `supabase-setup.md` §5, for each environment:
   1. Generate a secret locally with `openssl rand -hex 32`.
@@ -1162,7 +1169,7 @@ export function secretsMatch(provided: string, expected: string): boolean;
 - **2.8 Staging rollout**, on the user's direct request:
   1. Deploy with `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`.
   2. The user sets the two secrets following the runbook.
-  3. Apply 049, 050 and 051 and realign their tracker rows.
+  3. Apply 049 to 052 and realign their tracker rows. Apply 050 and 052 before deploying the function, which calls their functions.
   4. Manual run: create a throwaway user with an avatar and a post photo. Request deletion (signed in), then set `deletion_scheduled_for` to yesterday with the service role. POST to the function with the secret. Confirm the auth user, the profile row, the post and both storage objects are gone.
 
 **Acceptance:**
@@ -1176,7 +1183,7 @@ export function secretsMatch(provided: string, expected: string): boolean;
 
 ## PR 3 — Shared code and web
 
-Break this PR into steps when it starts. It needs 048 applied on staging.
+Break this PR into steps when it starts. It needs 048 and 050 applied on staging (PRs 1 and 2). The 29-day constant, `deletion_in_progress` and the "being deleted" state come from 050.
 
 **Shared files and signatures:**
 
@@ -1191,14 +1198,21 @@ export const REAUTH_MAX_AGE_SECONDS = 600;
 export const REAUTH_REQUIRED = 'reauth_required';
 /** Message and ApiError code for a restore after the deletion date (050). */
 export const DELETION_IN_PROGRESS = 'deletion_in_progress';
+/** Shown in place of a chat partner who is pending deletion or purged. */
+export const UNAVAILABLE_ACCOUNT_NAME = 'Unavailable account';
 ```
 
-- Modify: `packages/shared/src/types/user.ts`. Add `deletion_scheduled_for: string | null;` to `User` under a `// Account deletion` comment. `PublicUser` is `Omit<User, …>`, so add the field to that `Omit` list too, or it leaks into `PublicUser` and the `PublicUserProfile` literal in `PublicProfileHeader.test.tsx` stops type-checking. It is not added to `PUBLIC_USER_COLUMNS`.
+- Modify: `packages/shared/src/types/user.ts`. Add `deletion_scheduled_for: string | null;` to `User` under a `// Account deletion` comment. `PublicUser` is `Omit<User, …>`, so add the field to that `Omit` list too, or it leaks into `PublicUser` and the `baseUser: PublicUser` fixture in `PublicProfileHeader.test.tsx` stops type-checking. It is not added to `PUBLIC_USER_COLUMNS`. The web tsconfig includes `e2e/`, so `apps/web/e2e/fixtures/mock-data.ts` needs the field too.
 - Modify: `packages/shared/src/api/conversations.ts` (and its test). Today `getConversations` takes the partner's name from `conversation_participants.name`, which stays visible while they are pending. It also skips a conversation with no partner row (`if (!other) continue`), so after the purge the conversation disappears and web's thread shows "Conversation not found". Change it to:
   - keep a conversation with no partner row, with `other_user_id: null`
   - add `other_user_available: boolean` to `ConversationWithParticipant`, false when the partner's `users` row didn't come back (pending or purged)
+  - when unavailable, set `other_user_name` to `UNAVAILABLE_ACCOUNT_NAME`. The real name then can't leak through any reader: the web message log's `aria-label` and initials, the thread page's `<title>` and composer label, or mobile's route params.
+  - throw on an error from the `users` lookup (`conversations.ts:85-88` ignores it today). Otherwise a failed query would mark every partner unavailable.
   - make `other_user_id` nullable, and update its readers (`useMessageThread`, the web and mobile list rows, and mobile's thread route params)
-  - tests: a pending partner (`users` row missing, participant row present), a purged partner (both missing), a normal partner
+  - the nullable id breaks mobile's type-check in this PR: `ConversationListScreen.tsx:60`, `ChatStackParamList.otherUserId` (`navigation.ts:79`), and `blockUser(…, otherUserId)` in `MessageThreadScreen.tsx:275`. So PR 3 adds mobile's null guards, which hide Block for a purged partner, and runs the mobile tests in its gate. PR 4 builds the visible fallback on top.
+  - typed fixtures that need `other_user_available`: `MessageLog.test.tsx`, `useConversations.test.ts`, `useMessageThread.test.ts`, `messages/[id].test.tsx`, `messages/index.test.tsx`
+  - tests: a pending partner (`users` row missing, participant row present), a purged partner (both missing), a normal partner, and a `users` lookup error
+- Create: `packages/shared/src/utils/safeRedirectPath.ts` (and `.test.ts`), exported from the package index: `safeRedirectPath(value: unknown, origin: string): string | null`. It returns null for anything that isn't a string, is empty, or contains whitespace or control characters. Otherwise it parses the value with `new URL(value, origin)` and returns `pathname + search + hash` only when the parsed origin equals `origin` and the value starts with a single `/`. Tests: plain path, path with a query, absolute URL, `//host`, `/\host`, `/\t/host`, `%09` and `%5C` forms after decoding, `javascript:`, empty, and not a string.
 - Create: `packages/shared/src/logic/accountDeletion.ts` (and `.test.ts`), exported from `logic/index.ts`:
 
 ```ts
@@ -1250,34 +1264,42 @@ A PostgREST error whose `message` is `reauth_required` becomes `new ApiError('Pl
     1. **Explain**, including the date `now + ACCOUNT_DELETION_GRACE_DAYS`.
     2. **Confirm it's you:** a password field using `signInWithPassword`, or a Continue with Google button.
     3. **Final confirm.**
-  - The Google path stores the current user id in `sessionStorage` under `nepally.deleteAccount.userId`. It calls `signInWithGoogle` with `redirectTo: <origin>/delete-account?step=confirm`. On return it compares ids and shows "You signed in as a different account" on a mismatch.
+  - The Google path stores the current user id in `sessionStorage` under `nepally.deleteAccount.userId`. It calls `signInWithGoogle` with `redirectTo: <origin>/delete-account?step=confirm` and `prompt: 'select_account'`.
+  - That redirect skips `/auth/callback`, so `finishSignIn` never runs. If the other Google account has no Nepally profile, `AuthContext`'s profile stays null. So compare the stored id with `session.user.id`, never with the profile.
+  - On a mismatch, sign that session out locally. Show "You signed in as a different account. Sign in again as yourself." Offer `/login?redirect=/delete-account`, and delete nothing.
   - The step 2 → 3 transition is skipped when `isRecentSignIn(session.access_token)`.
-  - On success it signs out globally, falling back to local, and lands on `/delete-account?scheduled=<iso>`. `AuthContext.signOut()` takes no arguments and always ends with `router.replace('/')`, which would fight that route. So give it an optional destination, `signOut({ redirectTo })`, and update `AuthContext.test.tsx`. supabase-js already signs out globally by default.
+  - `profile_not_found` from the request shows the `SUPPORT_EMAIL` fallback.
+  - On success it signs out globally and lands on `/delete-account?scheduled=<iso>`.
+    - `AuthContext.signOut()` takes no arguments and always ends with `router.replace('/')`, which would fight that route. So give it an optional destination, `signOut({ redirectTo })`.
+    - `handleSignOut` also returns the error and keeps the session when Supabase's sign-out fails (`AuthContext.tsx:157-166`). Make it fall back to `signOut({ scope: 'local' })`, so a failed global sign-out still signs this browser out.
+    - Update `AuthContext.test.tsx` for both. supabase-js already signs out globally by default.
   - Tests cover every state in spec §7.
-- **3.3 `apps/web/src/lib/auth.ts`.** `signInWithGoogle` accepts an optional `redirectTo`. The existing callers are unchanged, and a test covers the new argument.
+- **3.3 `apps/web/src/lib/auth.ts`.** `signInWithGoogle` accepts an optional `redirectTo` and an optional `prompt`, passed as `queryParams`. The existing callers are unchanged, and a test covers the new arguments.
 - **3.4 The `/delete-account` page.**
   - `apps/web/src/pages/delete-account.page.tsx` (+ `.test.tsx`) is public.
-  - Signed in, it renders `DeleteAccountFlow`.
+  - Signed in, it renders `DeleteAccountFlow`. A pending member gets the restore screen from the gate (3.5), as on every other page.
   - Signed out with `?scheduled=`, it shows "Your account will be deleted on _date_. Sign in before then to restore it."
   - Signed out without it, it explains the process and links to `/login?redirect=/delete-account` and the `SUPPORT_EMAIL` fallback.
 - **3.4a A return path for login.** None exists today. `login.page.tsx` sends a signed-in visitor, and a successful sign-in, to `/feed`. `lib/authCallback.ts` routes a Google sign-in only to `/feed` or `/onboarding/zip`.
-  - Add a shared helper, `safeRedirectPath(value): string | null`. It accepts only a same-origin path: it starts with `/`, doesn't start with `//` or `/\`, and has no scheme.
-  - Login reads `?redirect=` through that helper. Google sign-in carries it through the OAuth `redirectTo`, and the callback honours it once onboarding is complete. Onboarding still comes first.
-  - Tests: helper cases (absolute URL, protocol-relative, backslash, encoded, empty), login with and without the parameter, and the callback.
+  - Login reads `?redirect=` through the shared `safeRedirectPath` (above).
+  - Login starts Google sign-in through `hooks/useGoogleSignIn.ts`, not `signInWithGoogle` directly. The hook takes the redirect, and carries it on the OAuth `redirectTo` as `/auth/callback?redirect=…`. Update its test.
+  - `callback.page.tsx` subscribes once with the router from its first render. The page is statically optimised, so `router.query` is `{}` then. Read `redirect` from `window.location.search` instead, and pass it through `safeRedirectPath`.
+  - The callback honours the redirect once onboarding is complete. Onboarding still comes first.
+  - Tests: login with a safe and an unsafe parameter, the hook, and the callback with a safe, unsafe and missing parameter.
 - **3.5 The restore gate.**
   - `apps/web/src/components/account/AccountRestoreScreen.tsx` (+ test) has two buttons: **Restore my account** (`cancelAccountDeletion`, then refresh the profile in `AuthContext`) and **Keep deletion and sign out**.
   - Once `deletion_scheduled_for` has passed, or when Restore gets `isDeletionInProgressError`, it shows "Your account is being deleted" with only a sign-out button.
-  - The app shell renders it in place of the page whenever the profile has `deletion_scheduled_for`. The public legal pages and `/delete-account` stay reachable. Put it in `Layout.tsx`, which already reads auth.
+  - The app shell renders it in place of the page whenever the profile has `deletion_scheduled_for`. Only the public legal pages stay reachable. `/delete-account` is gated too, or a pending member could skip Restore through its sign-in link. Nothing needs it open: after the request the member is signed out, and the Google re-auth returns before the account is pending. Put it in `Layout.tsx`, which already reads auth.
   - `AuthContext` must expose `deletion_scheduled_for`. It comes with `getMyProfile()` once the type is updated.
   - Web push: `AuthContext` calls `requestWebPushPermission` on sign-in. It must wait until the profile has loaded, and skip a pending account. The request removed that account's tokens, and signing out doesn't remove a new one. After a successful restore, register again. Cover both in `AuthContext.test.tsx`.
 - **3.6 The Settings entry.** Add `{ label: 'Delete account', href: '/delete-account' }` to `getSettingsLinks` in `components/layout/navItems.ts`, and update `navItems.test.ts`.
-- **3.7 The chat fallback.** In `components/messages/ConversationRow.tsx` and `ThreadHeader.tsx` (and their tests), when `other_user_available` is false, show "Unavailable account" with the default avatar and no profile link. When `other_user_id` is null (purged), `useMessageThread` loads the thread instead of reporting "Conversation not found", and the page hides the composer. Check `pages/messages/[id].page.tsx` for other places that read the participant.
+- **3.7 The chat fallback.** When `other_user_available` is false, `ConversationRow.tsx` and `ThreadHeader.tsx` (and their tests) show the default avatar and no profile link. The name is already `UNAVAILABLE_ACCOUNT_NAME` from `getConversations`, which also covers `MessageLog.tsx` (its `aria-label` and initials) and `pages/messages/[id].page.tsx` (its `<title>` and composer label). When `other_user_id` is null (purged), `useMessageThread` loads the thread instead of reporting "Conversation not found", and the page hides the composer.
 - **3.8 Moderation.** Today `useModerationQueue` batch-fetches only reported posts (`getPostsByIds`), and `ReportCard` gets only a `post` prop. So for a user or listing target it can't tell whether the target still exists.
   - Shared: next to `getPostsByIds` in `packages/shared/src/api/moderation.ts`, add `getExistingUserIds(supabase, ids)` and `getExistingListingIds(supabase, ids)`. Each selects `id` with `.in('id', ids)`, returns `{ data: string[] }` and short-circuits on an empty list. Tests: found, missing, empty list, error. A moderator sees pending accounts and their active listings (048), so only purged ones, and listings no longer active, come back missing.
   - `useModerationQueue`'s `fetchQueue` makes both calls alongside `getPostsByIds`, and the queue fails as a whole if any fails. It exposes a `missingTargetIds: Set<string>`. Update its test.
-  - `moderation.page.tsx` passes `targetMissing` to `ReportCard`. For a missing user or listing, the card shows "Member no longer available" or "Listing no longer available", with no link and no **Ban user** button. The post branch already shows "Post no longer available". Add a `ReportCard` test for each target type, missing and present.
+  - `moderation.page.tsx` passes `targetMissing` to `ReportCard`. For a missing user or listing, the card shows "Member no longer available" or "Listing no longer available", with no link and no **Ban user** button. The post branch already shows "Post no longer available". Add a `ReportCard` test for each target type, missing and present. The untyped `queue()` fixture in `moderation.test.tsx` needs `missingTargetIds`, or the page tests crash once the page calls `.has()`.
 - **3.9 Legal copy.**
-  - `privacy.page.tsx`, `help.page.tsx` and `terms.page.tsx` get the in-app steps, the 29-day grace period and restoring by signing in. Privacy and Help keep "within 30 days". Privacy also says photos are removed at the end of the grace period. The email fallback stays.
+  - `privacy.page.tsx`, `help.page.tsx` and `terms.page.tsx` get the in-app steps, the 29-day grace period and restoring by signing in. Privacy and Help keep "within 30 days". Privacy also says that the apps stop showing photos right away, but a saved link to a photo keeps working until the photo is removed at the end of the grace period. The email fallback stays.
   - The Help page links to `/delete-account`.
   - Bump `LEGAL_LAST_UPDATED`, and update `legal.test.tsx`.
   - The text still needs counsel review, like the rest of the legal pages.
@@ -1285,7 +1307,7 @@ A PostgREST error whose `message` is `reauth_required` becomes `new ApiError('Pl
   - Amend `docs/decisions/2026-09-18-long-lived-sessions.md` line 29: Google and Apple accounts redo their provider sign-in, because `reauthenticate()` can't gate anything except a password change. Add a dated "Amended" note.
   - Fix the same "emailed code" claim in `docs/plans/active/2026-09-18-production-launch.md` (lines 33 and 221) and `docs/plans/active/mobile-usability-security-hardening.md` (line 142).
   - Update `docs/product/features/sign-up-and-log-in.md` if it describes Settings.
-- **3.11 Gate, review, draft PR.** End-to-end checks are deferred to PR 4.
+- **3.11 Gate, review, draft PR.** The gate includes the mobile tests and type-check, because of the null guards. End-to-end checks are deferred to PR 4.
 
 **Acceptance:** a web member can delete their account on staging with a password and with Google. A second browser signed in as another member no longer sees them. Signing back in shows the restore screen, and Restore brings everything back.
 
@@ -1293,26 +1315,28 @@ A PostgREST error whose `message` is `reauth_required` becomes `new ApiError('Pl
 
 ## PR 4 — Mobile
 
-Break this PR into steps when it starts. It needs PR 1 applied and PR 3 merged, for the shared code.
+Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 merged, for the shared code.
 
 **Tasks:**
 
 - **4.1 `DeleteAccountScreen`.**
   - `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx` (+ test) has the same three steps as web.
   - Password re-auth uses `pauseAuthListener` / `resumeAuthListener` around `signInWithPassword`, the way `ChangePasswordScreen.tsx:66-100` does.
-  - Google re-auth calls `services/auth/googleAuth.ts` and compares the returned user id with the one from before.
+  - Google re-auth calls `services/auth/googleAuth.ts` with `prompt: 'select_account'`, then compares the returned session's user id with the one from before. `googleAuth.ts` exchanges the code straight into the live session. So on a mismatch, sign that session out and send the member to sign in again, as on web.
+  - `profile_not_found` shows the `SUPPORT_EMAIL` fallback.
+  - Mobile `AuthContext.signOut` ignores Supabase's `{ error }` (`AuthContext.tsx:210-219`). Make it fall back to `signOut({ scope: 'local' })`, and test it.
   - Every async handler checks `navigation.isFocused()` before navigating or alerting, the same guard #109 added to chat starts.
   - On success it shows an alert, "Your account will be deleted on _date_. Sign in before then to restore it.", then signs out globally (falling back to local) and runs `clearAllData()`.
   - Tests cover every state in spec §7, following the golden rules in `apps/mobile/CLAUDE.md`.
 - **4.2 Navigation.**
   - Add `DeleteAccount: undefined` to the profile stack's param list in `apps/mobile/src/types/navigation.ts`, and the screen to `ProfileNavigator.tsx`. Export both new screens from `screens/profile/index.ts`, because `ProfileNavigator` imports from that barrel.
-  - Add `AccountRestore: undefined` to `RootStackParamList` for the gate in 4.4.
+  - Add `AccountRestore: undefined` to `RootStackParamList` for the gate in 4.4. `RootNavigator` imports `AccountRestoreScreen` from its own file, not the barrel, which would pull in every profile screen (`RootNavigator.test.tsx:12-30` avoids that on purpose).
   - Add a "Delete account" item to the Profile dropdown menu in `ProfileScreen.tsx:411-428`, after Change Password. Update `ProfileScreen.test.tsx`.
 - **4.3 `AccountRestoreScreen`.** `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx` (+ test): **Restore my account** calls `cancelAccountDeletion` then refreshes the profile; **Keep deletion and sign out** signs out. After the date, or on `isDeletionInProgressError`, it shows "Your account is being deleted" with only Sign out, as on web.
 - **4.4 The `RootNavigator` gate.** When `user?.deletion_scheduled_for` is set, show `AccountRestoreScreen` in place of onboarding and the main tabs. Update `RootNavigator.test.tsx`.
   - Mobile `AuthContext` declares its own `User` interface and copies a fixed list of fields from `getMyProfile()` (`AuthContext.tsx:13` and `:105-121`). So the column is loaded but dropped. Add it to both, or switch the context to the shared `User`.
   - Push: `AuthContext` calls `registerPushTokenForUser` on sign-in, before `refreshUser()` loads the profile. Move registration after the profile loads, skip it for a pending account, and register after a successful restore. Update `AuthContext.test.tsx`.
-- **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows "Unavailable account" and the default avatar, and doesn't open a profile. These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer.
+- **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows the default avatar, and doesn't open a profile. The name is already `UNAVAILABLE_ACCOUNT_NAME`. These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer. PR 3's null guards already hide Block.
 - **4.6 Gate, review, draft PR.** Then run a Maestro flow once on a dev build: sign in, delete, sign in again, restore. Add it under `apps/mobile/.maestro/` if the flow is stable.
 
 **Acceptance:** on a device, a member can delete their account with a password and with Google. Signing back in shows the restore screen, and Restore works. Chats with a pending member show "Unavailable account".
@@ -1333,7 +1357,7 @@ Break this PR into steps when it starts. It needs PR 1 applied and PR 3 merged, 
 - **RLS cost.** `is_pending_deletion` is a SECURITY DEFINER function, so Postgres can't inline it and runs one primary-key lookup per row it checks. That's fine at launch scale. If feed queries slow down, replace it with a join against a partial index, or cache pending ids per statement. Recorded here, not scheduled.
 - **Web has no central route guard.** The restore gate is new ground (3.5). Keep it one component with its own test, not scattered page checks.
 - **Purge secrets are manual per environment.** Until the runbook is followed, the cron job fails and nobody is purged. The production launch checklist must include the runbook.
-- **Google re-auth may not prompt.** If the browser is still signed in to Google, re-auth can complete without a prompt. It still needs that Google account on that device, which is what the ADR asks for. A stricter `prompt` parameter is a follow-up if review asks for it.
+- **Google re-auth can't force a password.** `prompt: 'select_account'` makes Google show its chooser, so re-auth never completes silently. But Google has no `prompt` that demands a password. Whoever holds a browser signed in to that Google account passes. That still needs that Google account on that device, which is what the ADR asks for (spec §6).
 
 ## Follow-ups (not scheduled)
 
