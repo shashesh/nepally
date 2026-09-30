@@ -1,19 +1,22 @@
 /**
  * Live smoke test: account deletion requests, hiding and restore.
  *
- * Verifies migration 048 against a real Supabase project:
+ * Verifies migrations 048 and 050 against a real Supabase project:
  *   1. amr_signed_in_within accepts a recent sign-in and rejects stale, empty
  *      and malformed amr claims (this is the check request_account_deletion
  *      runs on the caller's JWT).
  *   2. A member cannot set deletion_scheduled_for directly (034 guard).
  *   3. request_account_deletion, right after signing in, schedules deletion
- *      30 days out, returns the same date when repeated, and removes the
+ *      29 days out (050), returns the same date when repeated, and removes the
  *      member's device tokens.
  *   4. While deletion is pending, another member cannot see the profile,
  *      post, comment, like, follows, listing, event or RSVP. A moderator
  *      still sees all of it. The member themself still sees everything
  *      except follow edges, which are hidden when either end is pending.
  *   5. cancel_account_deletion makes everything visible again.
+ *   6. Once the date has passed, cancel_account_deletion raises
+ *      deletion_in_progress and keeps the date (050), so a restore can't race
+ *      the purge.
  *
  * Run: npm run test:security:account-deletion
  * Env: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
@@ -29,9 +32,12 @@ type ContentFixtures = {
   eventId: string;
 };
 
-const GRACE_DAYS = 30;
+const GRACE_DAYS = 29;
 const REAUTH_MAX_AGE_SECONDS = 600;
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Slack for clock drift between this machine and the database. Well under a day. */
+const SCHEDULE_TOLERANCE_MS = 10 * 60 * 1000;
+const DELETION_IN_PROGRESS = 'deletion_in_progress';
 
 /** Error the 034 guard trigger raises (ERRCODE 42501 + fixed message). */
 const PRIVILEGE_GUARD_ERROR_CODE = '42501';
@@ -393,7 +399,7 @@ async function main(): Promise<void> {
     const scheduledMs = new Date(scheduled as string).getTime();
     const expectedMs = before + GRACE_DAYS * DAY_MS;
     assertCondition(
-      Math.abs(scheduledMs - expectedMs) < DAY_MS,
+      Math.abs(scheduledMs - expectedMs) < SCHEDULE_TOLERANCE_MS,
       `Deletion should be scheduled ${GRACE_DAYS} days out, got ${scheduled}`
     );
 
@@ -444,6 +450,41 @@ async function main(): Promise<void> {
       await visibleCounts(viewerClient, owner.id, fixtures),
       ALL_VISIBLE,
       'viewer after restore'
+    );
+
+    // 6. Restore closes once the date has passed.
+    const { error: secondRequestError } = await ownerClient.rpc('request_account_deletion');
+    assertCondition(
+      !secondRequestError,
+      `A second request should succeed: ${secondRequestError?.message}`
+    );
+    const pastDate = new Date(Date.now() - DAY_MS).toISOString();
+    const { error: backdateError } = await service
+      .from('users')
+      .update({ deletion_scheduled_for: pastDate })
+      .eq('id', owner.id);
+    assertCondition(
+      !backdateError,
+      `Moving the date into the past failed: ${backdateError?.message}`
+    );
+
+    const { error: lateCancelError } = await ownerClient.rpc('cancel_account_deletion');
+    assertCondition(
+      lateCancelError?.message === DELETION_IN_PROGRESS,
+      `A cancel after the date should raise ${DELETION_IN_PROGRESS}, got ${lateCancelError?.message ?? 'success'}`
+    );
+    const { data: afterLateCancel, error: afterLateCancelError } = await service
+      .from('users')
+      .select('deletion_scheduled_for')
+      .eq('id', owner.id)
+      .single();
+    if (afterLateCancelError || !afterLateCancel) {
+      throw new Error(`Reading the date back failed: ${afterLateCancelError?.message || 'no row'}`);
+    }
+    assertCondition(
+      new Date(afterLateCancel.deletion_scheduled_for as string).getTime() ===
+        new Date(pastDate).getTime(),
+      `A refused cancel should keep the date, got ${afterLateCancel.deletion_scheduled_for}`
     );
 
     console.log('PASS: account deletion smoke test verified.');

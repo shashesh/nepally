@@ -1,14 +1,16 @@
 /**
  * Live smoke test: the purge-deleted-accounts edge function (migration 049).
  *
- * Against a real Supabase project where 048 is applied, the function is
- * deployed and its secret is set:
+ * Against a real Supabase project where 048 to 051 are applied, the function
+ * is deployed and its secret is set:
  *   1. A POST without the right x-purge-secret is refused (401).
  *   2. A member uploads an avatar and a post photo, requests deletion, and
  *      has the purge date moved into the past. After a POST with the secret,
  *      the auth user, the profile row and both storage objects are gone.
  *   3. A second pending member whose date is still in the future is left
  *      alone.
+ *   4. The due member's comment on the second member's post stops counting:
+ *      that post's comments_count drops back (migration 051).
  *
  * This runs a REAL purge: every account whose date has passed is deleted,
  * not only this test's.
@@ -127,6 +129,43 @@ async function setPurgeDate(service: SupabaseClient, userId: string, when: Date)
   assertCondition(!error, `Moving the purge date failed: ${error?.message}`);
 }
 
+/** Copies columns from any existing row, so fixtures satisfy this project's enums and FKs. */
+async function borrow(
+  service: SupabaseClient,
+  table: string,
+  columns: string
+): Promise<Record<string, unknown>> {
+  const { data, error } = await service.from(table).select(columns).limit(1).single();
+  if (error || !data) {
+    throw new Error(`Failed to borrow a ${table} row: ${error?.message || 'none on this project'}`);
+  }
+  return data as unknown as Record<string, unknown>;
+}
+
+async function insertRow(
+  service: SupabaseClient,
+  table: string,
+  row: Record<string, unknown>
+): Promise<string> {
+  const { data, error } = await service.from(table).insert(row).select('id').single();
+  if (error || !data) {
+    throw new Error(`Failed to insert fixture ${table}: ${error?.message || 'no row'}`);
+  }
+  return data.id as string;
+}
+
+async function commentsCount(service: SupabaseClient, postId: string): Promise<number> {
+  const { data, error } = await service
+    .from('posts')
+    .select('comments_count')
+    .eq('id', postId)
+    .single();
+  if (error || !data) {
+    throw new Error(`Reading comments_count failed: ${error?.message || 'no row'}`);
+  }
+  return data.comments_count as number;
+}
+
 async function callPurge(url: string, secret: string): Promise<Response> {
   return fetch(`${url}/functions/v1/purge-deleted-accounts`, {
     method: 'POST',
@@ -177,6 +216,31 @@ async function main(): Promise<void> {
     createdUsers.push(waiting.id);
     await requestDeletion(await signIn(url, anonKey, waiting));
 
+    // 4. The due member comments on the waiting member's post.
+    const location = await borrow(
+      service,
+      'posts',
+      'metro_area_id, location_zip_code, location_city, location_state'
+    );
+    const postId = await insertRow(service, 'posts', {
+      author_id: waiting.id,
+      title: 'Account purge smoke test',
+      description: 'Account purge smoke test body',
+      status: 'active',
+      photos: [],
+      is_global: false,
+      ...location,
+    });
+    await insertRow(service, 'post_comments', {
+      post_id: postId,
+      author_id: due.id,
+      content: 'Account purge smoke test comment',
+    });
+    assertCondition(
+      (await commentsCount(service, postId)) === 1,
+      'The comment should count before the purge'
+    );
+
     const response = await callPurge(url, purgeSecret);
     assertCondition(response.ok, `The purge should answer 200, got ${response.status}`);
     const summary = (await response.json()) as { purged: number; skipped: number; failed: number };
@@ -210,6 +274,12 @@ async function main(): Promise<void> {
     assertCondition(
       waitingProfile?.deletion_scheduled_for,
       'The member whose date is still ahead should be untouched'
+    );
+
+    const countAfter = await commentsCount(service, postId);
+    assertCondition(
+      countAfter === 0,
+      `The purged member's comment should stop counting, comments_count is ${countAfter}`
     );
 
     console.log('PASS: account purge smoke test verified.');
