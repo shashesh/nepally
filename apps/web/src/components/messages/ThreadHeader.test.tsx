@@ -1,15 +1,15 @@
 import React from 'react';
 import { fireEvent, render, screen } from '../../test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { UNAVAILABLE_ACCOUNT_NAME } from '@nepally/shared';
 import type { ConversationWithParticipant } from '@nepally/shared';
 
 vi.mock('next/link', () => ({
-  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
-    { href, children, ...rest },
-    ref
-  ) {
-    return React.createElement('a', { href, ref, ...rest }, children);
-  }),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(
+    function MockLink({ href, children, ...rest }, ref) {
+      return React.createElement('a', { href, ref, ...rest }, children);
+    }
+  ),
 }));
 
 import { ThreadHeader } from './ThreadHeader';
@@ -21,6 +21,7 @@ const PARTNER: ConversationWithParticipant = {
   created_at: '2026-09-20T10:00:00Z',
   other_user_id: 'partner-1',
   other_user_name: 'Bikal Shrestha',
+  other_user_available: true,
   unread_count: 0,
 };
 
@@ -46,5 +47,20 @@ describe('ThreadHeader', () => {
     const profile = await screen.findByRole('menuitem', { name: 'View profile' });
     expect(profile.getAttribute('href')).toBe('/users/partner-1');
     expect(screen.queryByRole('menuitem', { name: 'Chat' })).toBeNull();
+  });
+
+  it('heads an unavailable partner by the placeholder, with no member menu', () => {
+    render(
+      <ThreadHeader
+        partner={{
+          ...PARTNER,
+          other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+          other_user_available: false,
+        }}
+      />
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Unavailable account' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Options for/ })).toBeNull();
   });
 });

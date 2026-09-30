@@ -51,6 +51,7 @@ function conversation(id: string): ConversationWithParticipant {
     created_at: '2026-09-20T10:00:00Z',
     other_user_id: PARTNER_ID,
     other_user_name: 'Bikal Shrestha',
+    other_user_available: true,
     unread_count: 0,
   };
 }
@@ -83,11 +84,20 @@ describe('useMessageThread', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     subscription = null;
-    mocks.getMessages.mockResolvedValue({ data: [message('m1', PARTNER_ID), message('m2', VIEWER)] });
-    mocks.getConversations.mockResolvedValue({ data: [conversation('conv-0'), conversation('conv-1')] });
+    mocks.getMessages.mockResolvedValue({
+      data: [message('m1', PARTNER_ID), message('m2', VIEWER)],
+    });
+    mocks.getConversations.mockResolvedValue({
+      data: [conversation('conv-0'), conversation('conv-1')],
+    });
     mocks.markAsRead.mockResolvedValue({});
     mocks.subscribeToMessages.mockImplementation(
-      (_client: unknown, _id: string, onInsert: Subscription['onInsert'], onUpdate: Subscription['onUpdate']) => {
+      (
+        _client: unknown,
+        _id: string,
+        onInsert: Subscription['onInsert'],
+        onUpdate: Subscription['onUpdate']
+      ) => {
         subscription = { onInsert, onUpdate };
         return CHANNEL;
       }
@@ -98,7 +108,11 @@ describe('useMessageThread', () => {
     it('loads the newest messages and the partner, then marks the thread read', async () => {
       const { result } = await renderLoaded();
 
-      expect(mocks.getMessages).toHaveBeenCalledWith(expect.anything(), 'conv-1', THREAD_MESSAGE_LIMIT);
+      expect(mocks.getMessages).toHaveBeenCalledWith(
+        expect.anything(),
+        'conv-1',
+        THREAD_MESSAGE_LIMIT
+      );
       expect(THREAD_MESSAGE_LIMIT).toBe(100);
       expect(mocks.getConversations).toHaveBeenCalledWith(expect.anything(), VIEWER);
       expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2']);
@@ -190,7 +204,9 @@ describe('useMessageThread', () => {
 
       // Subscribed before the load finishes, so nothing sent meanwhile is lost.
       expect(mocks.subscribeToMessages).toHaveBeenCalledTimes(1);
-      act(() => subscription!.onInsert(message('m3', PARTNER_ID, { timestamp: '2026-09-23T10:05:00Z' })));
+      act(() =>
+        subscription!.onInsert(message('m3', PARTNER_ID, { timestamp: '2026-09-23T10:05:00Z' }))
+      );
 
       await act(async () => {
         conversations.resolve({ data: [conversation('conv-1')] });
@@ -230,15 +246,19 @@ describe('useMessageThread', () => {
       expect(mocks.markAsRead).toHaveBeenCalledWith(expect.anything(), 'conv-1', VIEWER);
     });
 
-    it("drops a load that lands after the conversation changed", async () => {
+    it('drops a load that lands after the conversation changed', async () => {
       const firstMessages = deferred<{ data: ChatMessage[] }>();
       mocks.getMessages.mockReturnValueOnce(firstMessages.promise);
-      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-1'), conversation('conv-2')] });
+      mocks.getConversations.mockResolvedValue({
+        data: [conversation('conv-1'), conversation('conv-2')],
+      });
       const { result, rerender } = renderHook(({ id }) => useMessageThread(id, VIEWER), {
         initialProps: { id: 'conv-1' },
       });
 
-      mocks.getMessages.mockResolvedValue({ data: [message('x1', PARTNER_ID, { conversation_id: 'conv-2' })] });
+      mocks.getMessages.mockResolvedValue({
+        data: [message('x1', PARTNER_ID, { conversation_id: 'conv-2' })],
+      });
       rerender({ id: 'conv-2' });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -325,7 +345,7 @@ describe('useMessageThread', () => {
       expect(result.current.messages).toBe(before);
     });
 
-    it("ignores an event for another conversation", async () => {
+    it('ignores an event for another conversation', async () => {
       const { result } = await renderLoaded();
 
       act(() => subscription!.onInsert(message('x1', PARTNER_ID, { conversation_id: 'conv-9' })));
@@ -336,8 +356,12 @@ describe('useMessageThread', () => {
     it('keeps messages in time order when they arrive out of order', async () => {
       const { result } = await renderLoaded();
 
-      act(() => subscription!.onInsert(message('m4', PARTNER_ID, { timestamp: '2026-09-23T10:10:00Z' })));
-      act(() => subscription!.onInsert(message('m3', VIEWER, { timestamp: '2026-09-23T10:05:00Z' })));
+      act(() =>
+        subscription!.onInsert(message('m4', PARTNER_ID, { timestamp: '2026-09-23T10:10:00Z' }))
+      );
+      act(() =>
+        subscription!.onInsert(message('m3', VIEWER, { timestamp: '2026-09-23T10:05:00Z' }))
+      );
 
       expect(result.current.messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
     });
@@ -351,7 +375,9 @@ describe('useMessageThread', () => {
     });
 
     it('unsubscribes and starts over when the conversation changes', async () => {
-      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-1'), conversation('conv-2')] });
+      mocks.getConversations.mockResolvedValue({
+        data: [conversation('conv-1'), conversation('conv-2')],
+      });
       const { result, rerender } = await renderLoaded();
 
       mocks.getMessages.mockResolvedValue({ data: [message('x1', PARTNER_ID)] });
@@ -409,7 +435,9 @@ describe('useMessageThread', () => {
     it('does not add a send that lands after the conversation changed', async () => {
       const pending = deferred<{ data: ChatMessage }>();
       mocks.sendMessage.mockReturnValue(pending.promise);
-      mocks.getConversations.mockResolvedValue({ data: [conversation('conv-1'), conversation('conv-2')] });
+      mocks.getConversations.mockResolvedValue({
+        data: [conversation('conv-1'), conversation('conv-2')],
+      });
       const { result, rerender } = await renderLoaded();
 
       let sending!: Promise<boolean>;

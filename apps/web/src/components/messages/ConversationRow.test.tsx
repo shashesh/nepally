@@ -1,20 +1,22 @@
 import React from 'react';
 import { fireEvent, render, screen } from '../../test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { UNAVAILABLE_ACCOUNT_NAME } from '@nepally/shared';
 import type { ConversationWithParticipant } from '@nepally/shared';
 
 vi.mock('next/link', () => ({
-  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
-    { href, children, ...rest },
-    ref
-  ) {
-    return React.createElement('a', { href, ref, ...rest }, children);
-  }),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(
+    function MockLink({ href, children, ...rest }, ref) {
+      return React.createElement('a', { href, ref, ...rest }, children);
+    }
+  ),
 }));
 
 import { ConversationRow } from './ConversationRow';
 
-function conversation(overrides: Partial<ConversationWithParticipant> = {}): ConversationWithParticipant {
+function conversation(
+  overrides: Partial<ConversationWithParticipant> = {}
+): ConversationWithParticipant {
   return {
     id: 'conv-1',
     last_message: 'Is the room still available?',
@@ -22,6 +24,7 @@ function conversation(overrides: Partial<ConversationWithParticipant> = {}): Con
     created_at: '2026-09-20T10:00:00Z',
     other_user_id: 'user-9',
     other_user_name: 'Bikal Shrestha',
+    other_user_available: true,
     other_user_photo: null,
     other_user_trust_level: 1,
     unread_count: 0,
@@ -29,7 +32,10 @@ function conversation(overrides: Partial<ConversationWithParticipant> = {}): Con
   };
 }
 
-function renderRow(overrides: Partial<ConversationWithParticipant> = {}, now = new Date('2026-09-23T11:00:00Z')) {
+function renderRow(
+  overrides: Partial<ConversationWithParticipant> = {},
+  now = new Date('2026-09-23T11:00:00Z')
+) {
   return render(
     <ul>
       <ConversationRow conversation={conversation(overrides)} now={now} />
@@ -96,5 +102,17 @@ describe('ConversationRow', () => {
     const profile = await screen.findByRole('menuitem', { name: 'View profile' });
     expect(profile.getAttribute('href')).toBe('/users/user-9');
     expect(screen.queryByRole('menuitem', { name: 'Chat' })).toBeNull();
+  });
+
+  it('shows an unavailable partner by the placeholder, with an avatar but no member menu', () => {
+    renderRow({
+      other_user_id: null,
+      other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+      other_user_photo: null,
+      other_user_available: false,
+    });
+
+    expect(screen.getByText('Unavailable account')).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Options for/ })).toBeNull();
   });
 });

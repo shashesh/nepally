@@ -4,6 +4,7 @@ import { Anchor, Title } from '@mantine/core';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { formatPublicName } from '@nepally/shared';
 import type { ConversationWithParticipant } from '@nepally/shared';
+import Avatar from '../Avatar';
 import { UserMenuTrigger } from '../users/UserMenuTrigger';
 import styles from './thread.module.css';
 
@@ -22,14 +23,24 @@ export function ThreadHeader({ partner }: ThreadHeaderProps) {
         Messages
       </Anchor>
       <div className={styles.partner}>
-        <UserMenuTrigger
-          userId={partner.other_user_id}
-          name={name}
-          toneKey={partner.other_user_name}
-          photoUrl={partner.other_user_photo}
-          trustLevel={partner.other_user_trust_level}
-          size="small"
-        />
+        {partner.other_user_available && partner.other_user_id ? (
+          <UserMenuTrigger
+            userId={partner.other_user_id}
+            name={name}
+            toneKey={partner.other_user_name}
+            photoUrl={partner.other_user_photo}
+            trustLevel={partner.other_user_trust_level}
+            size="small"
+          />
+        ) : (
+          <Avatar
+            name={name}
+            toneKey={partner.other_user_name}
+            photoUrl={null}
+            size="small"
+            decorative
+          />
+        )}
         <Title order={1} className={styles.title}>
           {name}
         </Title>

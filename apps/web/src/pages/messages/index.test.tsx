@@ -15,15 +15,15 @@ vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('../../hooks/useConversations', () => ({ useConversations: mocks.useConversations }));
 vi.mock('next/router', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
 vi.mock('next/head', () => ({
-  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
-    { href, children, ...rest },
-    ref
-  ) {
-    return React.createElement('a', { href, ref, ...rest }, children);
-  }),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(
+    function MockLink({ href, children, ...rest }, ref) {
+      return React.createElement('a', { href, ref, ...rest }, children);
+    }
+  ),
 }));
 
 import MessagesPage from './index.page';
@@ -38,6 +38,7 @@ function conversation(id: string, name: string, unread = 0): ConversationWithPar
     created_at: '2026-09-20T10:00:00Z',
     other_user_id: `other-${id}`,
     other_user_name: name,
+    other_user_available: true,
     unread_count: unread,
   };
 }
@@ -96,18 +97,29 @@ describe('MessagesPage', () => {
 
   it('lists each conversation as a row linking to its thread', () => {
     mocks.useConversations.mockReturnValue(
-      inbox({ conversations: [conversation('conv-1', 'Bikal Shrestha'), conversation('conv-2', 'Ram Thapa', 3)] })
+      inbox({
+        conversations: [
+          conversation('conv-1', 'Bikal Shrestha'),
+          conversation('conv-2', 'Ram Thapa', 3),
+        ],
+      })
     );
     render(<MessagesPage />);
 
     const rows = screen.getAllByRole('listitem');
     expect(rows).toHaveLength(2);
-    expect(screen.getByRole('link', { name: /Bikal S\./ }).getAttribute('href')).toBe('/messages/conv-1');
-    expect(screen.getByRole('link', { name: /Ram T\..*3 unread/ }).getAttribute('href')).toBe('/messages/conv-2');
+    expect(screen.getByRole('link', { name: /Bikal S\./ }).getAttribute('href')).toBe(
+      '/messages/conv-1'
+    );
+    expect(screen.getByRole('link', { name: /Ram T\..*3 unread/ }).getAttribute('href')).toBe(
+      '/messages/conv-2'
+    );
   });
 
   it("opens a member's profile from their avatar instead of an alert", async () => {
-    mocks.useConversations.mockReturnValue(inbox({ conversations: [conversation('conv-1', 'Bikal Shrestha')] }));
+    mocks.useConversations.mockReturnValue(
+      inbox({ conversations: [conversation('conv-1', 'Bikal Shrestha')] })
+    );
     render(<MessagesPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal S.' }));
