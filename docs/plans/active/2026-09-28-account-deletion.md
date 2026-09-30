@@ -5370,3 +5370,10 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - `index.ts` builds the Supabase client outside its `try`. The env vars it reads are injected by Supabase, but a missing one would skip the function's own 500 response.
   - `PURGE_BATCH_SIZE` is 50 per day. A larger backlog drains oldest-first over several days. For the same reason, the live purge check could miss its own user if more than 50 older accounts were ever due on staging.
   - pg_net holds the outbound request, including the `x-purge-secret` header, in `net.http_request_queue` until it is sent. The secret commands in the runbook can land in shell or SQL-editor history. The endpoint has no rate limit; the 256-bit secret is its protection.
+- From the PR 3 chunk 1 review (no CRITICAL or HIGH):
+  - `isDeletionDatePassed` treats an unparseable date as not passed, and `formatDeletionDate` renders "Invalid Date". Both only get values from `get_my_profile()` or the RPC, but failing closed (passed, and an empty string) would be safer.
+  - The `formatDeletionDate` test expects "October 30, 2026" for noon UTC, which fails on a machine at UTC+12 or later. Pin the zone (`vi.stubEnv('TZ', 'UTC')`) if anyone runs the suite there.
+  - `requestAccountDeletion` surfaces "No deletion date returned" as-is if the RPC ever returns no date; an `ApiError` with the usual sentence would read better.
+  - `getLastSignInAt` accepts `Infinity` as a timestamp (`Number.isFinite` would close it; a server-signed token can't carry one), and `isRecentSignIn` treats a future timestamp as recent.
+  - Cheap test gaps: a two-part token, a non-JSON payload, an already-padded segment, a non-ASCII `user_metadata` name, an `Error`-shaped PostgREST error with a code as its message, and `not_authenticated` falling back to the generic sentence.
+  - `isDeletionDatePassed`'s doc could say, as `isRecentSignIn`'s does, that the client clock is a hint and the server's `deletion_in_progress` decides.
