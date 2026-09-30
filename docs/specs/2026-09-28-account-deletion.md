@@ -30,21 +30,21 @@ cascades to all of their data, and removes their photos from storage.
 
 ## 2. Decisions
 
-| #   | Decision                                                                                                         | Why                                                                                                                                                                                                                                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | 30-day grace period, then a hard delete                                                                          | Accidental deletions can be undone. The privacy policy already promises removal "within 30 days".                                                                                                                                                   |
-| D2  | During the grace period the account is hidden: profile, posts, comments, listings, events, likes, RSVPs, follows | A "deleted" person's posts shouldn't stay up for a month. Chats keep their history and show the person as an unavailable account.                                                                                                                   |
-| D3  | Signing in during the grace period asks: restore, or keep the deletion and sign out                              | A stray sign-in, or someone else with the password, can't silently undo the request.                                                                                                                                                                |
-| D4  | Before a request, the user must have signed in within the last 10 minutes. The database checks this.             | The long-lived sessions ADR makes deletion a sensitive action. The check reads the JWT `amr` claim, so a stolen, still-open session can't delete the account.                                                                                       |
-| D5  | Email accounts re-enter their password. Google-only accounts redo Google sign-in.                                | `supabase.auth.reauthenticate()` sends a code, but the code can only be checked by a password change (`updateUser`), so it can't gate deletion. Emailed sign-in codes would need custom SMTP, which isn't set up yet. This amends the ADR (see §9). |
-| D6  | Request and cancel are Postgres functions. The purge is an edge function run daily by pg_cron.                   | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                       |
-| D7  | Payment records aren't kept in our database                                                                      | No Stripe customer is stored and there are no subscriptions. Stripe keeps the payment records, which covers the privacy policy's "may keep payment records".                                                                                        |
+| #   | Decision                                                                                                         | Why                                                                                                                                                                                                                                                                                                                                           |
+| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | 30-day grace period, then a hard delete                                                                          | Accidental deletions can be undone. The privacy policy already promises removal "within 30 days". Restoring is possible until the date, not after it (§4.4).                                                                                                                                                                                  |
+| D2  | During the grace period the account is hidden: profile, posts, comments, listings, events, likes, RSVPs, follows | A "deleted" person's posts shouldn't stay up for a month. Chats keep their history and show the person as an unavailable account. Photos stay at their public URLs until the purge (§6).                                                                                                                                                      |
+| D3  | Signing in during the grace period asks: restore, or keep the deletion and sign out                              | A stray sign-in, or someone else with the password, can't silently undo the request.                                                                                                                                                                                                                                                          |
+| D4  | Before a request, the user must have signed in within the last 10 minutes. The database checks this.             | The long-lived sessions ADR makes deletion a sensitive action. The check reads the JWT `amr` claim, so a stolen, still-open session can't delete the account.                                                                                                                                                                                 |
+| D5  | Email accounts re-enter their password. Google-only accounts redo Google sign-in.                                | `supabase.auth.reauthenticate()` sends a code, but the code can only be checked by a password change (`updateUser`), so it can't gate deletion. Emailed sign-in codes would need custom SMTP, which isn't set up yet. This amends the ADR (see §9).                                                                                           |
+| D6  | Request and cancel are Postgres functions. The purge is an edge function run daily by pg_cron.                   | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                                                                                                                 |
+| D7  | Stripe is the payment record. Our promotion rows go at the purge.                                                | No Stripe customer is stored and there are no subscriptions. `listing_promotions` holds each promotion's cost and its Stripe checkout session and payment intent ids. They stay during the grace period and the purge's cascade deletes them. Stripe keeps the payment records, which covers the privacy policy's "may keep payment records". |
 
 ## 3. What exists today
 
 - **Everything cascades.** `public.users.id` references `auth.users(id) ON DELETE CASCADE`. Every user-linked table references `public.users` with `ON DELETE CASCADE`. The two exceptions use `SET NULL`: `conversations.creator_id` and `reports.reviewed_by`. So `auth.admin.deleteUser(id)` already removes the profile, posts, comments, likes, saves, messages, conversation memberships, events and RSVPs, listings and their saves, views and contacts, promotions, follows, blocks, notifications, device tokens, settings and saved locations.
 - **One reference with no foreign key:** `reports.target_id`, which points at a post, comment, listing or user.
-- **Storage doesn't cascade.** There are four public buckets. Every object has `owner_id` set.
+- **Storage doesn't cascade.** There are four public buckets. Every object has `owner_id` set. A public bucket serves files by URL with no RLS check (027).
   - `avatars`: `<uid>.jpg` at the root
   - `post-photos`, `event-photos`, `listing-photos`: `<uid>/<file>`
 - **Delete triggers keep counters right:** `event_rsvps`, `post_likes`, `saved_listings` and `user_follows` each have one.
@@ -62,28 +62,35 @@ is active. Add a partial index `WHERE deletion_scheduled_for IS NOT NULL`. Add t
 column to `guard_user_privileged_columns()` (from 034) so it can only change
 through the functions below.
 
+The index is a plain `CREATE INDEX` inside 048, not a `CONCURRENTLY` migration of
+its own. [migration-workflow.md](../architecture/migration-workflow.md#adding-a-migration-going-forward)
+step 6 exempts a fresh database, and production will replay 048 onto empty tables.
+On staging the `users` table holds only test accounts, and the new column is NULL in
+every row, so the build blocks writes for milliseconds.
+
 **`is_pending_deletion(uid uuid) RETURNS boolean`.** Stable, `SECURITY DEFINER`,
 pinned `search_path`, executable by `anon` and `authenticated` because the policies
 apply to every role. It returns true only when the user exists and has
 `deletion_scheduled_for` set. It returns false for active and unknown users, the
 convention the 041 function-execute check expects of policy helpers.
 
-**RLS.** Each SELECT policy on these tables gains "the row's user is the caller,
-or the caller is a moderator (`is_moderator()`), or `NOT is_pending_deletion(<user
-column>)`". `users` reads its own column instead of calling the helper. Moderators
-also gain sight of a pending member's active listings, which the current listings
-policy doesn't give them.
+**RLS.** Each SELECT policy on these tables keeps its current condition, and that
+condition is ANDed with a pending check: `NOT is_pending_deletion(<user column>)`,
+or the row's user is the caller, or the caller is a moderator (`is_moderator()`).
+Because it is ANDed, the check can only hide rows. It never shows a row the current
+policy hides, such as an RSVP to an event whose RSVPs are private. `users` reads its
+own column instead of calling the helper.
 
-| Table                  | User column                                                         |
-| ---------------------- | ------------------------------------------------------------------- |
-| `users`                | `id`                                                                |
-| `posts`                | `author_id`                                                         |
-| `post_comments`        | `author_id`                                                         |
-| `marketplace_listings` | `owner_id`                                                          |
-| `events`               | `organizer_id`                                                      |
-| `event_rsvps`          | `user_id`                                                           |
-| `post_likes`           | `user_id`                                                           |
-| `user_follows`         | `follower_id` and `followee_id` (hide the row if either is pending) |
+| Table                  | User column                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `users`                | `id`                                                                                                   |
+| `posts`                | `author_id`                                                                                            |
+| `post_comments`        | `author_id`                                                                                            |
+| `marketplace_listings` | `owner_id`                                                                                             |
+| `events`               | `organizer_id`                                                                                         |
+| `event_rsvps`          | `user_id`                                                                                              |
+| `post_likes`           | `user_id`                                                                                              |
+| `user_follows`         | `follower_id` and `followee_id`. The row is hidden if either is pending, from everyone but moderators. |
 
 All three views (`marketplace_listings_view`, `user_helper_scores` and
 `listing_promotions_display`) run as the invoker and inherit the policies. Messages
@@ -111,7 +118,8 @@ by `authenticated` only (the 041 grant pattern).
 **`cancel_account_deletion() RETURNS void`.** `SECURITY DEFINER`, `authenticated`
 only. It sets `deletion_scheduled_for = NULL` for `auth.uid()`. It needs no recent
 sign-in check, because reaching the restore screen already required signing in.
-Push registration happens again on the next app start.
+Push registration happens again on the next app start. Migration 050 (§4.4) makes it
+refuse once the date has passed.
 
 **`get_my_profile()`** also returns `deletion_scheduled_for`.
 
@@ -125,15 +133,22 @@ object the user owns, whatever the path convention.
 - `verify_jwt = false` in `supabase/config.toml`. The caller must send
   `x-purge-secret`, compared in constant time with the `ACCOUNT_PURGE_SECRET`
   function secret (the same approach as `send-push-notification`).
-- Uses a service-role client. Per run it selects up to 50 users with
-  `deletion_scheduled_for <= now()`, then for each one:
-  1. Re-reads the row and skips the user if they restored since the select.
+- Uses a service-role client. Per run it selects up to 50 users whose
+  `deletion_scheduled_for` is at least an hour in the past. The hour covers any
+  clock drift between the function and the database. Then for each one:
+  1. Re-reads the row and skips the user if it is no longer due.
   2. Calls `list_user_storage_objects`, groups the paths by bucket and removes
      them through the Storage API in chunks of 100.
-  3. If storage removal succeeded, calls `auth.admin.deleteUser(uid)`. The
-     cascades do the rest.
+  3. If storage removal succeeded, re-reads the row again, then calls
+     `auth.admin.deleteUser(uid)`. The cascades do the rest.
   4. On any failure, logs the user id and error, then moves on. That user is
      retried on the next run.
+- **A restore can't race the purge.** `cancel_account_deletion` refuses once the
+  date has passed (§4.4), and the purge only takes accounts an hour past it. A
+  member can't clear a due date, and without that no re-read could close the gap
+  before `deleteUser`. The two re-reads still cover a service-role change, such as
+  support restoring an account by hand. Files already removed when that happens
+  stay gone, but the account survives.
 - Responds with counts only (`purged`, `skipped`, `failed`). It never logs names or
   emails.
 - The logic that picks and deletes users sits in a module that takes its clients as
@@ -148,6 +163,17 @@ secrets and the `ACCOUNT_PURGE_SECRET` function secret are set by hand in each
 environment, following a runbook added to `supabase-setup.md` (§5, Scheduled jobs). Until they are
 set, the job's HTTP call fails harmlessly and nothing is deleted.
 
+### 4.4 Migration `050_account_restore_deadline.sql`
+
+`cancel_account_deletion()` clears the date only while `deletion_scheduled_for >
+now()`. After that it raises `deletion_in_progress` (SQLSTATE `P0001`) and changes
+nothing. Signing in after the date, before the purge has run, shows "Your account
+is being deleted" (§5.5).
+
+It is a separate migration because 048 was already applied to staging when the race
+came up. Under 048 alone, a restore could land after the purge's last re-read and
+still lose the account.
+
 ## 5. Client design
 
 ### 5.1 Shared (`packages/shared`)
@@ -158,7 +184,8 @@ set, the job's HTTP call fails harmlessly and nothing is deleted.
   the usual `{ data, error }`:
   - `requestAccountDeletion(supabase)` returns the scheduled date. It maps
     `reauth_required` to a typed error code.
-  - `cancelAccountDeletion(supabase)`.
+  - `cancelAccountDeletion(supabase)`. It maps `deletion_in_progress` to a typed
+    error code.
 - **Logic:**
   - `getLastSignInAt(accessToken)` returns the newest `amr` timestamp, or null.
   - `isRecentSignIn(accessToken, now)` lets the UI skip step 2 when the user has
@@ -169,9 +196,10 @@ set, the job's HTTP call fails harmlessly and nothing is deleted.
 
 ### 5.2 The delete flow (web and mobile)
 
-1. **Explain.** What is deleted: profile, posts, comments, messages, listings,
-   events, photos. Active promotions end with the listings. The account is hidden
-   now and deleted on _date_. Signing in before then lets you restore it.
+1. **Explain.** What is deleted: profile, posts, comments, the messages you sent,
+   listings, events, photos. Messages other members sent you stay in their chats.
+   Active promotions end with the listings. The account is hidden now and deleted
+   on _date_. Signing in before then lets you restore it.
 2. **Confirm it's you.**
    - Password: a password field, then `signInWithPassword` with the user's email.
      A wrong password shows "That password is incorrect."
@@ -224,17 +252,21 @@ set, the job's HTTP call fails harmlessly and nothing is deleted.
 - **Restore my account** calls `cancelAccountDeletion`, then refreshes the profile.
 - **Keep deletion and sign out** signs out.
 
+Once the date has passed, the screen says "Your account is being deleted" and offers
+only Sign out. A restore that gets `deletion_in_progress` switches to that state.
+
 ### 5.6 Chat fallback (both platforms)
 
 When a conversation's other participant comes back empty, show "Unavailable
 account" with a neutral avatar and no profile link. This happens while their
-deletion is pending (hidden by RLS) and after the purge (their participant row is
-gone).
+deletion is pending (hidden by RLS) and after the purge (their participant row and
+the messages they sent are gone).
 
 ### 5.7 Legal copy
 
 - `/privacy`: add the in-app steps, the 30-day grace period and restoring by
-  signing in. Keep "within 30 days" and the paragraph on records kept by law.
+  signing in. Say that photos are removed at the end of the grace period. Keep
+  "within 30 days" and the paragraph on records kept by law.
 - `/help`: add the same steps, and link to `/delete-account`.
 - `/terms`: add the same steps.
 - Update `legal.test.tsx` to match.
@@ -246,16 +278,29 @@ gone).
   the purge their email can sign up again. Blocking ban evasion is out of scope
   (§10).
 - **Reports** whose `target_id` points at purged content or a purged profile: the
-  moderation queue shows "Content deleted" and must not crash.
+  moderation queue shows the target as "no longer available", the wording it
+  already uses for a missing post. It shows no link and no ban action, and must not
+  crash. A moderator can't tell a purged listing from one that is sold or removed,
+  so the wording doesn't claim which.
 - **Paid promotions:** hidden with the listing during the grace period, deleted at
   the purge. Refund wording belongs to the lawyer's promotion refund text, not
   this flow.
 - **Counters:** follower and like counts include a pending user until the purge,
   when the delete triggers decrement them. This is accepted.
-- **Restore during a purge run:** the purge re-reads each row just before deleting.
+- **Signing in after the date, before the purge runs:** restore is closed
+  (§4.4). The restore screen says the account is being deleted.
 - **Messages sent to a pending user** stay in the conversation. The pending user
-  sees them after restoring. They stay after the purge too, because only the
-  purged user's own messages cascade.
+  sees them after restoring. After the purge the other member keeps the
+  conversation and the messages they sent. The cascades on `messages.sender_id`
+  and `conversation_participants.user_id` delete the purged user's own messages
+  and participant row.
+- **Photos during the grace period.** The buckets are public, so hiding the rows
+  doesn't lock the files. The apps stop showing the photos, because the rows that
+  hold their URLs are hidden. But anyone who saved a photo's URL can still open it
+  until the purge removes the file. That includes the avatar URL
+  (`avatars/<uid>.jpg`) for anyone who knows the user id. Locking the files would
+  mean moving them to a private bucket and back on restore. That is a follow-up,
+  not part of this work.
 
 ## 7. Testing
 
@@ -276,9 +321,12 @@ gone).
   - another member can't see the pending user's profile, posts, comments,
     listings, events, likes, RSVPs or follows, while a moderator still can
   - cancelling restores visibility
+  - once the date has passed, cancelling raises `deletion_in_progress` and keeps
+    the date (050)
 - **Edge function unit tests** with injected clients:
   - nothing is due
-  - a user who restored is skipped
+  - the due cutoff is an hour before now
+  - a user who is no longer due is skipped
   - a storage failure skips that user and continues
   - on success, `deleteUser` is called once per user
 - **Manual staging run** of the purge on one throwaway user whose date is set in the
@@ -298,12 +346,12 @@ gone).
 | PR  | Contents                                                                                                            | Notes                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | 1   | Migration 048 and the `test:security:account-deletion` check                                                        | Apply to staging when the user asks, then realign the tracker row to `048`.       |
-| 2   | `purge-deleted-accounts` edge function, `config.toml` entry, migration 049, and the Vault runbook                   | Deploy the function and set the secrets on staging. Then do the manual purge run. |
+| 2   | `purge-deleted-accounts` edge function, `config.toml` entry, migrations 049 and 050, and the Vault runbook          | Deploy the function and set the secrets on staging. Then do the manual purge run. |
 | 3   | Shared constants, types, API and logic; the web flow, `/delete-account`, restore gate, chat fallback and legal copy | Needs PR 1 applied on staging.                                                    |
 | 4   | Mobile `DeleteAccountScreen`, `AccountRestoreScreen`, the `RootNavigator` gate, menu entry and chat fallback        | Needs PRs 1 and 3.                                                                |
 
 The production Supabase project doesn't exist yet. When it is created, migrations
-048 and 049, the function and the secrets go with the rest of the setup.
+048 to 050, the function and the secrets go with the rest of the setup.
 
 ## 9. Documentation changes
 
@@ -320,6 +368,7 @@ The production Supabase project doesn't exist yet. When it is created, migration
 ## 10. Out of scope
 
 - A confirmation email when deletion is requested. It needs custom SMTP.
+- Locking a pending member's photos during the grace period (§6).
 - Blocking banned users from signing up again with the same email after the purge.
 - Data export before deletion.
 - Sign in with Apple. It is a separate W3 item, but its re-auth follows D5.
