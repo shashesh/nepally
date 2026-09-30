@@ -14,6 +14,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { AuthCard } from '../auth/AuthCard';
 import { busyButtonProps, notify } from '../ui';
 
+const RELOAD_FAILED =
+  "Your account is restored, but we couldn't reload it. Please refresh the page.";
+
 type Busy = 'restore' | 'sign-out' | null;
 
 export interface AccountRestoreScreenProps {
@@ -54,9 +57,16 @@ export function AccountRestoreScreen({ scheduledFor }: AccountRestoreScreenProps
       setError(result.error.message);
       return;
     }
+    const refreshed = await refreshUser();
     // Layout swaps this screen for the page once the profile has no date.
-    await refreshUser();
-    setBusy(null);
+    if (!refreshed || refreshed.deletion_scheduled_for) {
+      setBusy(null);
+      logClientEvent({
+        event: 'account_restore_reload_failed',
+        context: { platform: 'web' },
+      });
+      setError(RELOAD_FAILED);
+    }
   }
 
   async function handleSignOut() {

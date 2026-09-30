@@ -65,6 +65,38 @@ describe('AccountRestoreScreen', () => {
     expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
   });
 
+  it("says so when the profile can't be reloaded after a restore", async () => {
+    mocks.refreshUser.mockResolvedValue(null);
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Restore my account');
+
+    expect(
+      screen.getByText(
+        "Your account is restored, but we couldn't reload it. Please refresh the page."
+      )
+    ).toBeDefined();
+    expect(mocks.logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_restore_reload_failed' })
+    );
+    expect(
+      screen.getByRole('button', { name: 'Restore my account' }).getAttribute('aria-busy')
+    ).not.toBe('true');
+  });
+
+  it('says so when the reloaded profile still has its deletion date', async () => {
+    mocks.refreshUser.mockResolvedValue({ id: 'user-1', deletion_scheduled_for: AHEAD });
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Restore my account');
+
+    expect(
+      screen.getByText(
+        "Your account is restored, but we couldn't reload it. Please refresh the page."
+      )
+    ).toBeDefined();
+  });
+
   it('switches to "being deleted" when the database refuses a late restore', async () => {
     mocks.cancelAccountDeletion.mockResolvedValue({
       error: new ApiError('Your account is already being deleted.', {
