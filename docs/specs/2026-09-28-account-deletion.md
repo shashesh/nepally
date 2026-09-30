@@ -240,6 +240,8 @@ copies too.
   conversations whose partner is gone (§5.6).
 - **Login return path:** `safeRedirectPath(value, origin)` returns a same-origin
   path or null (§5.3). Callers pass `window.location.origin`.
+  `getSignInReturnPath(value, origin)` also refuses `/login` and `/auth/*`, which
+  only lead back into signing in; login and the callback use it.
 - **API** (`src/api/accountDeletion.ts`), taking a `SupabaseClient` and returning
   the usual `{ data, error }`:
   - `requestAccountDeletion(supabase)` returns the scheduled date. It maps
