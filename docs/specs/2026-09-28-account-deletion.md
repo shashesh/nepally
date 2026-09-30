@@ -280,9 +280,10 @@ copies too.
 - `profile_not_found` means the account never got a profile row. The flow can't
   delete it, so it shows the email fallback (`SUPPORT_EMAIL`).
 - Network or server errors show a retry message. Nothing has changed.
-- If the global sign-out fails after a successful request, sign out locally anyway.
-  Other devices land on the restore screen. Neither platform's `signOut` does that
-  today (§5.3, §5.4).
+- If the global sign-out fails after a successful request, this device is signed
+  out anyway: supabase-js removes the local session even when revoking it on the
+  server fails. Other devices land on the restore screen. Web's `signOut` still
+  reports an error in that case, which this work fixes (§5.3).
 
 ### 5.3 Web
 
@@ -306,8 +307,9 @@ copies too.
   profile has `deletion_scheduled_for`. That includes `/delete-account`, so a
   pending member can't skip Restore through it. Public legal pages stay reachable.
   Web push registration waits until the profile has loaded and isn't pending.
-- **Sign-out:** `AuthContext.signOut` gets an optional destination, and falls back
-  to a local sign-out when the global one fails.
+- **Sign-out:** `AuthContext.signOut` gets an optional destination. When the server
+  call fails but this browser's session is gone, it carries on as signed out
+  instead of reporting an error.
 
 ### 5.4 Mobile
 
@@ -318,8 +320,8 @@ copies too.
     `ChangePasswordScreen`.
   - Google reuses `services/auth/googleAuth.ts`. It exchanges the code straight into
     the live session, so a wrong account must be signed out before the flow stops.
-- **Sign-out:** `AuthContext.signOut` ignores Supabase's error today. It must fall
-  back to a local sign-out.
+- **Sign-out:** `AuthContext.signOut` ignores Supabase's error. That's fine: the
+  local session is removed either way.
 - **Restore gate:** `RootNavigator` gains a branch. When the user's profile has
   `deletion_scheduled_for`, it shows `AccountRestoreScreen` in place of onboarding
   or the main tabs. Mobile `AuthContext` copies a fixed list of profile fields, so
@@ -350,7 +352,8 @@ pending, and it is gone after the purge, which today drops the whole conversatio
 - It returns `other_user_available: false` for both, and sets `other_user_name` to
   `UNAVAILABLE_ACCOUNT_NAME`. Every reader then shows it: the list row, thread
   header, message log labels and initials, the page title, the composer's label,
-  and mobile's route params.
+  and mobile's route params. `formatPublicName` returns that name unchanged, so it
+  isn't shortened to "Unavailable A.".
 - An error from its `users` lookup fails the call. It is not read as "every
   partner is unavailable".
 

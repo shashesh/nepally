@@ -2081,133 +2081,3223 @@ The full review of #111 (2026-09-30) found that other members keep copies of a p
 
 ## PR 3 — Shared code and web
 
-Break this PR into steps when it starts. It needs 048 and 050 applied on staging (PRs 1 and 2). The 29-day constant, `deletion_in_progress` and the "being deleted" state come from 050.
+Branch `feat/account-deletion-web`, from master after #111–#113 merged. 048 to 052 are applied on staging.
 
-**Shared files and signatures:**
+**Found at the start of PR 3 (2026-09-30):**
 
-- Create: `packages/shared/src/constants/accountDeletion.ts`. There is no constants index, so export it from `packages/shared/src/index.ts` next to the other constants:
+- **supabase-js already signs out locally when the server call fails.** `auth-js` 2.116 (`GoTrueClient._signOut`) removes the stored session and fires `SIGNED_OUT` even when revoking it on the server fails, then returns the error. So neither app needs a "fall back to local sign-out" step; the #111 review assumed it did. Web's `handleSignOut` still says "Couldn't log you out" in that case although this browser is signed out, which Task 3.12 fixes. Mobile needs nothing, and PR 4 drops its item.
+- **`formatPublicName` mangles the placeholder.** `formatPublicName('Unavailable account')` is `'Unavailable A.'`, and every chat reader on both platforms formats the partner's name. Task 3.4 makes it return `UNAVAILABLE_ACCOUNT_NAME` unchanged, so no reader has to change to show it.
+- **`api/conversations.ts` has no test file.** Task 3.4 creates one.
+- **The thread opens a purged partner's chat without changes.** `useMessageThread` finds its partner in `getConversations`' list, so keeping the conversation there is enough.
+- **The column can be optional on `User`.** Only `get_my_profile()` returns it; other `User` reads select fewer columns. `deletion_scheduled_for?: string | null` breaks no fixture, including the web `e2e/` fixtures and `PublicProfileHeader.test.tsx`.
+- **`AuthContext` already carries the column.** It stores `getMyProfile()`'s row as `user`. Push registration is keyed on `supabaseUser.id`, before the profile loads (Task 3.12).
+- **Login's Google button goes through `hooks/useGoogleSignIn.ts`.** `/auth/callback` subscribes once with the router from its first render, and the page is statically optimised, so it reads `?redirect=` from `window.location` (Task 3.11).
+- **The redirect allow-list already covers the new URLs.** `supabase-setup.md`, "Configure Site URL and Redirect URLs", lists `http://localhost:3000/**`, `https://nepally.us/**` and preview URLs. They match `/auth/callback?redirect=…` and `/delete-account?step=confirm`. Task 3.21 checks that staging's dashboard matches.
+- **`AuthCard` and Mantine cover the new screens,** so the delete page and the restore screen need no CSS module. Their buttons follow the busy-controls rule in `web-ui-system.md`: `aria-disabled`, `data-disabled`, `aria-busy` and a `Loader`. Never Mantine's `loading` or native `disabled` on a control the member just used.
+- **`logClientEvent` takes any event name,** so new events need no type change.
+
+**How this PR runs:** five chunks. Each ends with its gate and one `code-reviewer`; chunks 2 and 3 get a `security-reviewer` too. Commit after every task. Run web Vitest from `C:\…`, uppercase, or whole files fail. Use `npx prettier --write <file>` on each changed file, never `npm run format`.
+
+| Chunk | Tasks     | Theme                                                                                                                    |
+| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1     | 3.1–3.3   | Shared account deletion: constants, the `User` field, logic, API                                                         |
+| 2     | 3.4–3.8   | Shared chat, redirect and moderation data; the web chat fallback; mobile's null guards                                   |
+| 3     | 3.9–3.12  | Web auth plumbing: Google options, the login return path, the callback, `AuthContext`                                    |
+| 4     | 3.13–3.18 | Web feature: the restore screen and gate, the delete flow and page, the Settings entry, moderation "no longer available" |
+| 5     | 3.19–3.21 | Legal copy, docs, ship                                                                                                   |
+
+### Chunk 1: shared account deletion
+
+### Task 3.1: Constants and the `User` field
+
+**Files:**
+
+- Create: `packages/shared/src/constants/accountDeletion.ts`, `packages/shared/src/constants/accountDeletion.test.ts`
+- Modify: `packages/shared/src/index.ts`, `packages/shared/src/types/user.ts`
+
+- [ ] **Step 1: Write the failing test.** It imports from the package entry, so it also proves the export.
 
 ```ts
+import { describe, expect, it } from 'vitest';
+import {
+  ACCOUNT_DELETION_GRACE_DAYS,
+  DELETION_IN_PROGRESS,
+  PROFILE_NOT_FOUND,
+  REAUTH_MAX_AGE_SECONDS,
+  REAUTH_REQUIRED,
+  UNAVAILABLE_ACCOUNT_NAME,
+} from '../index';
+
+describe('account deletion constants', () => {
+  it('match the database: the 050 grace period and the 048 recency window', () => {
+    expect(ACCOUNT_DELETION_GRACE_DAYS).toBe(29);
+    expect(REAUTH_MAX_AGE_SECONDS).toBe(600);
+  });
+
+  it('name the errors the RPCs raise', () => {
+    expect([REAUTH_REQUIRED, DELETION_IN_PROGRESS, PROFILE_NOT_FOUND]).toEqual([
+      'reauth_required',
+      'deletion_in_progress',
+      'profile_not_found',
+    ]);
+  });
+
+  it('has the placeholder the apps show for a missing chat partner', () => {
+    expect(UNAVAILABLE_ACCOUNT_NAME).toBe('Unavailable account');
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/constants/accountDeletion.test.ts`
+Expected: FAIL, because the constants aren't exported.
+
+- [ ] **Step 3: Write the constants** in `packages/shared/src/constants/accountDeletion.ts`.
+
+```ts
+/**
+ * Account deletion (spec: docs/specs/2026-09-28-account-deletion.md). The
+ * numbers and error names mirror the database; keep them in step with
+ * request_account_deletion() and cancel_account_deletion() in
+ * supabase/migrations/050_account_deletion_timing.sql.
+ */
+
 /** Days between a deletion request and the purge (050: c_grace_period). */
 export const ACCOUNT_DELETION_GRACE_DAYS = 29;
-/** How recent a sign-in request_account_deletion accepts (048: c_reauth_max_age_seconds). */
+
+/** How recent a sign-in request_account_deletion accepts, in seconds (c_reauth_max_age_seconds). */
 export const REAUTH_MAX_AGE_SECONDS = 600;
-/** Message and ApiError code for a request without a recent sign-in. */
+
+/** Raised by request_account_deletion() without a recent sign-in (P0001). Also the ApiError code. */
 export const REAUTH_REQUIRED = 'reauth_required';
-/** Message and ApiError code for a restore after the deletion date (050). */
+
+/** Raised by cancel_account_deletion() once the date has passed (P0001). Also the ApiError code. */
 export const DELETION_IN_PROGRESS = 'deletion_in_progress';
+
+/** Raised by request_account_deletion() when the caller has no profile row (P0002). Also the ApiError code. */
+export const PROFILE_NOT_FOUND = 'profile_not_found';
+
 /** Shown in place of a chat partner who is pending deletion or purged. */
 export const UNAVAILABLE_ACCOUNT_NAME = 'Unavailable account';
 ```
 
-- Modify: `packages/shared/src/types/user.ts`. Add `deletion_scheduled_for: string | null;` to `User` under a `// Account deletion` comment. `PublicUser` is `Omit<User, …>`, so add the field to that `Omit` list too, or it leaks into `PublicUser` and the `baseUser: PublicUser` fixture in `PublicProfileHeader.test.tsx` stops type-checking. It is not added to `PUBLIC_USER_COLUMNS`. The web tsconfig includes `e2e/`, so `apps/web/e2e/fixtures/mock-data.ts` needs the field too.
-- Modify: `packages/shared/src/api/conversations.ts` (and its test). Today `getConversations` takes the partner's name from `conversation_participants.name`, which stays visible while they are pending. It also skips a conversation with no partner row (`if (!other) continue`), so after the purge the conversation disappears and web's thread shows "Conversation not found". Change it to:
-  - keep a conversation with no partner row, with `other_user_id: null`
-  - add `other_user_available: boolean` to `ConversationWithParticipant`, false when the partner's `users` row didn't come back (pending or purged)
-  - when unavailable, set `other_user_name` to `UNAVAILABLE_ACCOUNT_NAME`. The real name then can't leak through any reader: the web message log's `aria-label` and initials, the thread page's `<title>` and composer label, or mobile's route params.
-  - throw on an error from the `users` lookup (`conversations.ts:85-88` ignores it today). Otherwise a failed query would mark every partner unavailable.
-  - make `other_user_id` nullable, and update its readers (`useMessageThread`, the web and mobile list rows, and mobile's thread route params)
-  - the nullable id breaks mobile's type-check in this PR: `ConversationListScreen.tsx:60`, `ChatStackParamList.otherUserId` (`navigation.ts:79`), and `blockUser(…, otherUserId)` in `MessageThreadScreen.tsx:275`. So PR 3 adds mobile's null guards, which hide Block for a purged partner, and runs the mobile tests in its gate. PR 4 builds the visible fallback on top.
-  - typed fixtures that need `other_user_available`: `MessageLog.test.tsx`, `useConversations.test.ts`, `useMessageThread.test.ts`, `messages/[id].test.tsx`, `messages/index.test.tsx`
-  - tests: a pending partner (`users` row missing, participant row present), a purged partner (both missing), a normal partner, and a `users` lookup error
-- Create: `packages/shared/src/utils/safeRedirectPath.ts` (and `.test.ts`), exported from the package index: `safeRedirectPath(value: unknown, origin: string): string | null`. It returns null for anything that isn't a string, is empty, or contains whitespace or control characters. Otherwise it parses the value with `new URL(value, origin)` and returns `pathname + search + hash` only when the parsed origin equals `origin` and the value starts with a single `/`. Tests: plain path, path with a query, absolute URL, `//host`, `/\host`, `/\t/host`, `%09` and `%5C` forms after decoding, `javascript:`, empty, and not a string.
-- Create: `packages/shared/src/logic/accountDeletion.ts` (and `.test.ts`), exported from `logic/index.ts`:
+- [ ] **Step 4: Export them.** In `packages/shared/src/index.ts`, after `export * from './constants/search';`, add:
 
 ```ts
-export type ReauthMethod = 'password' | 'google';
-
-/** Newest amr timestamp (seconds) in a Supabase access token, or null if absent or unreadable. */
-export function getLastSignInAt(accessToken: string): number | null;
-
-/** True when the last sign-in is within REAUTH_MAX_AGE_SECONDS of nowMs. UI hint only; the server decides. */
-export function isRecentSignIn(accessToken: string, nowMs?: number): boolean;
-
-/** 'password' when the user has an email identity, otherwise 'google'. */
-export function getReauthMethod(user: { app_metadata?: { providers?: string[] } }): ReauthMethod;
-
-/** "October 28, 2026" for an ISO timestamp, in the given locale (default 'en-US'). */
-export function formatDeletionDate(iso: string, locale?: string): string;
+export * from './constants/accountDeletion';
 ```
 
-`getLastSignInAt` decodes the JWT payload with `atob` after base64url normalisation. Hermes, browsers and Node all have `atob`. It must never throw: a malformed token returns null.
-
-- Create: `packages/shared/src/api/accountDeletion.ts` (and `.test.ts`), exported from `api/index.ts`:
+- [ ] **Step 5: Add the field.** In `packages/shared/src/types/user.ts`, after `last_active_at: string;` in `User`:
 
 ```ts
+
+  // Account deletion (migration 048): the purge time while deletion is
+  // pending, null otherwise. Only get_my_profile() returns it.
+  deletion_scheduled_for?: string | null;
+```
+
+In the same file, add `| 'deletion_scheduled_for'` to the end of `PublicUser`'s `Omit` list, after `| 'google_verified'`.
+
+- [ ] **Step 6: Run the test and type-check.**
+
+Run: `npm run test --workspace=packages/shared -- src/constants/accountDeletion.test.ts`
+Expected: PASS, 3 tests.
+Run: `npm run type-check --workspace=packages/shared`
+Expected: exit 0.
+
+- [ ] **Step 7: Commit.**
+
+```bash
+git add packages/shared/src/constants/accountDeletion.ts packages/shared/src/constants/accountDeletion.test.ts packages/shared/src/index.ts packages/shared/src/types/user.ts
+git commit -m "feat(shared): account deletion constants and the User field"
+```
+
+### Task 3.2: Account deletion logic
+
+**Files:**
+
+- Create: `packages/shared/src/logic/accountDeletion.ts`, `packages/shared/src/logic/accountDeletion.test.ts`
+- Modify: `packages/shared/src/logic/index.ts`
+
+- [ ] **Step 1: Write the failing tests.**
+
+```ts
+import { describe, expect, it } from 'vitest';
+import {
+  formatDeletionDate,
+  getLastSignInAt,
+  getReauthMethod,
+  getScheduledDeletionDate,
+  isDeletionDatePassed,
+  isRecentSignIn,
+} from './accountDeletion';
+
+function base64Url(value: object): string {
+  return btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** A JWT-shaped token with this payload. The signature is never checked client-side. */
+function tokenWith(payload: object): string {
+  return `${base64Url({ alg: 'HS256', typ: 'JWT' })}.${base64Url(payload)}.signature`;
+}
+
+const NOW_MS = Date.UTC(2026, 9, 1, 12, 0, 0); // 2026-10-01T12:00:00Z
+const NOW_S = NOW_MS / 1000;
+
+describe('getLastSignInAt', () => {
+  it('returns the newest numeric amr timestamp', () => {
+    const token = tokenWith({
+      amr: [
+        { method: 'password', timestamp: NOW_S - 3600 },
+        { method: 'oauth', timestamp: NOW_S - 60 },
+      ],
+    });
+    expect(getLastSignInAt(token)).toBe(NOW_S - 60);
+  });
+
+  it('ignores entries without a numeric timestamp', () => {
+    expect(
+      getLastSignInAt(
+        tokenWith({ amr: [{ method: 'otp', timestamp: '123' }, { method: 'password' }] })
+      )
+    ).toBeNull();
+  });
+
+  it('returns null for a missing or malformed claim', () => {
+    expect(getLastSignInAt(tokenWith({}))).toBeNull();
+    expect(getLastSignInAt(tokenWith({ amr: 'password' }))).toBeNull();
+  });
+
+  it('never throws on a token it cannot read', () => {
+    expect(getLastSignInAt('not-a-jwt')).toBeNull();
+    expect(getLastSignInAt('a.%%%.c')).toBeNull();
+    expect(getLastSignInAt('')).toBeNull();
+  });
+});
+
+describe('isRecentSignIn', () => {
+  it('accepts a sign-in inside the ten-minute window, including its edge', () => {
+    expect(
+      isRecentSignIn(tokenWith({ amr: [{ method: 'password', timestamp: NOW_S - 60 }] }), NOW_MS)
+    ).toBe(true);
+    expect(
+      isRecentSignIn(tokenWith({ amr: [{ method: 'password', timestamp: NOW_S - 600 }] }), NOW_MS)
+    ).toBe(true);
+  });
+
+  it('rejects an older sign-in, or none', () => {
+    expect(
+      isRecentSignIn(tokenWith({ amr: [{ method: 'password', timestamp: NOW_S - 601 }] }), NOW_MS)
+    ).toBe(false);
+    expect(isRecentSignIn('not-a-jwt', NOW_MS)).toBe(false);
+  });
+});
+
+describe('getReauthMethod', () => {
+  it('uses the password when the account has an email identity', () => {
+    expect(getReauthMethod({ app_metadata: { providers: ['google', 'email'] } })).toBe('password');
+  });
+
+  it('uses Google otherwise', () => {
+    expect(getReauthMethod({ app_metadata: { providers: ['google'] } })).toBe('google');
+    expect(getReauthMethod({})).toBe('google');
+  });
+});
+
+describe('deletion dates', () => {
+  it('formats a date for people', () => {
+    expect(formatDeletionDate('2026-10-30T12:00:00.000Z')).toBe('October 30, 2026');
+  });
+
+  it('schedules 29 days out', () => {
+    expect(getScheduledDeletionDate(NOW_MS)).toBe('2026-10-30T12:00:00.000Z');
+  });
+
+  it('knows when the date has passed', () => {
+    expect(isDeletionDatePassed('2026-10-01T11:59:59.000Z', NOW_MS)).toBe(true);
+    expect(isDeletionDatePassed('2026-10-01T12:00:00.000Z', NOW_MS)).toBe(true);
+    expect(isDeletionDatePassed('2026-10-01T12:00:01.000Z', NOW_MS)).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/logic/accountDeletion.test.ts`
+Expected: FAIL, because `./accountDeletion` doesn't exist.
+
+- [ ] **Step 3: Write the logic** in `packages/shared/src/logic/accountDeletion.ts`.
+
+```ts
+/**
+ * Account deletion helpers (spec: docs/specs/2026-09-28-account-deletion.md
+ * §5.1). The database has the final say on recency
+ * (request_account_deletion); these only decide what the apps show.
+ */
+import { ACCOUNT_DELETION_GRACE_DAYS, REAUTH_MAX_AGE_SECONDS } from '../constants/accountDeletion';
+
+export type ReauthMethod = 'password' | 'google';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A JWT's payload, or null when the token can't be read. Never throws. */
+function readJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const payload: unknown = JSON.parse(atob(padded));
+    return typeof payload === 'object' && payload !== null
+      ? (payload as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The newest `amr` timestamp (seconds) in a Supabase access token, or null if there is none. */
+export function getLastSignInAt(accessToken: string): number | null {
+  const amr = readJwtPayload(accessToken)?.amr;
+  if (!Array.isArray(amr)) return null;
+  const timestamps = amr
+    .map((entry: unknown) =>
+      typeof entry === 'object' && entry !== null
+        ? (entry as { timestamp?: unknown }).timestamp
+        : undefined
+    )
+    .filter((timestamp): timestamp is number => typeof timestamp === 'number');
+  return timestamps.length > 0 ? Math.max(...timestamps) : null;
+}
+
+/** True when the last sign-in is within REAUTH_MAX_AGE_SECONDS of `nowMs`. */
+export function isRecentSignIn(accessToken: string, nowMs: number = Date.now()): boolean {
+  const signedInAt = getLastSignInAt(accessToken);
+  return signedInAt !== null && nowMs / 1000 - signedInAt <= REAUTH_MAX_AGE_SECONDS;
+}
+
+/** 'password' when the account has an email identity, otherwise 'google'. */
+export function getReauthMethod(user: { app_metadata?: { providers?: unknown } }): ReauthMethod {
+  const providers = user.app_metadata?.providers;
+  return Array.isArray(providers) && providers.includes('email') ? 'password' : 'google';
+}
+
+/** "October 30, 2026" for an ISO timestamp. */
+export function formatDeletionDate(iso: string, locale: string = 'en-US'): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/** The purge date a request made at `nowMs` would get. */
+export function getScheduledDeletionDate(nowMs: number = Date.now()): string {
+  return new Date(nowMs + ACCOUNT_DELETION_GRACE_DAYS * DAY_MS).toISOString();
+}
+
+/** True once the date has passed, when restoring is closed (050). */
+export function isDeletionDatePassed(iso: string, nowMs: number = Date.now()): boolean {
+  return new Date(iso).getTime() <= nowMs;
+}
+```
+
+- [ ] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/logic/index.ts`.
+
+- [ ] **Step 5: Run the tests.**
+
+Run: `npm run test --workspace=packages/shared -- src/logic/accountDeletion.test.ts`
+Expected: PASS, 11 tests.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add packages/shared/src/logic/accountDeletion.ts packages/shared/src/logic/accountDeletion.test.ts packages/shared/src/logic/index.ts
+git commit -m "feat(shared): account deletion logic: recent sign-in, re-auth method, dates"
+```
+
+### Task 3.3: The account deletion API
+
+**Files:**
+
+- Create: `packages/shared/src/api/accountDeletion.ts`, `packages/shared/src/api/accountDeletion.test.ts`
+- Modify: `packages/shared/src/api/index.ts`
+
+- [ ] **Step 1: Write the failing tests.**
+
+```ts
+import { describe, expect, it, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { ApiError } from '../utils/apiError';
+import {
+  cancelAccountDeletion,
+  getAccountDeletionErrorCode,
+  requestAccountDeletion,
+} from './accountDeletion';
+
+function clientReturning(result: { data: unknown; error: unknown }) {
+  const rpc = vi.fn().mockResolvedValue(result);
+  return { supabase: { rpc } as unknown as SupabaseClient, rpc };
+}
+
+/** The shape PostgREST gives a RAISE EXCEPTION. */
+function raised(message: string, code = 'P0001') {
+  return { message, code, details: null, hint: null };
+}
+
+describe('requestAccountDeletion', () => {
+  it('calls the RPC and resolves with the purge date', async () => {
+    const { supabase, rpc } = clientReturning({ data: '2026-10-30T12:00:00+00:00', error: null });
+
+    const result = await requestAccountDeletion(supabase);
+
+    expect(rpc).toHaveBeenCalledWith('request_account_deletion');
+    expect(result).toEqual({ data: '2026-10-30T12:00:00+00:00' });
+  });
+
+  it('turns reauth_required into a coded error with a sentence', async () => {
+    const { supabase } = clientReturning({ data: null, error: raised('reauth_required') });
+
+    const result = await requestAccountDeletion(supabase);
+
+    expect(result.error).toBeInstanceOf(ApiError);
+    expect(result.error?.message).toBe("Please confirm it's you again.");
+    expect(getAccountDeletionErrorCode(result.error)).toBe('reauth_required');
+  });
+
+  it('turns profile_not_found into a coded error', async () => {
+    const { supabase } = clientReturning({
+      data: null,
+      error: raised('profile_not_found', 'P0002'),
+    });
+
+    const result = await requestAccountDeletion(supabase);
+
+    expect(getAccountDeletionErrorCode(result.error)).toBe('profile_not_found');
+  });
+
+  it('gives any other failure the fallback sentence and no code', async () => {
+    const { supabase } = clientReturning({ data: null, error: raised('boom', 'XX000') });
+
+    const result = await requestAccountDeletion(supabase);
+
+    expect(result.error?.message).toBe("Couldn't delete your account. Please try again.");
+    expect(getAccountDeletionErrorCode(result.error)).toBeNull();
+  });
+
+  it('fails when no date comes back', async () => {
+    const { supabase } = clientReturning({ data: null, error: null });
+
+    const result = await requestAccountDeletion(supabase);
+
+    expect(result.data).toBeUndefined();
+    expect(result.error).toBeDefined();
+  });
+});
+
+describe('cancelAccountDeletion', () => {
+  it('calls the RPC', async () => {
+    const { supabase, rpc } = clientReturning({ data: null, error: null });
+
+    expect(await cancelAccountDeletion(supabase)).toEqual({});
+    expect(rpc).toHaveBeenCalledWith('cancel_account_deletion');
+  });
+
+  it('turns deletion_in_progress into a coded error with a sentence', async () => {
+    const { supabase } = clientReturning({ data: null, error: raised('deletion_in_progress') });
+
+    const result = await cancelAccountDeletion(supabase);
+
+    expect(result.error?.message).toBe('Your account is already being deleted.');
+    expect(getAccountDeletionErrorCode(result.error)).toBe('deletion_in_progress');
+  });
+
+  it('gives any other failure the fallback sentence', async () => {
+    const { supabase } = clientReturning({ data: null, error: raised('boom', 'XX000') });
+
+    const result = await cancelAccountDeletion(supabase);
+
+    expect(result.error?.message).toBe("Couldn't restore your account. Please try again.");
+  });
+});
+
+describe('getAccountDeletionErrorCode', () => {
+  it('reads codes only from the errors these functions return', () => {
+    expect(getAccountDeletionErrorCode(new Error('reauth_required'))).toBeNull();
+    expect(getAccountDeletionErrorCode(undefined)).toBeNull();
+    expect(getAccountDeletionErrorCode(new ApiError('x', { code: 'reauth_required' }))).toBe(
+      'reauth_required'
+    );
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/api/accountDeletion.test.ts`
+Expected: FAIL, because `./accountDeletion` doesn't exist.
+
+- [ ] **Step 3: Write the API** in `packages/shared/src/api/accountDeletion.ts`.
+
+```ts
+/**
+ * Account deletion RPCs (migrations 048 and 050). Both take the caller from
+ * the JWT, so neither takes a user id.
+ */
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { ApiError, toApiError } from '../utils/apiError';
+import {
+  DELETION_IN_PROGRESS,
+  PROFILE_NOT_FOUND,
+  REAUTH_REQUIRED,
+} from '../constants/accountDeletion';
+
+export type AccountDeletionErrorCode =
+  typeof REAUTH_REQUIRED | typeof DELETION_IN_PROGRESS | typeof PROFILE_NOT_FOUND;
+
+/** What each error the RPCs raise tells the member. */
+const SENTENCES: Record<AccountDeletionErrorCode, string> = {
+  [REAUTH_REQUIRED]: "Please confirm it's you again.",
+  [DELETION_IN_PROGRESS]: 'Your account is already being deleted.',
+  [PROFILE_NOT_FOUND]: "We couldn't find your profile.",
+};
+
+function isAccountDeletionErrorCode(value: unknown): value is AccountDeletionErrorCode {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(SENTENCES, value);
+}
+
+/** The RPCs raise their error as the message; it becomes an ApiError carrying it as the code. */
+function toAccountDeletionError(raw: unknown, fallback: string): Error {
+  const message =
+    typeof raw === 'object' && raw !== null ? (raw as { message?: unknown }).message : undefined;
+  if (isAccountDeletionErrorCode(message)) {
+    return new ApiError(SENTENCES[message], { code: message });
+  }
+  return toApiError(raw, fallback);
+}
+
+/** The account deletion error an error from these functions carries, or null. */
+export function getAccountDeletionErrorCode(error: unknown): AccountDeletionErrorCode | null {
+  if (!(error instanceof ApiError)) return null;
+  return isAccountDeletionErrorCode(error.code) ? error.code : null;
+}
+
 export interface AccountDeletionResult {
-  /** ISO timestamp of the scheduled purge. */
+  /** The ISO purge date. */
   data?: string;
   error?: Error;
 }
 
+/**
+ * Schedules the caller's account for deletion. It needs a sign-in within
+ * REAUTH_MAX_AGE_SECONDS; repeating it returns the same date.
+ */
 export async function requestAccountDeletion(
   supabase: SupabaseClient
-): Promise<AccountDeletionResult>;
-export async function cancelAccountDeletion(supabase: SupabaseClient): Promise<{ error?: Error }>;
+): Promise<AccountDeletionResult> {
+  try {
+    const { data, error } = await supabase.rpc('request_account_deletion');
+    if (error) throw error;
+    if (typeof data !== 'string') throw new Error('No deletion date returned');
+    return { data };
+  } catch (error) {
+    return {
+      error: toAccountDeletionError(error, "Couldn't delete your account. Please try again."),
+    };
+  }
+}
 
-/** True for the error requestAccountDeletion returns when the user must sign in again. */
-export function isReauthRequiredError(error: unknown): boolean;
-
-/** True for the error cancelAccountDeletion returns once the deletion date has passed. */
-export function isDeletionInProgressError(error: unknown): boolean;
+/** Restores the caller's account. Refused with DELETION_IN_PROGRESS once the date has passed. */
+export async function cancelAccountDeletion(supabase: SupabaseClient): Promise<{ error?: Error }> {
+  try {
+    const { error } = await supabase.rpc('cancel_account_deletion');
+    if (error) throw error;
+    return {};
+  } catch (error) {
+    return {
+      error: toAccountDeletionError(error, "Couldn't restore your account. Please try again."),
+    };
+  }
+}
 ```
 
-A PostgREST error whose `message` is `reauth_required` becomes `new ApiError('Please confirm it’s you again.', { code: REAUTH_REQUIRED })`. From cancel, `deletion_in_progress` becomes `new ApiError('Your account is already being deleted.', { code: DELETION_IN_PROGRESS })`. Any other error goes through `toApiError(error, 'Couldn’t delete your account. Try again.')` (for cancel: `'Couldn’t restore your account. Try again.'`).
+- [ ] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/api/index.ts`.
 
-**Web tasks:**
+- [ ] **Step 5: Run the tests.**
 
-- **3.1 Shared constants, type, logic and API**, test first, as specified above.
-- **3.2 The delete flow component.**
-  - `apps/web/src/components/account/DeleteAccountFlow.tsx` (+ `.module.css`, `.test.tsx`) with three steps:
-    1. **Explain**, including the date `now + ACCOUNT_DELETION_GRACE_DAYS`.
-    2. **Confirm it's you:** a password field using `signInWithPassword`, or a Continue with Google button.
-    3. **Final confirm.**
-  - The Google path stores the current user id in `sessionStorage` under `nepally.deleteAccount.userId`. It calls `signInWithGoogle` with `redirectTo: <origin>/delete-account?step=confirm` and `prompt: 'select_account'`.
-  - That redirect skips `/auth/callback`, so `finishSignIn` never runs. If the other Google account has no Nepally profile, `AuthContext`'s profile stays null. So compare the stored id with `session.user.id`, never with the profile.
-  - On a mismatch, sign that session out locally. Show "You signed in as a different account. Sign in again as yourself." Offer `/login?redirect=/delete-account`, and delete nothing.
-  - The step 2 → 3 transition is skipped when `isRecentSignIn(session.access_token)`.
-  - `profile_not_found` from the request shows the `SUPPORT_EMAIL` fallback.
-  - On success it signs out globally and lands on `/delete-account?scheduled=<iso>`.
-    - `AuthContext.signOut()` takes no arguments and always ends with `router.replace('/')`, which would fight that route. So give it an optional destination, `signOut({ redirectTo })`.
-    - `handleSignOut` also returns the error and keeps the session when Supabase's sign-out fails (`AuthContext.tsx:157-166`). Make it fall back to `signOut({ scope: 'local' })`, so a failed global sign-out still signs this browser out.
-    - Update `AuthContext.test.tsx` for both. supabase-js already signs out globally by default.
-  - Tests cover every state in spec §7.
-- **3.3 `apps/web/src/lib/auth.ts`.** `signInWithGoogle` accepts an optional `redirectTo` and an optional `prompt`, passed as `queryParams`. The existing callers are unchanged, and a test covers the new arguments.
-- **3.4 The `/delete-account` page.**
-  - `apps/web/src/pages/delete-account.page.tsx` (+ `.test.tsx`) is public.
-  - Signed in, it renders `DeleteAccountFlow`. A pending member gets the restore screen from the gate (3.5), as on every other page.
-  - Signed out with `?scheduled=`, it shows "Your account will be deleted on _date_. Sign in before then to restore it."
-  - Signed out without it, it explains the process and links to `/login?redirect=/delete-account` and the `SUPPORT_EMAIL` fallback.
-- **3.4a A return path for login.** None exists today. `login.page.tsx` sends a signed-in visitor, and a successful sign-in, to `/feed`. `lib/authCallback.ts` routes a Google sign-in only to `/feed` or `/onboarding/zip`.
-  - Login reads `?redirect=` through the shared `safeRedirectPath` (above).
-  - Login starts Google sign-in through `hooks/useGoogleSignIn.ts`, not `signInWithGoogle` directly. The hook takes the redirect, and carries it on the OAuth `redirectTo` as `/auth/callback?redirect=…`. Update its test.
-  - `callback.page.tsx` subscribes once with the router from its first render. The page is statically optimised, so `router.query` is `{}` then. Read `redirect` from `window.location.search` instead, and pass it through `safeRedirectPath`.
-  - The callback honours the redirect once onboarding is complete. Onboarding still comes first.
-  - Tests: login with a safe and an unsafe parameter, the hook, and the callback with a safe, unsafe and missing parameter.
-- **3.5 The restore gate.**
-  - `apps/web/src/components/account/AccountRestoreScreen.tsx` (+ test) has two buttons: **Restore my account** (`cancelAccountDeletion`, then refresh the profile in `AuthContext`) and **Keep deletion and sign out**.
-  - Once `deletion_scheduled_for` has passed, or when Restore gets `isDeletionInProgressError`, it shows "Your account is being deleted" with only a sign-out button.
-  - The app shell renders it in place of the page whenever the profile has `deletion_scheduled_for`. Only the public legal pages stay reachable. `/delete-account` is gated too, or a pending member could skip Restore through its sign-in link. Nothing needs it open: after the request the member is signed out, and the Google re-auth returns before the account is pending. Put it in `Layout.tsx`, which already reads auth.
-  - `AuthContext` must expose `deletion_scheduled_for`. It comes with `getMyProfile()` once the type is updated.
-  - Web push: `AuthContext` calls `requestWebPushPermission` on sign-in. It must wait until the profile has loaded, and skip a pending account. The request removed that account's tokens, and signing out doesn't remove a new one. After a successful restore, register again. Cover both in `AuthContext.test.tsx`.
-- **3.6 The Settings entry.** Add `{ label: 'Delete account', href: '/delete-account' }` to `getSettingsLinks` in `components/layout/navItems.ts`, and update `navItems.test.ts`.
-- **3.7 The chat fallback.** When `other_user_available` is false, `ConversationRow.tsx` and `ThreadHeader.tsx` (and their tests) show the default avatar and no profile link. The name is already `UNAVAILABLE_ACCOUNT_NAME` from `getConversations`, which also covers `MessageLog.tsx` (its `aria-label` and initials) and `pages/messages/[id].page.tsx` (its `<title>` and composer label). When `other_user_id` is null (purged), `useMessageThread` loads the thread instead of reporting "Conversation not found", and the page hides the composer.
-- **3.8 Moderation.** Today `useModerationQueue` batch-fetches only reported posts (`getPostsByIds`), and `ReportCard` gets only a `post` prop. So for a user or listing target it can't tell whether the target still exists.
-  - Shared: next to `getPostsByIds` in `packages/shared/src/api/moderation.ts`, add `getExistingUserIds(supabase, ids)` and `getExistingListingIds(supabase, ids)`. Each selects `id` with `.in('id', ids)`, returns `{ data: string[] }` and short-circuits on an empty list. Tests: found, missing, empty list, error. A moderator sees pending accounts and their active listings (048), so only purged ones, and listings no longer active, come back missing.
-  - `useModerationQueue`'s `fetchQueue` makes both calls alongside `getPostsByIds`, and the queue fails as a whole if any fails. It exposes a `missingTargetIds: Set<string>`. Update its test.
-  - `moderation.page.tsx` passes `targetMissing` to `ReportCard`. For a missing user or listing, the card shows "Member no longer available" or "Listing no longer available", with no link and no **Ban user** button. The post branch already shows "Post no longer available". Add a `ReportCard` test for each target type, missing and present. The untyped `queue()` fixture in `moderation.test.tsx` needs `missingTargetIds`, or the page tests crash once the page calls `.has()`.
-- **3.9 Legal copy.**
-  - `privacy.page.tsx`, `help.page.tsx` and `terms.page.tsx` get the in-app steps, the 29-day grace period and restoring by signing in. Privacy and Help keep "within 30 days". Privacy also says that the apps stop showing photos right away, but a saved link to a photo keeps working until the photo is removed at the end of the grace period. The email fallback stays.
-  - The Help page links to `/delete-account`.
-  - Bump `LEGAL_LAST_UPDATED`, and update `legal.test.tsx`.
-  - The text still needs counsel review, like the rest of the legal pages.
-- **3.10 Docs.**
-  - Amend `docs/decisions/2026-09-18-long-lived-sessions.md` line 29: Google and Apple accounts redo their provider sign-in, because `reauthenticate()` can't gate anything except a password change. Add a dated "Amended" note.
-  - Fix the same "emailed code" claim in `docs/plans/active/2026-09-18-production-launch.md` (lines 33 and 221) and `docs/plans/active/mobile-usability-security-hardening.md` (line 142).
-  - Update `docs/product/features/sign-up-and-log-in.md` if it describes Settings.
-- **3.11 Gate, review, draft PR.** The gate includes the mobile tests and type-check, because of the null guards. End-to-end checks are deferred to PR 4.
+Run: `npm run test --workspace=packages/shared -- src/api/accountDeletion.test.ts`
+Expected: PASS, 9 tests.
 
-**Acceptance:** a web member can delete their account on staging with a password and with Google. A second browser signed in as another member no longer sees them. Signing back in shows the restore screen, and Restore brings everything back.
+- [ ] **Step 6: Commit.**
+
+```bash
+git add packages/shared/src/api/accountDeletion.ts packages/shared/src/api/accountDeletion.test.ts packages/shared/src/api/index.ts
+git commit -m "feat(shared): request and cancel account deletion"
+```
+
+- [ ] **Chunk 1 gate and review.** Run `npm run test --workspace=packages/shared`, `npm run type-check --workspace=packages/shared` and `npm run lint --workspace=packages/shared`, checking each exit code. Then a `code-reviewer` on the chunk's three commits. Fix CRITICAL and HIGH findings in one `fix: address chunk 1 review` commit; everything else goes to Follow-ups.
+
+### Chunk 2: shared chat, redirect and moderation data
+
+### Task 3.4: `getConversations` marks unavailable partners
+
+**Files:**
+
+- Modify: `packages/shared/src/types/chat.ts`, `packages/shared/src/utils/user.ts`, `packages/shared/src/utils/user.test.ts`, `packages/shared/src/api/conversations.ts`
+- Create: `packages/shared/src/api/conversations.test.ts`
+
+After this task, `other_user_id` is nullable, and web and mobile won't type-check until Tasks 3.5 and 3.6. Run only the shared tests until then.
+
+- [ ] **Step 1: Write the failing tests.** Add to `packages/shared/src/utils/user.test.ts`. Import `UNAVAILABLE_ACCOUNT_NAME` from `'../constants/accountDeletion'` if the file doesn't already, and put the test inside the existing `describe('formatPublicName', …)`:
+
+```ts
+it('leaves the unavailable-account placeholder whole', () => {
+  expect(formatPublicName(UNAVAILABLE_ACCOUNT_NAME)).toBe('Unavailable account');
+});
+```
+
+Then create `packages/shared/src/api/conversations.test.ts`:
+
+```ts
+import { describe, expect, it, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
+import { getConversations } from './conversations';
+
+type Result = { data: unknown; error: unknown };
+
+/** A query builder whose methods all chain, and which resolves to `result` when awaited. */
+function query(result: Result) {
+  const builder: Record<string, unknown> = {
+    then: (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
+  };
+  for (const method of ['select', 'eq', 'in', 'neq', 'order', 'or']) {
+    builder[method] = vi.fn(() => builder);
+  }
+  return builder;
+}
+
+/** Answers from() in call order: my rows, conversations, partner rows, blocks, then partner profiles. */
+function client(...results: Result[]): SupabaseClient {
+  const queue = results.map(query);
+  return { from: vi.fn(() => queue.shift()) } as unknown as SupabaseClient;
+}
+
+const ok = (data: unknown): Result => ({ data, error: null });
+const MINE = ok([{ conversation_id: 'c1', unread_count: 2 }]);
+const CONVERSATION = ok([
+  {
+    id: 'c1',
+    last_message: 'Hi',
+    last_message_time: '2026-09-30T10:00:00Z',
+    created_at: '2026-09-01T00:00:00Z',
+  },
+]);
+const PARTNER_ROW = ok([{ conversation_id: 'c1', user_id: 'u2', name: 'Bikal Shrestha' }]);
+const NO_BLOCKS = ok([]);
+
+describe('getConversations', () => {
+  it('returns an available partner with their name, photo and trust level', async () => {
+    const supabase = client(
+      MINE,
+      CONVERSATION,
+      PARTNER_ROW,
+      NO_BLOCKS,
+      ok([{ id: 'u2', profile_photo: 'p.jpg', trust_level: 1 }])
+    );
+
+    const { data, error } = await getConversations(supabase, 'u1');
+
+    expect(error).toBeUndefined();
+    expect(data).toEqual([
+      {
+        id: 'c1',
+        last_message: 'Hi',
+        last_message_time: '2026-09-30T10:00:00Z',
+        created_at: '2026-09-01T00:00:00Z',
+        other_user_id: 'u2',
+        other_user_name: 'Bikal Shrestha',
+        other_user_photo: 'p.jpg',
+        other_user_trust_level: 1,
+        other_user_available: true,
+        unread_count: 2,
+      },
+    ]);
+  });
+
+  it('marks a partner pending deletion unavailable: the profile is hidden, the participant row stays', async () => {
+    const supabase = client(MINE, CONVERSATION, PARTNER_ROW, NO_BLOCKS, ok([]));
+
+    const { data } = await getConversations(supabase, 'u1');
+
+    expect(data?.[0]).toMatchObject({
+      other_user_id: 'u2',
+      other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+      other_user_photo: null,
+      other_user_available: false,
+    });
+  });
+
+  it('keeps a conversation whose partner was purged, with no partner id', async () => {
+    const supabase = client(MINE, CONVERSATION, ok([]), NO_BLOCKS);
+
+    const { data } = await getConversations(supabase, 'u1');
+
+    expect(data).toHaveLength(1);
+    expect(data?.[0]).toMatchObject({
+      other_user_id: null,
+      other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+      other_user_available: false,
+    });
+  });
+
+  it("fails when the partners' profiles can't be read, rather than calling everyone unavailable", async () => {
+    const supabase = client(MINE, CONVERSATION, PARTNER_ROW, NO_BLOCKS, {
+      data: null,
+      error: { message: 'boom', code: 'XX000' },
+    });
+
+    const { data, error } = await getConversations(supabase, 'u1');
+
+    expect(data).toBeUndefined();
+    expect(error?.message).toBe('Failed to fetch conversations');
+  });
+
+  it('still leaves out a conversation with a blocked partner', async () => {
+    const supabase = client(
+      MINE,
+      CONVERSATION,
+      PARTNER_ROW,
+      ok([{ blocker_id: 'u1', blocked_id: 'u2' }]),
+      ok([{ id: 'u2', profile_photo: null, trust_level: 1 }])
+    );
+
+    const { data } = await getConversations(supabase, 'u1');
+
+    expect(data).toEqual([]);
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/user.test.ts src/api/conversations.test.ts`
+Expected: FAIL. `formatPublicName` gives `'Unavailable A.'`, the results have no `other_user_available`, the purged conversation is dropped, and the lookup error is ignored.
+
+- [ ] **Step 3: Let the placeholder through `formatPublicName`.** In `packages/shared/src/utils/user.ts`, import the constant at the top:
+
+```ts
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
+```
+
+and add, as the second line of `formatPublicName`'s body, after the blank-name check:
+
+```ts
+// A label, not a name: getConversations uses it for a partner who is
+// pending deletion or purged, and it must read the same everywhere.
+if (fullName === UNAVAILABLE_ACCOUNT_NAME) return fullName;
+```
+
+- [ ] **Step 4: Change the type.** In `packages/shared/src/types/chat.ts`, in `ConversationWithParticipant`, replace `other_user_id: string;` and `other_user_name: string;` with:
+
+```ts
+/** Null when the partner's account was purged: their participant row is gone. */
+other_user_id: string | null;
+/** UNAVAILABLE_ACCOUNT_NAME when the partner is pending deletion or purged. */
+other_user_name: string;
+```
+
+and add after `other_user_trust_level?: number;`:
+
+```ts
+/** False when the partner is pending deletion (hidden by RLS) or purged. */
+other_user_available: boolean;
+```
+
+- [ ] **Step 5: Change `getConversations`.** In `packages/shared/src/api/conversations.ts`:
+
+- Import the constant:
+
+```ts
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
+```
+
+- In the profile lookup, replace `const { data: userProfiles } = await supabase` with `const { data: userProfiles, error: usersError } = await supabase`. Right after that call, add `if (usersError) throw usersError;`.
+- Replace the `// Assemble results` loop with:
+
+```ts
+// Assemble results. A partner is unavailable when their users row didn't
+// come back: hidden by RLS while pending deletion, or gone after the
+// purge. A purged partner's participant row is gone too; the
+// conversation stays, with no partner id.
+const result: ConversationWithParticipant[] = [];
+for (const conv of conversations || []) {
+  const other = otherMap.get(conv.id);
+  if (other && blockedUserIds.has(other.user_id)) continue;
+
+  const userInfo = other ? userInfoMap.get(other.user_id) : undefined;
+  result.push({
+    id: conv.id,
+    last_message: conv.last_message,
+    last_message_time: conv.last_message_time,
+    created_at: conv.created_at,
+    other_user_id: other?.user_id ?? null,
+    other_user_name: other && userInfo ? other.name : UNAVAILABLE_ACCOUNT_NAME,
+    other_user_photo: userInfo?.profile_photo ?? null,
+    other_user_trust_level: userInfo?.trust_level ?? 0,
+    other_user_available: userInfo !== undefined,
+    unread_count: unreadMap.get(conv.id) || 0,
+  });
+}
+```
+
+- [ ] **Step 6: Run the tests.**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/user.test.ts src/api/conversations.test.ts`
+Expected: PASS.
+
+- [ ] **Step 7: Commit.**
+
+```bash
+git add packages/shared/src/types/chat.ts packages/shared/src/utils/user.ts packages/shared/src/utils/user.test.ts packages/shared/src/api/conversations.ts packages/shared/src/api/conversations.test.ts
+git commit -m "feat(shared): mark chat partners who are pending deletion or purged unavailable"
+```
+
+### Task 3.5: The web chat fallback
+
+**Files:**
+
+- Modify: `apps/web/src/components/messages/ConversationRow.tsx` (+ `.test.tsx`), `apps/web/src/components/messages/ThreadHeader.tsx` (+ `.test.tsx`), `apps/web/src/pages/messages/[id].page.tsx` (+ `[id].test.tsx`)
+- Modify, fixtures only: `apps/web/src/components/messages/MessageLog.test.tsx`, `apps/web/src/pages/messages/index.test.tsx`, `apps/web/src/hooks/useConversations.test.ts`, `apps/web/src/hooks/useMessageThread.test.ts`
+
+`MessageLog` and the thread page's `<title>` and composer label already read `formatPublicName(partner.other_user_name)`, which now yields the placeholder. They need no change.
+
+- [ ] **Step 1: Give every typed fixture the new field.** Add `other_user_available: true,` to:
+  - the `conversation()` builder in `ConversationRow.test.tsx`, `index.test.tsx`, `useConversations.test.ts` and `useMessageThread.test.ts`
+  - `PARTNER` in `ThreadHeader.test.tsx`, `MessageLog.test.tsx` and `[id].test.tsx`
+
+- [ ] **Step 2: Write the failing tests.** In `ConversationRow.test.tsx` (import `UNAVAILABLE_ACCOUNT_NAME` from `@nepally/shared`):
+
+```tsx
+it('shows an unavailable partner by the placeholder, with an avatar but no member menu', () => {
+  renderRow({
+    other_user_id: null,
+    other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+    other_user_photo: null,
+    other_user_available: false,
+  });
+
+  expect(screen.getByText('Unavailable account')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Options for/ })).toBeNull();
+});
+```
+
+In `ThreadHeader.test.tsx`, following the file's render pattern:
+
+```tsx
+it('heads an unavailable partner by the placeholder, with no member menu', () => {
+  render(
+    <ThreadHeader
+      partner={{
+        ...PARTNER,
+        other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+        other_user_available: false,
+      }}
+    />
+  );
+
+  expect(screen.getByRole('heading', { level: 1, name: 'Unavailable account' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Options for/ })).toBeNull();
+});
+```
+
+In `[id].test.tsx`, which mocks `useMessageThread` through its `thread()` builder:
+
+```tsx
+it('hides the composer when the partner was purged, and says why', () => {
+  const purged = {
+    ...PARTNER,
+    other_user_id: null,
+    other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+    other_user_available: false,
+  };
+  mocks.useMessageThread.mockReturnValue(thread({ partner: purged, messages: [MESSAGE] }));
+
+  render(<MessageThreadPage />);
+
+  expect(
+    screen.getByText("This account has been deleted, so it can't get new messages.")
+  ).toBeTruthy();
+  expect(screen.queryByRole('textbox')).toBeNull();
+});
+```
+
+- [ ] **Step 3: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/messages src/pages/messages`
+Expected: the three new tests FAIL; the rest pass.
+
+- [ ] **Step 4: Render the fallback.** In `ConversationRow.tsx`, import `Avatar from '../Avatar'`, and replace the `<UserMenuTrigger … />` element with:
+
+```tsx
+{
+  conversation.other_user_available && conversation.other_user_id ? (
+    <UserMenuTrigger
+      userId={conversation.other_user_id}
+      name={name}
+      toneKey={conversation.other_user_name}
+      photoUrl={conversation.other_user_photo}
+      trustLevel={conversation.other_user_trust_level}
+    />
+  ) : (
+    <Avatar
+      name={name}
+      toneKey={conversation.other_user_name}
+      photoUrl={null}
+      size="medium"
+      decorative
+    />
+  );
+}
+```
+
+Do the same in `ThreadHeader.tsx`, with `size="small"` on both branches. In `[id].page.tsx`, replace `<MessageComposer partnerName={name} onSend={thread.send} />` with:
+
+```tsx
+{
+  partner.other_user_id === null ? (
+    <Text className={styles.firstMessage}>
+      This account has been deleted, so it can&apos;t get new messages.
+    </Text>
+  ) : (
+    <MessageComposer partnerName={name} onSend={thread.send} />
+  );
+}
+```
+
+- [ ] **Step 5: Run the web tests and type-check.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/messages src/pages/messages src/hooks/useConversations.test.ts src/hooks/useMessageThread.test.ts`
+Expected: PASS.
+Run: `npm run type-check --workspace=apps/web`
+Expected: exit 0.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add apps/web/src/components/messages apps/web/src/pages/messages apps/web/src/hooks/useConversations.test.ts apps/web/src/hooks/useMessageThread.test.ts
+git commit -m "feat(web): show chat partners who are pending deletion or purged as unavailable"
+```
+
+### Task 3.6: Mobile's null guards
+
+**Files:**
+
+- Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/screens/chat/MessageThreadScreen.tsx` (+ `.test.tsx`)
+
+PR 4 builds mobile's visible fallback. This task only keeps mobile correct now that `other_user_id` can be null. The name already shows as the placeholder, because `ConversationItem` and the thread both format it with `formatPublicName` (Task 3.4).
+
+- [ ] **Step 1: Write the failing test** in `MessageThreadScreen.test.tsx`, inside the `describe` that renders the thread, and in the file's style:
+
+```tsx
+it('offers no Block for a purged partner', async () => {
+  mockUseRoute.mockReturnValue({
+    params: {
+      conversationId: 'conv-1',
+      otherUserId: null,
+      otherUserName: 'Unavailable account',
+      otherUserTrustLevel: 0,
+      otherUserPhotoUrl: null,
+    },
+  });
+  const screen = render(<MessageThreadScreen />);
+  await act(async () => {});
+
+  expect(screen.queryByLabelText('Conversation options')).toBeNull();
+  expect(screen.getByText('Unavailable account')).toBeTruthy();
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail.**
+
+Run: `npm run test --workspace=apps/mobile -- src/screens/chat/MessageThreadScreen.test.tsx`
+Expected: FAIL, because the options button is there.
+
+- [ ] **Step 3: Guard.** In `types/navigation.ts`, change `MessageThread`'s `otherUserId: string;` to:
+
+```ts
+/** Null when the partner's account was purged. */
+otherUserId: string | null;
+```
+
+In `MessageThreadScreen.tsx`, change `handleBlock`'s guard to `if (!user?.id || !otherUserId) return;`. Then wrap the `menuButton` `TouchableOpacity`, the one labelled "Conversation options", in `{otherUserId ? ( … ) : null}`.
+
+- [ ] **Step 4: Run the test, the chat tests and type-check.**
+
+Run: `npm run test --workspace=apps/mobile -- src/screens/chat`
+Expected: PASS.
+Run: `npm run type-check --workspace=apps/mobile`
+Expected: exit 0.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/mobile/src/types/navigation.ts apps/mobile/src/screens/chat/MessageThreadScreen.tsx apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx
+git commit -m "fix(mobile): no Block for a purged chat partner"
+```
+
+### Task 3.7: `safeRedirectPath`
+
+**Files:**
+
+- Create: `packages/shared/src/utils/redirect.ts`, `packages/shared/src/utils/redirect.test.ts`
+- Modify: `packages/shared/src/utils/index.ts`
+
+- [ ] **Step 1: Write the failing tests.**
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { safeRedirectPath } from './redirect';
+
+const ORIGIN = 'https://nepally.us';
+
+describe('safeRedirectPath', () => {
+  it('accepts a same-origin path, with its query and hash', () => {
+    expect(safeRedirectPath('/delete-account', ORIGIN)).toBe('/delete-account');
+    expect(safeRedirectPath('/feed?tags=jobs#top', ORIGIN)).toBe('/feed?tags=jobs#top');
+  });
+
+  it('refuses anything that could leave the site', () => {
+    for (const value of [
+      'https://evil.com',
+      '//evil.com',
+      '/\\evil.com',
+      '/\t/evil.com',
+      '/\n/evil.com',
+      ' /feed',
+      'javascript:alert(1)',
+      'feed',
+    ]) {
+      expect(safeRedirectPath(value, ORIGIN)).toBeNull();
+    }
+  });
+
+  it('keeps an encoded backslash as text, on this site', () => {
+    expect(safeRedirectPath('/%5Cevil.com', ORIGIN)).toBe('/%5Cevil.com');
+  });
+
+  it('refuses empty and non-string values', () => {
+    expect(safeRedirectPath('', ORIGIN)).toBeNull();
+    expect(safeRedirectPath(undefined, ORIGIN)).toBeNull();
+    expect(safeRedirectPath(['/feed'], ORIGIN)).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/redirect.test.ts`
+Expected: FAIL, because `./redirect` doesn't exist.
+
+- [ ] **Step 3: Write the helper** in `packages/shared/src/utils/redirect.ts`.
+
+```ts
+/** True for a space, a control character or a backslash, which browsers may read as a slash. */
+function hasUnsafeCharacter(value: string): boolean {
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (code <= 0x20 || code === 0x7f || char === '\\') return true;
+  }
+  return false;
+}
+
+/**
+ * A same-origin path to return to after signing in (e.g. ?redirect=/delete-account),
+ * or null when `value` isn't one. It refuses spaces, control characters and
+ * backslashes, then parses the value against `origin` and accepts it only when
+ * it starts with a single slash and the origin is unchanged. So `//evil.com`,
+ * `/\evil.com`, `/<tab>/evil.com` and `https://evil.com` all fail. Pass the
+ * value already decoded, as Next's router.query or URLSearchParams gives it.
+ */
+export function safeRedirectPath(value: unknown, origin: string): string | null {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  if (hasUnsafeCharacter(value)) return null;
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  try {
+    const url = new URL(value, origin);
+    if (url.origin !== new URL(origin).origin) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+```
+
+- [ ] **Step 4: Export it.** Add `export * from './redirect';` to the end of `packages/shared/src/utils/index.ts`.
+
+- [ ] **Step 5: Run the tests.**
+
+Run: `npm run test --workspace=packages/shared -- src/utils/redirect.test.ts`
+Expected: PASS, 4 tests.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add packages/shared/src/utils/redirect.ts packages/shared/src/utils/redirect.test.ts packages/shared/src/utils/index.ts
+git commit -m "feat(shared): safeRedirectPath for returning after sign-in"
+```
+
+### Task 3.8: Which reported members and listings still exist
+
+**Files:**
+
+- Modify: `packages/shared/src/api/moderation.ts`, `packages/shared/src/api/moderation.test.ts`
+
+A moderator sees pending accounts and their active listings (048). So only purged members come back missing, and listings that are purged or no longer active.
+
+- [ ] **Step 1: Write the failing tests** at the end of `moderation.test.ts`, adding `getExistingListingIds` and `getExistingUserIds` to its import from `./moderation`:
+
+```ts
+describe.each([
+  ['getExistingUserIds', getExistingUserIds, 'users'],
+  ['getExistingListingIds', getExistingListingIds, 'marketplace_listings'],
+] as const)('%s', (_name, fetchIds, table) => {
+  it('returns an empty list without querying when no ids are given', async () => {
+    const from = vi.fn();
+
+    const result = await fetchIds({ from } as unknown as SupabaseClient, []);
+
+    expect(result.data).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('returns the ids that still exist, from one query', async () => {
+    const query = { select: vi.fn(), in: vi.fn() };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({ data: [{ id: 'a' }], error: null });
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await fetchIds(supabase, ['a', 'b']);
+
+    expect(supabase.from).toHaveBeenCalledWith(table);
+    expect(query.select).toHaveBeenCalledWith('id');
+    expect(query.in).toHaveBeenCalledWith('id', ['a', 'b']);
+    expect(result.data).toEqual(['a']);
+  });
+
+  it('returns the error when the query fails', async () => {
+    const query = { select: vi.fn(), in: vi.fn() };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({ data: null, error: new Error('boom') });
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await fetchIds(supabase, ['a']);
+
+    expect(result.error?.message).toBe('boom');
+    expect(result.data).toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run: `npm run test --workspace=packages/shared -- src/api/moderation.test.ts`
+Expected: FAIL, because the functions aren't exported.
+
+- [ ] **Step 3: Write them** in `moderation.ts`, after `getPostsByIds`:
+
+```ts
+/** The ids in `ids` that still have a row in `table`, in one query. */
+async function getExistingIds(
+  supabase: SupabaseClient,
+  table: 'users' | 'marketplace_listings',
+  ids: string[],
+  fallback: string
+): Promise<{ data?: string[]; error?: Error }> {
+  if (ids.length === 0) {
+    return { data: [] };
+  }
+
+  try {
+    const { data, error } = await supabase.from(table).select('id').in('id', ids);
+
+    if (error) throw error;
+
+    return { data: (data || []).map((row: { id: string }) => row.id) };
+  } catch (error) {
+    return { error: toApiError(error, fallback) };
+  }
+}
+
+/** Which reported members still exist. A purged account comes back missing. */
+export function getExistingUserIds(
+  supabase: SupabaseClient,
+  userIds: string[]
+): Promise<{ data?: string[]; error?: Error }> {
+  return getExistingIds(supabase, 'users', userIds, 'Failed to check reported members');
+}
+
+/** Which reported listings the moderator can still see: purged and no-longer-active ones come back missing. */
+export function getExistingListingIds(
+  supabase: SupabaseClient,
+  listingIds: string[]
+): Promise<{ data?: string[]; error?: Error }> {
+  return getExistingIds(
+    supabase,
+    'marketplace_listings',
+    listingIds,
+    'Failed to check reported listings'
+  );
+}
+```
+
+- [ ] **Step 4: Run the tests.**
+
+Run: `npm run test --workspace=packages/shared -- src/api/moderation.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add packages/shared/src/api/moderation.ts packages/shared/src/api/moderation.test.ts
+git commit -m "feat(shared): check which reported members and listings still exist"
+```
+
+- [ ] **Chunk 2 gate and review.** Run each and check its exit code:
+  - `npm run test --workspace=packages/shared`
+  - from `C:\…`, `npm run test --workspace=apps/web`
+  - `npm run test --workspace=apps/mobile`
+  - `npm run type-check`
+  - `npm run lint`
+
+  Then a `code-reviewer` and a `security-reviewer` on the chunk's commits. The redirect helper is the security-sensitive part. Fix CRITICAL and HIGH in one `fix: address chunk 2 review` commit.
+
+### Chunk 3: web auth plumbing
+
+### Task 3.9: Google sign-in takes a return address and the account chooser
+
+**Files:**
+
+- Modify: `apps/web/src/lib/auth.ts`, `apps/web/src/lib/auth.test.ts`
+
+- [ ] **Step 1: Write the failing test** in `auth.test.ts`, inside `describe('signInWithGoogle', …)`:
+
+```ts
+it('passes a return address and asks for the account chooser when told to', async () => {
+  authMocks.signInWithOAuthMock.mockResolvedValue({
+    data: { url: 'https://accounts.google.com/o/oauth2/...' },
+    error: null,
+  });
+
+  await signInWithGoogle({
+    redirectTo: 'http://localhost:3000/delete-account?step=confirm',
+    selectAccount: true,
+  });
+
+  expect(authMocks.signInWithOAuthMock).toHaveBeenCalledWith({
+    provider: 'google',
+    options: {
+      redirectTo: 'http://localhost:3000/delete-account?step=confirm',
+      queryParams: { prompt: 'select_account' },
+    },
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/lib/auth.test.ts`
+Expected: FAIL, because `signInWithGoogle` takes no options.
+
+- [ ] **Step 3: Add the options.** In `lib/auth.ts`, replace `signInWithGoogle`'s signature and its `signInWithOAuth` call:
+
+```ts
+export interface GoogleSignInOptions {
+  /** Where Google hands the member back; /auth/callback by default. */
+  redirectTo?: string;
+  /** Always show Google's account chooser, so a re-auth can't complete silently. */
+  selectAccount?: boolean;
+}
+
+export async function signInWithGoogle(options: GoogleSignInOptions = {}): Promise<GoogleAuthResult> {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: options.redirectTo ?? `${window.location.origin}/auth/callback`,
+        ...(options.selectAccount ? { queryParams: { prompt: 'select_account' } } : {}),
+      },
+    });
+```
+
+The rest of the function is unchanged.
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/lib/auth.test.ts`
+Expected: PASS. The existing no-options test still sees exactly `{ redirectTo: '…/auth/callback' }`.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/lib/auth.ts apps/web/src/lib/auth.test.ts
+git commit -m "feat(web): Google sign-in takes a return address and the account chooser"
+```
+
+### Task 3.10: Login returns to a safe `?redirect=`
+
+**Files:**
+
+- Modify: `apps/web/src/hooks/useGoogleSignIn.ts` (+ `.test.ts`), `apps/web/src/pages/login.page.tsx`, `apps/web/src/pages/login.test.tsx`
+
+- [ ] **Step 1: Write the failing tests.** In `useGoogleSignIn.test.ts`:
+
+```ts
+it('carries a return path through the Google callback', async () => {
+  mocks.signInWithGoogle.mockResolvedValue({});
+  const { result } = renderHook(() => useGoogleSignIn(vi.fn(), '/delete-account'));
+
+  await act(async () => {
+    await result.current.start();
+  });
+
+  expect(mocks.signInWithGoogle).toHaveBeenCalledWith({
+    redirectTo: `${window.location.origin}/auth/callback?redirect=%2Fdelete-account`,
+  });
+});
+```
+
+In `login.test.tsx`, inside `describe('LoginPage', …)`:
+
+```tsx
+it('goes to a safe ?redirect= after logging in', async () => {
+  loginMocks.useRouterMock.mockReturnValue({
+    push: mockPush,
+    replace: mockReplace,
+    query: { redirect: '/delete-account' },
+    isReady: true,
+  });
+  loginMocks.signInWithEmailMock.mockResolvedValue({
+    user: { id: 'user-1', email: 'test@example.com' },
+  });
+  render(<LoginPage />);
+
+  await submitWith('test@example.com', 'correctpassword');
+
+  expect(mockPush).toHaveBeenCalledWith('/delete-account');
+});
+
+it('ignores an unsafe ?redirect= and goes to the feed', async () => {
+  loginMocks.useRouterMock.mockReturnValue({
+    push: mockPush,
+    replace: mockReplace,
+    query: { redirect: 'https://evil.com' },
+    isReady: true,
+  });
+  loginMocks.signInWithEmailMock.mockResolvedValue({
+    user: { id: 'user-1', email: 'test@example.com' },
+  });
+  render(<LoginPage />);
+
+  await submitWith('test@example.com', 'correctpassword');
+
+  expect(mockPush).toHaveBeenCalledWith('/feed');
+});
+
+it('sends a signed-in visitor to a safe ?redirect=', async () => {
+  loginMocks.useRouterMock.mockReturnValue({
+    push: mockPush,
+    replace: mockReplace,
+    query: { redirect: '/delete-account' },
+    isReady: true,
+  });
+  loginMocks.useAuthMock.mockReturnValue({ user: { id: 'user-1' }, refreshUser: mockRefreshUser });
+  render(<LoginPage />);
+  await act(async () => {});
+
+  expect(mockReplace).toHaveBeenCalledWith('/delete-account');
+});
+
+it('passes a safe ?redirect= to Google sign-in', async () => {
+  loginMocks.useRouterMock.mockReturnValue({
+    push: mockPush,
+    replace: mockReplace,
+    query: { redirect: '/delete-account' },
+    isReady: true,
+  });
+  render(<LoginPage />);
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /Continue with Google/ }));
+  });
+
+  expect(loginMocks.signInWithGoogleMock).toHaveBeenCalledWith({
+    redirectTo: `${window.location.origin}/auth/callback?redirect=%2Fdelete-account`,
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useGoogleSignIn.test.ts src/pages/login.test.tsx`
+Expected: the five new tests FAIL.
+
+- [ ] **Step 3: Carry the return path in the hook.** In `useGoogleSignIn.ts`, add the parameter and use it:
+
+```ts
+/**
+ * Starts Google sign-in for log in and sign up. `setError('')` first; on
+ * failure logs auth_google_failed and sets the mapped sentence. On success
+ * `busy` stays true: the browser is already leaving for Google. `returnTo`,
+ * already checked with safeRedirectPath, rides through /auth/callback as
+ * ?redirect=.
+ */
+export function useGoogleSignIn(
+  setError: (message: string) => void,
+  returnTo: string | null = null
+): { busy: boolean; start: () => Promise<void> } {
+  const [busy, setBusy] = useState(false);
+
+  async function start(): Promise<void> {
+    setError('');
+    setBusy(true);
+    const result = await (returnTo
+      ? signInWithGoogle({
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(returnTo)}`,
+        })
+      : signInWithGoogle());
+```
+
+The rest of `start` is unchanged.
+
+- [ ] **Step 4: Read `?redirect=` on the login page.** In `login.page.tsx`, add `safeRedirectPath` to the `@nepally/shared` import. After the `info` constant, add:
+
+```ts
+// Where to go after logging in: a safe ?redirect= (/delete-account sends
+// one), or the feed. The router is never ready on the server, so window
+// is only read in the browser.
+const returnTo = router.isReady
+  ? safeRedirectPath(router.query.redirect, window.location.origin)
+  : null;
+const destination = returnTo ?? '/feed';
+```
+
+Then make these three changes:
+
+- `const google = useGoogleSignIn(setServerError);` becomes `const google = useGoogleSignIn(setServerError, returnTo);`
+- Replace the redirect lines with the block below. Until the router is ready, a signed-in visitor sees nothing rather than a flash of the form:
+
+```ts
+const redirecting = useRedirectWhen(!!user && router.isReady, destination);
+if (redirecting || (user && !router.isReady)) return null;
+```
+
+- In `handleSubmit`, `void router.push('/feed');` becomes `void router.push(destination);`
+
+- [ ] **Step 5: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useGoogleSignIn.test.ts src/pages/login.test.tsx`
+Expected: PASS, the old tests included.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add apps/web/src/hooks/useGoogleSignIn.ts apps/web/src/hooks/useGoogleSignIn.test.ts apps/web/src/pages/login.page.tsx apps/web/src/pages/login.test.tsx
+git commit -m "feat(web): login returns to a safe ?redirect="
+```
+
+### Task 3.11: The Google callback honours `?redirect=`
+
+**Files:**
+
+- Modify: `apps/web/src/pages/auth/callback.page.tsx`, `apps/web/src/pages/auth/callback.test.tsx`
+
+- [ ] **Step 1: Write the failing tests** at the end of `describe('AuthCallbackPage', …)`:
+
+```tsx
+describe('with ?redirect=', () => {
+  afterEach(() => {
+    window.history.pushState({}, '', '/');
+  });
+
+  it('goes to a safe ?redirect= instead of the feed', async () => {
+    window.history.pushState({}, '', '/auth/callback?redirect=%2Fdelete-account');
+    render(<AuthCallbackPage />);
+
+    await fireAuthEvent('SIGNED_IN');
+
+    expect(mockPush).toHaveBeenCalledWith('/delete-account');
+  });
+
+  it('still sends a member with no metro to onboarding first', async () => {
+    window.history.pushState({}, '', '/auth/callback?redirect=%2Fdelete-account');
+    callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/onboarding/zip' });
+    render(<AuthCallbackPage />);
+
+    await fireAuthEvent('SIGNED_IN');
+
+    expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
+  });
+
+  it('ignores an unsafe ?redirect=', async () => {
+    window.history.pushState({}, '', '/auth/callback?redirect=https%3A%2F%2Fevil.com');
+    render(<AuthCallbackPage />);
+
+    await fireAuthEvent('SIGNED_IN');
+
+    expect(mockPush).toHaveBeenCalledWith('/feed');
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/auth/callback.test.tsx`
+Expected: the first new test FAILS; it gets `/feed`.
+
+- [ ] **Step 3: Honour it.** In `callback.page.tsx`, import `safeRedirectPath` along with `logClientEvent` from `@nepally/shared`. Replace `void router.push(result.destination);` with:
+
+```ts
+// A safe ?redirect= (e.g. /delete-account) wins over the feed, never
+// over onboarding. Read from window.location: this page is statically
+// optimised, so the first render's router query is empty.
+const returnTo = safeRedirectPath(
+  new URLSearchParams(window.location.search).get('redirect'),
+  window.location.origin
+);
+void router.push(result.destination === '/feed' && returnTo ? returnTo : result.destination);
+```
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/auth/callback.test.tsx`
+Expected: PASS.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/pages/auth/callback.page.tsx apps/web/src/pages/auth/callback.test.tsx
+git commit -m "feat(web): the Google callback honours a safe ?redirect="
+```
+
+### Task 3.12: `AuthContext`: sign-out destination, the real sign-out state, push after the profile
+
+**Files:**
+
+- Modify: `apps/web/src/contexts/AuthContext.tsx`, `apps/web/src/contexts/AuthContext.test.tsx`, `docs/product/features/sign-up-and-log-in.md`
+
+- [ ] **Step 1: Write the failing tests** in `AuthContext.test.tsx`, inside `describe('AuthProvider', …)`:
+
+```tsx
+it('treats a failed revoke as signed out when this browser has no session left', async () => {
+  const snapshots = await renderSignedIn();
+  authMocks.signOutMock.mockResolvedValue({ error: new Error('network down') });
+  // supabase-js drops the local session even when revoking it fails.
+  authMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
+
+  let result: { error?: string } = { error: 'not called' };
+  await act(async () => {
+    result = await snapshots[snapshots.length - 1].signOut();
+  });
+
+  expect(result).toEqual({});
+  expect(authMocks.replaceMock).toHaveBeenCalledWith('/');
+  expect(snapshots[snapshots.length - 1].user).toBeNull();
+  expect(authMocks.logClientEventMock).toHaveBeenCalledWith(
+    expect.objectContaining({ event: 'auth_sign_out_failed' })
+  );
+});
+
+it('lands on the given page after signing out', async () => {
+  const snapshots = await renderSignedIn();
+
+  await act(async () => {
+    await snapshots[snapshots.length - 1].signOut({ redirectTo: '/delete-account?scheduled=x' });
+  });
+
+  expect(authMocks.replaceMock).toHaveBeenCalledWith('/delete-account?scheduled=x');
+});
+
+it('registers web push only once the profile shows no pending deletion', async () => {
+  const snapshots: Array<React.ContextType<typeof AuthContext>> = [];
+  authMocks.getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user-3' } } } });
+  authMocks.getUserMock.mockResolvedValue({ data: { user: { id: 'user-3' } } });
+  authMocks.getMyProfileMock.mockResolvedValue({
+    data: { id: 'user-3', deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+  });
+
+  render(
+    <AuthProvider>
+      <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+    </AuthProvider>
+  );
+  await waitFor(() => {
+    expect(snapshots[snapshots.length - 1].user?.id).toBe('user-3');
+  });
+  expect(authMocks.requestWebPushPermissionMock).not.toHaveBeenCalled();
+
+  // A restore clears the date, and the next profile read registers push.
+  authMocks.getMyProfileMock.mockResolvedValue({
+    data: { id: 'user-3', deletion_scheduled_for: null },
+  });
+  await act(async () => {
+    await snapshots[snapshots.length - 1].refreshUser();
+  });
+
+  await waitFor(() => {
+    expect(authMocks.requestWebPushPermissionMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      'user-3'
+    );
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/contexts/AuthContext.test.tsx`
+Expected: the three new tests FAIL.
+
+- [ ] **Step 3: Change `AuthContext.tsx`.**
+
+- Add above `interface AuthContextType`:
+
+```ts
+interface SignOutOptions {
+  /** Where to land once signed out; / by default. */
+  redirectTo?: string;
+}
+```
+
+- In `AuthContextType`, `signOut: () => Promise<{ error?: string }>;` becomes `signOut: (options?: SignOutOptions) => Promise<{ error?: string }>;`. Its doc comment says "replaces the route with `redirectTo`, or /".
+- Replace the push registration effect's first lines, and key it on the profile. Push waits for the profile and skips an account pending deletion: its tokens were deleted by the request, and signing out wouldn't remove a new one. A restore clears the date, and the effect runs again.
+
+```ts
+  const pushUserId = user && !user.deletion_scheduled_for ? user.id : null;
+
+  // Register browser push once per member in this app session, once their
+  // profile shows no pending deletion.
+  useEffect(() => {
+    const userId = pushUserId;
+```
+
+and change the effect's dependency list from `[supabaseUser?.id]` to `[pushUserId]`. The rest of the effect body is unchanged.
+
+- Replace `handleSignOut` with:
+
+```ts
+// True while this browser still holds a session. Unsure counts as yes.
+async function hasLocalSession(): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session !== null;
+  } catch {
+    return true;
+  }
+}
+
+// Layout shows its loader while signingOut, which unmounts the page before
+// the user clears, so a protected page's `!user → /login` redirect never
+// races the replace.
+async function handleSignOut(options: SignOutOptions = {}): Promise<{ error?: string }> {
+  setSigningOut(true);
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    logClientEvent({ event: 'auth_sign_out_failed', context: { platform: 'web' }, error });
+    // supabase-js drops this browser's session even when revoking it on
+    // the server fails, so the member may be signed out here already.
+    if (await hasLocalSession()) {
+      setSigningOut(false);
+      return { error: SIGN_OUT_FAILED };
+    }
+  }
+  setUser(null);
+  setSupabaseUser(null);
+  pushRegistrationAttemptedUserIdRef.current = null;
+  try {
+    await router.replace(options.redirectTo ?? '/');
+  } finally {
+    setSigningOut(false);
+  }
+  return {};
+}
+```
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/contexts/AuthContext.test.tsx`
+Expected: PASS, including "a failed signOut keeps the member", whose `renderSignedIn` leaves a session behind.
+
+- [ ] **Step 5: Update the feature doc.** In `docs/product/features/sign-up-and-log-in.md`, replace the last sentence of the "Log out" paragraph with: "If Supabase can't revoke the session but this browser is signed out anyway (supabase-js drops the local session either way), they land on `/` as usual. Only if the browser still holds the session do they stay signed in and see "Couldn't log you out. Please try again." Either failure is logged as `auth_sign_out_failed`."
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add apps/web/src/contexts/AuthContext.tsx apps/web/src/contexts/AuthContext.test.tsx docs/product/features/sign-up-and-log-in.md
+git commit -m "feat(web): sign-out destination, the real sign-out state, push after the profile"
+```
+
+- [ ] **Chunk 3 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`, checking each exit code. Then a `code-reviewer` and a `security-reviewer` on the chunk's commits: the redirect handling and sign-out are security-sensitive. Fix CRITICAL and HIGH in one `fix: address chunk 3 review` commit.
+
+### Chunk 4: the web feature
+
+### Task 3.13: `busyButtonProps` for everyone, and the restore screen
+
+**Files:**
+
+- Create: `apps/web/src/components/ui/busyButtonProps.tsx` (+ `.test.tsx`), `apps/web/src/components/account/AccountRestoreScreen.tsx` (+ `.test.tsx`)
+- Modify: `apps/web/src/components/ui/index.ts`, `apps/web/src/pages/onboarding/zip.page.tsx`
+
+- [ ] **Step 1: Move `busyButtonProps` out of the ZIP page, test first.** Create `components/ui/busyButtonProps.test.tsx`:
+
+```tsx
+import React from 'react';
+import { describe, expect, it } from 'vitest';
+import { busyButtonProps } from './busyButtonProps';
+
+describe('busyButtonProps', () => {
+  it('locks the button focusably and shows a Loader on the running one', () => {
+    const props = busyButtonProps(true, true, <span>icon</span>);
+    expect(props['aria-disabled']).toBe(true);
+    expect(props['data-disabled']).toBe(true);
+    expect(props['aria-busy']).toBe(true);
+    expect(React.isValidElement(props.leftSection)).toBe(true);
+  });
+
+  it('leaves an idle button alone, with its icon', () => {
+    const icon = <span>icon</span>;
+    const props = busyButtonProps(false, false, icon);
+    expect(props['aria-disabled']).toBeUndefined();
+    expect(props['data-disabled']).toBeUndefined();
+    expect(props['aria-busy']).toBeUndefined();
+    expect(props.leftSection).toBe(icon);
+  });
+});
+```
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/ui/busyButtonProps.test.tsx`. It should FAIL, because the module doesn't exist. Then create `components/ui/busyButtonProps.tsx` from the ZIP page's function:
+
+```tsx
+import React, { type ReactNode } from 'react';
+import { Loader } from '@mantine/core';
+
+/**
+ * The busy-controls rule (web-ui-system.md): a locked button stays focusable,
+ * and the one that's running shows a Loader in place of its icon.
+ */
+export function busyButtonProps(locked: boolean, running: boolean, icon?: ReactNode) {
+  return {
+    'aria-disabled': locked || undefined,
+    'data-disabled': locked || undefined,
+    'aria-busy': running || undefined,
+    leftSection: running ? <Loader size={16} color="currentColor" aria-hidden="true" /> : icon,
+  };
+}
+```
+
+Add `export { busyButtonProps } from './busyButtonProps';` to `components/ui/index.ts`. In `onboarding/zip.page.tsx`, delete the local function, import `busyButtonProps` from `'../../components/ui'`, and drop `Loader` from its Mantine import if nothing else there uses it. Run the new test and `src/pages/onboarding`; both PASS.
+
+- [ ] **Step 2: Write the restore screen's failing tests** in `components/account/AccountRestoreScreen.test.tsx`:
+
+```tsx
+import React from 'react';
+import { act, fireEvent, render, screen } from '../../test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@nepally/shared';
+
+const mocks = vi.hoisted(() => ({
+  useAuth: vi.fn(),
+  refreshUser: vi.fn(),
+  signOut: vi.fn(),
+  cancelAccountDeletion: vi.fn(),
+  logClientEvent: vi.fn(),
+  notifyError: vi.fn(),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('../../lib/supabase', () => ({ supabase: {} }));
+vi.mock('../ui/notify', () => ({ notify: { error: mocks.notifyError, success: vi.fn() } }));
+vi.mock('next/head', () => ({
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+}));
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  cancelAccountDeletion: mocks.cancelAccountDeletion,
+  logClientEvent: mocks.logClientEvent,
+}));
+
+import { AccountRestoreScreen } from './AccountRestoreScreen';
+
+const AHEAD = '2999-01-01T12:00:00.000Z';
+const PASSED = '2000-01-01T12:00:00.000Z';
+
+async function press(name: string) {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name }));
+  });
+}
+
+describe('AccountRestoreScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.useAuth.mockReturnValue({ refreshUser: mocks.refreshUser, signOut: mocks.signOut });
+    mocks.refreshUser.mockResolvedValue({ id: 'user-1', deletion_scheduled_for: null });
+    mocks.signOut.mockResolvedValue({});
+    mocks.cancelAccountDeletion.mockResolvedValue({});
+  });
+
+  it('gives the date and offers both choices', () => {
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your account is scheduled for deletion' })
+    ).toBeDefined();
+    expect(screen.getByText(/January 1, 2999/)).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Restore my account' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Keep deletion and sign out' })).toBeDefined();
+  });
+
+  it('restores, then reloads the profile so the gate lifts', async () => {
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Restore my account');
+
+    expect(mocks.cancelAccountDeletion).toHaveBeenCalledTimes(1);
+    expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches to "being deleted" when the database refuses a late restore', async () => {
+    mocks.cancelAccountDeletion.mockResolvedValue({
+      error: new ApiError('Your account is already being deleted.', {
+        code: 'deletion_in_progress',
+      }),
+    });
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Restore my account');
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your account is being deleted' })
+    ).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Restore my account' })).toBeNull();
+    expect(mocks.refreshUser).not.toHaveBeenCalled();
+  });
+
+  it('shows any other restore failure and logs it', async () => {
+    mocks.cancelAccountDeletion.mockResolvedValue({
+      error: new ApiError("Couldn't restore your account. Please try again."),
+    });
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Restore my account');
+
+    expect(screen.getByText("Couldn't restore your account. Please try again.")).toBeDefined();
+    expect(mocks.logClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_restore_failed' })
+    );
+  });
+
+  it('offers only Sign out once the date has passed', () => {
+    render(<AccountRestoreScreen scheduledFor={PASSED} />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your account is being deleted' })
+    ).toBeDefined();
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Sign out']);
+  });
+
+  it('signs out, and toasts the sentence when that fails', async () => {
+    mocks.signOut.mockResolvedValue({ error: "Couldn't log you out. Please try again." });
+    render(<AccountRestoreScreen scheduledFor={AHEAD} />);
+
+    await press('Keep deletion and sign out');
+
+    expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.notifyError).toHaveBeenCalledWith("Couldn't log you out. Please try again.");
+  });
+});
+```
+
+- [ ] **Step 3: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/AccountRestoreScreen.test.tsx`
+Expected: FAIL, because the module doesn't exist.
+
+- [ ] **Step 4: Write the screen** in `components/account/AccountRestoreScreen.tsx`:
+
+```tsx
+import React, { useState } from 'react';
+import Head from 'next/head';
+import { Alert, Button, Stack } from '@mantine/core';
+import {
+  DELETION_IN_PROGRESS,
+  cancelAccountDeletion,
+  formatDeletionDate,
+  getAccountDeletionErrorCode,
+  isDeletionDatePassed,
+  logClientEvent,
+} from '@nepally/shared';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { AuthCard } from '../auth/AuthCard';
+import { busyButtonProps, notify } from '../ui';
+
+type Busy = 'restore' | 'sign-out' | null;
+
+export interface AccountRestoreScreenProps {
+  /** The member's deletion_scheduled_for. */
+  scheduledFor: string;
+}
+
+/**
+ * What a member pending deletion sees in place of every page (Layout's gate,
+ * spec §5.5): restore the account, or keep the deletion and sign out. Once
+ * the date has passed, restoring is closed (050) and only Sign out is left.
+ */
+export function AccountRestoreScreen({ scheduledFor }: AccountRestoreScreenProps) {
+  const { refreshUser, signOut } = useAuth();
+  const [busy, setBusy] = useState<Busy>(null);
+  const [error, setError] = useState('');
+  const [refused, setRefused] = useState(false);
+  // Read the clock once, not on every render.
+  const [passedAtOpen] = useState(() => isDeletionDatePassed(scheduledFor));
+  const beingDeleted = refused || passedAtOpen;
+
+  async function handleRestore() {
+    if (busy) return;
+    setBusy('restore');
+    setError('');
+    const result = await cancelAccountDeletion(supabase);
+    if (result.error) {
+      setBusy(null);
+      if (getAccountDeletionErrorCode(result.error) === DELETION_IN_PROGRESS) {
+        setRefused(true);
+        return;
+      }
+      logClientEvent({
+        event: 'account_restore_failed',
+        context: { platform: 'web' },
+        error: result.error,
+      });
+      setError(result.error.message);
+      return;
+    }
+    // Layout swaps this screen for the page once the profile has no date.
+    await refreshUser();
+    setBusy(null);
+  }
+
+  async function handleSignOut() {
+    if (busy) return;
+    setBusy('sign-out');
+    setError('');
+    // Layout swaps this screen for its loader while signing out, so a failure
+    // comes back as a toast, like the menu's Log out.
+    const { error: signOutError } = await signOut();
+    if (signOutError) {
+      setBusy(null);
+      notify.error(signOutError);
+    }
+  }
+
+  return (
+    <>
+      <Head>
+        <title>
+          {beingDeleted ? 'Account being deleted - Nepally' : 'Restore your account - Nepally'}
+        </title>
+      </Head>
+      <AuthCard
+        title={
+          beingDeleted ? 'Your account is being deleted' : 'Your account is scheduled for deletion'
+        }
+        description={
+          beingDeleted
+            ? 'Its deletion date has passed, so it can no longer be restored.'
+            : `It will be deleted on ${formatDeletionDate(scheduledFor)}. Restore it to keep using Nepally.`
+        }
+      >
+        <Stack gap="sm">
+          {error ? (
+            <Alert color="red" variant="light">
+              {error}
+            </Alert>
+          ) : null}
+          {beingDeleted ? null : (
+            <Button
+              onClick={() => void handleRestore()}
+              {...busyButtonProps(busy !== null, busy === 'restore')}
+            >
+              Restore my account
+            </Button>
+          )}
+          <Button
+            variant={beingDeleted ? 'filled' : 'default'}
+            onClick={() => void handleSignOut()}
+            {...busyButtonProps(busy !== null, busy === 'sign-out')}
+          >
+            {beingDeleted ? 'Sign out' : 'Keep deletion and sign out'}
+          </Button>
+        </Stack>
+      </AuthCard>
+    </>
+  );
+}
+```
+
+- [ ] **Step 5: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account src/components/ui/busyButtonProps.test.tsx src/pages/onboarding`
+Expected: PASS.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add apps/web/src/components/ui/busyButtonProps.tsx apps/web/src/components/ui/busyButtonProps.test.tsx apps/web/src/components/ui/index.ts apps/web/src/pages/onboarding/zip.page.tsx apps/web/src/components/account/AccountRestoreScreen.tsx apps/web/src/components/account/AccountRestoreScreen.test.tsx
+git commit -m "feat(web): the account restore screen; share busyButtonProps"
+```
+
+### Task 3.14: The restore gate
+
+**Files:**
+
+- Modify: `apps/web/src/components/Layout.tsx`, `apps/web/src/components/Layout.test.tsx`, `apps/web/src/components/layout/PublicShell.tsx`
+
+- [ ] **Step 1: Write the failing tests** in `Layout.test.tsx`. Mock the screen at the top, beside the other `vi.mock` calls:
+
+```tsx
+vi.mock('./account/AccountRestoreScreen', () => ({
+  AccountRestoreScreen: ({ scheduledFor }: { scheduledFor: string }) =>
+    React.createElement('p', null, `Restore screen for ${scheduledFor}`),
+}));
+```
+
+Then, inside `describe('Layout', …)`:
+
+```tsx
+it('shows a member pending deletion the restore screen instead of the page, with no Log in', () => {
+  mocks.useAuth.mockReturnValue({
+    user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+    loading: false,
+    signOut: mocks.signOut,
+  });
+  render(<Layout>Page content</Layout>);
+
+  expect(screen.getByText('Restore screen for 2999-01-01T00:00:00Z')).toBeDefined();
+  expect(screen.queryByText('Page content')).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
+});
+
+it('keeps the legal pages readable for a member pending deletion', () => {
+  mocks.useRouter.mockReturnValue({ pathname: '/privacy', query: {}, push: mocks.push });
+  mocks.useAuth.mockReturnValue({
+    user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+    loading: false,
+    signOut: mocks.signOut,
+  });
+  render(<Layout>Privacy text</Layout>);
+
+  expect(screen.getByText('Privacy text')).toBeDefined();
+  expect(screen.queryByText(/Restore screen/)).toBeNull();
+});
+
+it('gates /delete-account too, so a pending member cannot skip Restore', () => {
+  mocks.useRouter.mockReturnValue({ pathname: '/delete-account', query: {}, push: mocks.push });
+  mocks.useAuth.mockReturnValue({
+    user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+    loading: false,
+    signOut: mocks.signOut,
+  });
+  render(<Layout>Delete page</Layout>);
+
+  expect(screen.queryByText('Delete page')).toBeNull();
+  expect(screen.getByText(/Restore screen/)).toBeDefined();
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/Layout.test.tsx`
+Expected: the three new tests FAIL.
+
+- [ ] **Step 3: Let `PublicShell` hide its auth links.** In `layout/PublicShell.tsx`, change the signature and wrap the `Group`:
+
+```tsx
+/** Shell for signed-out visitors: brand, Log in / Sign up, legal footer. */
+export function PublicShell({ children, showAuthLinks = true }: { children: ReactNode; showAuthLinks?: boolean }) {
+```
+
+and `{showAuthLinks ? ( <Group gap="xs"> … </Group> ) : null}` around the existing `Group`.
+
+- [ ] **Step 4: Add the gate** to `Layout.tsx`. Import the screen:
+
+```tsx
+import { AccountRestoreScreen } from './account/AccountRestoreScreen';
+```
+
+add above `export default function Layout`:
+
+```tsx
+/** Pages a member pending deletion can still read. Every other page shows the restore screen. */
+const OPEN_WHILE_PENDING_DELETION = new Set(['/privacy', '/terms', '/help']);
+```
+
+and after `if (!user) { return <PublicShell>{children}</PublicShell>; }`:
+
+```tsx
+// A member pending deletion restores or signs out before anything else
+// (spec §5.3). /delete-account is gated too, or its sign-in link would
+// skip Restore.
+if (user.deletion_scheduled_for) {
+  return (
+    <PublicShell showAuthLinks={false}>
+      {OPEN_WHILE_PENDING_DELETION.has(router.pathname) ? (
+        children
+      ) : (
+        <AccountRestoreScreen scheduledFor={user.deletion_scheduled_for} />
+      )}
+    </PublicShell>
+  );
+}
+```
+
+- [ ] **Step 5: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/Layout.test.tsx`
+Expected: PASS.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add apps/web/src/components/Layout.tsx apps/web/src/components/Layout.test.tsx apps/web/src/components/layout/PublicShell.tsx
+git commit -m "feat(web): gate every page behind the restore screen for a member pending deletion"
+```
+
+### Task 3.15: The delete flow
+
+**Files:**
+
+- Create: `apps/web/src/components/account/DeleteAccountFlow.tsx` (+ `.test.tsx`)
+
+- [ ] **Step 1: Write the failing tests** in `components/account/DeleteAccountFlow.test.tsx`:
+
+```tsx
+import React from 'react';
+import { act, fireEvent, render, screen } from '../../test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, SUPPORT_EMAIL } from '@nepally/shared';
+
+const mocks = vi.hoisted(() => ({
+  useAuth: vi.fn(),
+  signOut: vi.fn(),
+  refreshUser: vi.fn(),
+  notifyError: vi.fn(),
+  useRouter: vi.fn(),
+  replace: vi.fn(),
+  getSession: vi.fn(),
+  supabaseSignOut: vi.fn(),
+  signInWithEmail: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  requestAccountDeletion: vi.fn(),
+  isRecentSignIn: vi.fn(),
+  logClientEvent: vi.fn(),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
+vi.mock('next/head', () => ({
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+}));
+vi.mock('next/link', () => ({
+  default: ({ href, children }: { href: string; children: React.ReactNode }) =>
+    React.createElement('a', { href }, children),
+}));
+vi.mock('../../lib/supabase', () => ({
+  supabase: { auth: { getSession: mocks.getSession, signOut: mocks.supabaseSignOut } },
+}));
+vi.mock('../../lib/auth', () => ({
+  signInWithEmail: mocks.signInWithEmail,
+  signInWithGoogle: mocks.signInWithGoogle,
+}));
+vi.mock('../ui/notify', () => ({ notify: { error: mocks.notifyError, success: vi.fn() } }));
+vi.mock('@nepally/shared', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  requestAccountDeletion: mocks.requestAccountDeletion,
+  isRecentSignIn: mocks.isRecentSignIn,
+  logClientEvent: mocks.logClientEvent,
+}));
+
+import { DeleteAccountFlow, REAUTH_USER_KEY } from './DeleteAccountFlow';
+
+const EMAIL_MEMBER = {
+  id: 'user-1',
+  email: 'member@example.com',
+  app_metadata: { providers: ['email'] },
+};
+const GOOGLE_MEMBER = {
+  id: 'user-1',
+  email: 'member@example.com',
+  app_metadata: { providers: ['google'] },
+};
+
+async function press(name: string | RegExp) {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name }));
+  });
+}
+
+async function submitPassword(password: string) {
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: password } });
+  await press('Confirm');
+}
+
+describe('DeleteAccountFlow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.sessionStorage.clear();
+    mocks.useRouter.mockReturnValue({ query: {}, isReady: true, replace: mocks.replace });
+    mocks.useAuth.mockReturnValue({
+      supabaseUser: EMAIL_MEMBER,
+      signOut: mocks.signOut,
+      refreshUser: mocks.refreshUser,
+    });
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+    mocks.isRecentSignIn.mockReturnValue(false);
+    mocks.signOut.mockResolvedValue({});
+    mocks.supabaseSignOut.mockResolvedValue({ error: null });
+    mocks.replace.mockResolvedValue(true);
+  });
+
+  it('explains what goes and when, then asks for the password after an old sign-in', async () => {
+    render(<DeleteAccountFlow />);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account' })).toBeDefined();
+    expect(screen.getByText(/the messages you sent/)).toBeDefined();
+    await press('Continue');
+
+    expect(screen.getByRole('heading', { level: 1, name: "Confirm it's you" })).toBeDefined();
+    expect(screen.getByLabelText('Password')).toBeDefined();
+  });
+
+  it('skips confirming after a recent sign-in', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    render(<DeleteAccountFlow />);
+
+    await press('Continue');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+  });
+
+  it('says so when the password is wrong', async () => {
+    mocks.signInWithEmail.mockResolvedValue({
+      error: Object.assign(new Error('Invalid login credentials'), { code: 'invalid_credentials' }),
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await submitPassword('wrong');
+
+    expect(mocks.signInWithEmail).toHaveBeenCalledWith('member@example.com', 'wrong');
+    expect(screen.getByText('That password is incorrect.')).toBeDefined();
+  });
+
+  it('moves on after the right password', async () => {
+    mocks.signInWithEmail.mockResolvedValue({
+      user: { id: 'user-1', email: 'member@example.com' },
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await submitPassword('right');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+  });
+
+  it('starts Google with its account chooser, remembering who asked', async () => {
+    mocks.useAuth.mockReturnValue({
+      supabaseUser: GOOGLE_MEMBER,
+      signOut: mocks.signOut,
+      refreshUser: mocks.refreshUser,
+    });
+    mocks.signInWithGoogle.mockResolvedValue({});
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press(/Continue with Google/);
+
+    expect(window.sessionStorage.getItem(REAUTH_USER_KEY)).toBe('user-1');
+    expect(mocks.signInWithGoogle).toHaveBeenCalledWith({
+      redirectTo: `${window.location.origin}/delete-account?step=confirm`,
+      selectAccount: true,
+    });
+  });
+
+  it('back from Google as the same account, goes straight to the final step', async () => {
+    window.sessionStorage.setItem(REAUTH_USER_KEY, 'user-1');
+    mocks.useRouter.mockReturnValue({
+      query: { step: 'confirm' },
+      isReady: true,
+      replace: mocks.replace,
+    });
+
+    render(<DeleteAccountFlow />);
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+    expect(window.sessionStorage.getItem(REAUTH_USER_KEY)).toBeNull();
+  });
+
+  it('back from Google as a different account, signs it out and deletes nothing', async () => {
+    window.sessionStorage.setItem(REAUTH_USER_KEY, 'someone-else');
+    mocks.useRouter.mockReturnValue({
+      query: { step: 'confirm' },
+      isReady: true,
+      replace: mocks.replace,
+    });
+
+    render(<DeleteAccountFlow />);
+    await act(async () => {});
+
+    expect(mocks.supabaseSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(mocks.replace).toHaveBeenCalledWith('/delete-account?reauth=wrong-account');
+    expect(mocks.requestAccountDeletion).not.toHaveBeenCalled();
+  });
+
+  it('deletes the account, then signs out onto the scheduled page', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    mocks.requestAccountDeletion.mockResolvedValue({ data: '2026-10-30T12:00:00.000Z' });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press('Delete my account');
+
+    expect(mocks.signOut).toHaveBeenCalledWith({
+      redirectTo: '/delete-account?scheduled=2026-10-30T12%3A00%3A00.000Z',
+    });
+  });
+
+  it('goes back to confirming when the database wants a fresh sign-in', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    mocks.requestAccountDeletion.mockResolvedValue({
+      error: new ApiError("Please confirm it's you again.", { code: 'reauth_required' }),
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press('Delete my account');
+
+    expect(screen.getByRole('heading', { level: 1, name: "Confirm it's you" })).toBeDefined();
+    expect(screen.getByText("Please confirm it's you again.")).toBeDefined();
+  });
+
+  it('offers the email route for an account with no profile', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    mocks.requestAccountDeletion.mockResolvedValue({
+      error: new ApiError("We couldn't find your profile.", { code: 'profile_not_found' }),
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press('Delete my account');
+
+    expect(screen.getByText(new RegExp(SUPPORT_EMAIL))).toBeDefined();
+  });
+
+  it('shows any other failure and stays on the final step', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    mocks.requestAccountDeletion.mockResolvedValue({
+      error: new ApiError("Couldn't delete your account. Please try again."),
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press('Delete my account');
+
+    expect(screen.getByText("Couldn't delete your account. Please try again.")).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+    expect(mocks.signOut).not.toHaveBeenCalled();
+  });
+
+  it('toasts the date and reloads the profile when signing out fails after the delete', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    mocks.requestAccountDeletion.mockResolvedValue({ data: '2026-10-30T12:00:00.000Z' });
+    mocks.signOut.mockResolvedValue({ error: "Couldn't log you out. Please try again." });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press('Delete my account');
+
+    expect(mocks.notifyError).toHaveBeenCalledWith(expect.stringContaining('October 30, 2026'));
+    expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/DeleteAccountFlow.test.tsx`
+Expected: FAIL, because the module doesn't exist.
+
+- [ ] **Step 3: Write the flow** in `components/account/DeleteAccountFlow.tsx`:
+
+```tsx
+import React, { useEffect, useRef, useState, type FormEvent } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { Alert, Button, List, PasswordInput, Stack, Text } from '@mantine/core';
+import {
+  PROFILE_NOT_FOUND,
+  REAUTH_REQUIRED,
+  SUPPORT_EMAIL,
+  formatDeletionDate,
+  getAccountDeletionErrorCode,
+  getAuthErrorMessage,
+  getReauthMethod,
+  getScheduledDeletionDate,
+  isRecentSignIn,
+  logClientEvent,
+  requestAccountDeletion,
+} from '@nepally/shared';
+import { supabase } from '../../lib/supabase';
+import { signInWithEmail, signInWithGoogle } from '../../lib/auth';
+import { useAuth } from '../../hooks/useAuth';
+import { AuthCard } from '../auth/AuthCard';
+import { GoogleButton } from '../auth/GoogleButton';
+import { busyButtonProps, notify } from '../ui';
+
+/** Holds the member's user id across the Google round trip. */
+export const REAUTH_USER_KEY = 'nepally.deleteAccount.userId';
+
+const WRONG_PASSWORD = 'That password is incorrect.';
+const CONFIRM_AGAIN = "Please confirm it's you again.";
+
+type Step = 'explain' | 'confirm' | 'final' | 'wrong-account';
+
+function readReauthUserId(): string | null {
+  try {
+    return window.sessionStorage.getItem(REAUTH_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Back from Google (?step=confirm), the stored id decides where the flow starts. */
+function initialStep(returnedFromGoogle: boolean, userId: string): Step {
+  if (!returnedFromGoogle) return 'explain';
+  const expected = readReauthUserId();
+  if (expected === null) return 'explain';
+  return expected === userId ? 'final' : 'wrong-account';
+}
+
+function passwordErrorMessage(error: Error): string {
+  return (error as { code?: unknown }).code === 'invalid_credentials'
+    ? WRONG_PASSWORD
+    : getAuthErrorMessage(error, 'log-in');
+}
+
+/**
+ * Deleting a signed-in member's account (spec §5.2): explain, confirm it's
+ * them, delete. /delete-account renders it for any session, so a Google
+ * re-auth as a different account, even one with no profile, still lands
+ * here and is signed out.
+ */
+export function DeleteAccountFlow() {
+  const router = useRouter();
+  const { supabaseUser, signOut, refreshUser } = useAuth();
+  const userId = supabaseUser?.id ?? '';
+  const returnedFromGoogle = router.query.step === 'confirm';
+  const [step, setStep] = useState<Step>(() => initialStep(returnedFromGoogle, userId));
+  // Read the clock once, not on every render.
+  const [scheduledDate] = useState(() => getScheduledDeletionDate());
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const handledReturnRef = useRef(false);
+
+  // The Google round trip is over: forget the stored id. A different account
+  // is signed out of this browser, and nothing is deleted.
+  useEffect(() => {
+    if (!returnedFromGoogle || handledReturnRef.current) return;
+    handledReturnRef.current = true;
+    try {
+      window.sessionStorage.removeItem(REAUTH_USER_KEY);
+    } catch {
+      // Storage blocked: nothing to forget.
+    }
+    if (step === 'wrong-account') {
+      void supabase.auth.signOut({ scope: 'local' }).finally(() => {
+        void router.replace('/delete-account?reauth=wrong-account');
+      });
+    }
+  }, [returnedFromGoogle, step, router]);
+
+  async function handleContinue() {
+    if (busy) return;
+    setBusy(true);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    setBusy(false);
+    setNotice('');
+    setStep(session && isRecentSignIn(session.access_token) ? 'final' : 'confirm');
+  }
+
+  async function handlePassword(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    if (!password) {
+      setError('Enter your password.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    const result = await signInWithEmail(supabaseUser?.email ?? '', password);
+    setBusy(false);
+    if (result.error) {
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { platform: 'web', method: 'password' },
+        error: result.error,
+      });
+      setError(passwordErrorMessage(result.error));
+      return;
+    }
+    setPassword('');
+    setNotice('');
+    setStep('final');
+  }
+
+  async function handleGoogle() {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      window.sessionStorage.setItem(REAUTH_USER_KEY, userId);
+    } catch {
+      // Without storage, the return from Google starts over at Explain.
+    }
+    const result = await signInWithGoogle({
+      redirectTo: `${window.location.origin}/delete-account?step=confirm`,
+      selectAccount: true,
+    });
+    if (result.error) {
+      setBusy(false);
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { platform: 'web', method: 'google' },
+        error: result.error,
+      });
+      setError(getAuthErrorMessage(result.error, 'google'));
+    }
+  }
+
+  async function handleDelete() {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    const result = await requestAccountDeletion(supabase);
+    if (result.error || !result.data) {
+      setBusy(false);
+      const code = getAccountDeletionErrorCode(result.error);
+      if (code === REAUTH_REQUIRED) {
+        setNotice(CONFIRM_AGAIN);
+        setStep('confirm');
+        return;
+      }
+      logClientEvent({
+        event: 'account_delete_failed',
+        context: { platform: 'web' },
+        error: result.error,
+      });
+      setError(
+        code === PROFILE_NOT_FOUND
+          ? `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`
+          : (result.error?.message ?? "Couldn't delete your account. Please try again.")
+      );
+      return;
+    }
+    const scheduled = result.data;
+    const { error: signOutError } = await signOut({
+      redirectTo: `/delete-account?scheduled=${encodeURIComponent(scheduled)}`,
+    });
+    if (signOutError) {
+      // Layout unmounted this flow while signing out, so state set here is
+      // lost. The toast survives, and the reloaded profile (now with its date)
+      // puts the restore screen, with its own sign-out, in the flow's place.
+      notify.error(
+        `Your account will be deleted on ${formatDeletionDate(scheduled)}, but we couldn't sign you out. Choose "Keep deletion and sign out" to try again.`
+      );
+      await refreshUser();
+    }
+  }
+
+  const errorAlert = error ? (
+    <Alert color="red" variant="light">
+      {error}
+    </Alert>
+  ) : null;
+
+  let content: React.ReactNode;
+  if (step === 'wrong-account') {
+    content = (
+      <AuthCard
+        title="You signed in as a different account"
+        description="Signing that account out…"
+      >
+        <Text>Nothing was deleted.</Text>
+      </AuthCard>
+    );
+  } else if (step === 'explain') {
+    content = (
+      <AuthCard
+        title="Delete your account"
+        description="Read this first. After the grace period it can't be undone."
+      >
+        <Stack gap="sm">
+          <Text>Deleting your account removes:</Text>
+          <List>
+            <List.Item>your profile and photos</List.Item>
+            <List.Item>your posts and comments</List.Item>
+            <List.Item>
+              the messages you sent (messages other members sent you stay in their chats)
+            </List.Item>
+            <List.Item>
+              your listings and events (active promotions end with the listings)
+            </List.Item>
+          </List>
+          <Text>
+            Your account is hidden from other members right away and deleted on{' '}
+            {formatDeletionDate(scheduledDate)}. Sign in before then to restore it.
+          </Text>
+          <Button onClick={() => void handleContinue()} {...busyButtonProps(busy, busy)}>
+            Continue
+          </Button>
+          <Button variant="default" component={Link} href="/profile">
+            Cancel
+          </Button>
+        </Stack>
+      </AuthCard>
+    );
+  } else if (step === 'confirm' && supabaseUser && getReauthMethod(supabaseUser) === 'password') {
+    content = (
+      <AuthCard title="Confirm it's you" description={notice || 'Enter your password to continue.'}>
+        {errorAlert}
+        <form noValidate onSubmit={(event) => void handlePassword(event)}>
+          <Stack gap="sm">
+            <PasswordInput
+              label="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              visibilityToggleButtonProps={{ 'aria-label': 'Toggle password visibility' }}
+            />
+            <Button type="submit" {...busyButtonProps(busy, busy)}>
+              Confirm
+            </Button>
+          </Stack>
+        </form>
+      </AuthCard>
+    );
+  } else if (step === 'confirm') {
+    content = (
+      <AuthCard
+        title="Confirm it's you"
+        description={notice || 'Sign in with Google again to continue.'}
+      >
+        {errorAlert}
+        <GoogleButton onClick={() => void handleGoogle()} busy={busy} />
+      </AuthCard>
+    );
+  } else {
+    content = (
+      <AuthCard
+        title="Delete your account?"
+        description={`Your account will be hidden now and deleted on ${formatDeletionDate(scheduledDate)}.`}
+      >
+        <Stack gap="sm">
+          {errorAlert}
+          <Button color="red" onClick={() => void handleDelete()} {...busyButtonProps(busy, busy)}>
+            Delete my account
+          </Button>
+          <Button variant="default" component={Link} href="/profile">
+            Cancel
+          </Button>
+        </Stack>
+      </AuthCard>
+    );
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Delete account - Nepally</title>
+      </Head>
+      {content}
+    </>
+  );
+}
+```
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/DeleteAccountFlow.test.tsx`
+Expected: PASS, 12 tests.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/components/account/DeleteAccountFlow.tsx apps/web/src/components/account/DeleteAccountFlow.test.tsx
+git commit -m "feat(web): the delete account flow: explain, confirm it's you, delete"
+```
+
+### Task 3.16: The `/delete-account` page
+
+**Files:**
+
+- Create: `apps/web/src/pages/delete-account.page.tsx`, `apps/web/src/pages/delete-account.test.tsx`
+
+- [ ] **Step 1: Write the failing tests** in `pages/delete-account.test.tsx`:
+
+```tsx
+import React from 'react';
+import { render, screen } from '../test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({ useAuth: vi.fn(), useRouter: vi.fn() }));
+
+vi.mock('../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
+vi.mock('next/head', () => ({
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+}));
+vi.mock('next/link', () => ({
+  default: ({ href, children }: { href: string; children: React.ReactNode }) =>
+    React.createElement('a', { href }, children),
+}));
+vi.mock('../components/account/DeleteAccountFlow', () => ({
+  DeleteAccountFlow: () => React.createElement('p', null, 'The delete flow'),
+}));
+
+import DeleteAccountPage from './delete-account.page';
+
+function routerWith(query: Record<string, string>, isReady = true) {
+  mocks.useRouter.mockReturnValue({ query, isReady });
+}
+
+describe('DeleteAccountPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routerWith({});
+    mocks.useAuth.mockReturnValue({ supabaseUser: null });
+  });
+
+  it('renders nothing until the router is ready', () => {
+    routerWith({}, false);
+    const { container } = render(<DeleteAccountPage />);
+    expect(container.textContent).toBe('');
+  });
+
+  it('runs the flow for anyone with a session', () => {
+    mocks.useAuth.mockReturnValue({ supabaseUser: { id: 'user-1' } });
+    render(<DeleteAccountPage />);
+    expect(screen.getByText('The delete flow')).toBeDefined();
+  });
+
+  it('tells a signed-out visitor how deletion works and how to start it', () => {
+    render(<DeleteAccountPage />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Delete your Nepally account' })
+    ).toBeDefined();
+    expect(screen.getByText(/29 days/)).toBeDefined();
+    expect(
+      screen.getByRole('link', { name: 'Sign in to delete your account' }).getAttribute('href')
+    ).toBe('/login?redirect=%2Fdelete-account');
+    expect(screen.getByRole('link', { name: 'support@nepally.us' }).getAttribute('href')).toBe(
+      'mailto:support@nepally.us'
+    );
+  });
+
+  it('confirms the date after a request', () => {
+    routerWith({ scheduled: '2026-10-30T12:00:00.000Z' });
+    render(<DeleteAccountPage />);
+
+    expect(
+      screen.getByText(
+        'Your account will be deleted on October 30, 2026. Sign in before then to restore it.'
+      )
+    ).toBeDefined();
+  });
+
+  it('ignores a scheduled date that is not a date', () => {
+    routerWith({ scheduled: 'nope' });
+    render(<DeleteAccountPage />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Delete your Nepally account' })
+    ).toBeDefined();
+  });
+
+  it('says so after a Google re-auth as a different account', () => {
+    routerWith({ reauth: 'wrong-account' });
+    render(<DeleteAccountPage />);
+
+    expect(screen.getByText(/You signed in as a different account/)).toBeDefined();
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/delete-account.test.tsx`
+Expected: FAIL, because the page doesn't exist.
+
+- [ ] **Step 3: Write the page** in `pages/delete-account.page.tsx`:
+
+```tsx
+import React from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { Alert, Button, Stack, Text } from '@mantine/core';
+import { ACCOUNT_DELETION_GRACE_DAYS, SUPPORT_EMAIL, formatDeletionDate } from '@nepally/shared';
+import { useAuth } from '../hooks/useAuth';
+import { AuthCard } from '../components/auth/AuthCard';
+import { DeleteAccountFlow } from '../components/account/DeleteAccountFlow';
+
+const LOGIN_HERE = `/login?redirect=${encodeURIComponent('/delete-account')}`;
+
+function ScheduledCard({ date }: { date: string }) {
+  return (
+    <AuthCard title="Your account will be deleted" footer={<Link href="/login">Log in</Link>}>
+      <Text>{`Your account will be deleted on ${date}. Sign in before then to restore it.`}</Text>
+    </AuthCard>
+  );
+}
+
+function SignedOutCard({ wrongAccount }: { wrongAccount: boolean }) {
+  return (
+    <AuthCard title="Delete your Nepally account">
+      <Stack gap="sm">
+        {wrongAccount ? (
+          <Alert color="red" variant="light">
+            You signed in as a different account. Sign in again as yourself to delete your account.
+          </Alert>
+        ) : null}
+        <Text>
+          Sign in, then confirm it&apos;s you. Your account is hidden right away and deleted after{' '}
+          {ACCOUNT_DELETION_GRACE_DAYS} days: your profile, posts, comments, the messages you sent,
+          listings, events and photos. Sign in before then to restore it.
+        </Text>
+        <Button component={Link} href={LOGIN_HERE}>
+          Sign in to delete your account
+        </Button>
+        <Text>
+          Can&apos;t sign in? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from
+          your account&apos;s email address with the subject &quot;Delete my account&quot;.
+        </Text>
+      </Stack>
+    </AuthCard>
+  );
+}
+
+/**
+ * The public account deletion page, and the URL given to the Play Console.
+ * With a session it runs the flow. A member pending deletion never gets here:
+ * Layout shows them the restore screen.
+ */
+export default function DeleteAccountPage() {
+  const router = useRouter();
+  const { supabaseUser } = useAuth();
+  if (!router.isReady) return null;
+
+  const scheduledParam = router.query.scheduled;
+  const scheduled =
+    typeof scheduledParam === 'string' && !Number.isNaN(Date.parse(scheduledParam))
+      ? scheduledParam
+      : null;
+
+  return (
+    <>
+      <Head>
+        <title>Delete your account - Nepally</title>
+      </Head>
+      {supabaseUser ? (
+        <DeleteAccountFlow />
+      ) : scheduled ? (
+        <ScheduledCard date={formatDeletionDate(scheduled)} />
+      ) : (
+        <SignedOutCard wrongAccount={router.query.reauth === 'wrong-account'} />
+      )}
+    </>
+  );
+}
+```
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/delete-account.test.tsx`
+Expected: PASS, 6 tests.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/pages/delete-account.page.tsx apps/web/src/pages/delete-account.test.tsx
+git commit -m "feat(web): the public /delete-account page"
+```
+
+### Task 3.17: The Settings entry
+
+**Files:**
+
+- Modify: `apps/web/src/components/layout/navItems.ts`, `apps/web/src/components/layout/navItems.test.ts`
+
+- [ ] **Step 1: Write the failing test** in `navItems.test.ts`, inside `describe('navItems', …)`:
+
+```ts
+it('ends the Settings list with Delete account', () => {
+  expect(getSettingsLinks({ is_moderator: false }).at(-1)).toEqual({
+    label: 'Delete account',
+    href: '/delete-account',
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/layout/navItems.test.ts`
+Expected: FAIL.
+
+- [ ] **Step 3: Add the link.** In `getSettingsLinks`, add `{ label: 'Delete account', href: '/delete-account' },` after the Terms of Service entry.
+
+- [ ] **Step 4: Run the test** and `src/pages/profile.test.tsx`, which renders the list.
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/layout/navItems.test.ts src/pages/profile.test.tsx`
+Expected: PASS. If the profile test pins the list's exact labels, add "Delete account" there.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/components/layout/navItems.ts apps/web/src/components/layout/navItems.test.ts apps/web/src/pages/profile.test.tsx
+git commit -m "feat(web): Delete account in Settings"
+```
+
+### Task 3.18: Moderation shows reported members and listings that are gone
+
+**Files:**
+
+- Modify: `apps/web/src/hooks/useModerationQueue.ts` (+ `.test.ts`), `apps/web/src/components/moderation/ReportCard.tsx` (+ `.test.tsx`), `apps/web/src/pages/moderation.page.tsx`, `apps/web/src/pages/moderation.test.tsx`
+
+- [ ] **Step 1: Write the failing hook tests.** In `useModerationQueue.test.ts`:
+  - Add `getExistingUserIds: vi.fn(),` and `getExistingListingIds: vi.fn(),` to the `vi.mock('@nepally/shared', …)` factory.
+  - Add them to the import from `@nepally/shared`, with `const mockExistingUsers = getExistingUserIds as ReturnType<typeof vi.fn>;` and `const mockExistingListings = getExistingListingIds as ReturnType<typeof vi.fn>;`.
+  - In `beforeEach`, add `mockExistingUsers.mockResolvedValue({ data: ['author-2'] });` and `mockExistingListings.mockResolvedValue({ data: [] });`.
+
+Then add these tests:
+
+```ts
+it('marks reported members and listings that no longer exist', async () => {
+  mockReports.mockResolvedValue({
+    data: [
+      report('r1', { target_type: 'user', target_id: 'author-2' }),
+      report('r2', { target_type: 'user', target_id: 'gone-user' }),
+      report('r3', { target_type: 'listing', target_id: 'gone-listing' }),
+    ],
+  });
+
+  const { result } = await loaded();
+
+  expect(mockExistingUsers).toHaveBeenCalledWith({}, ['author-2', 'gone-user']);
+  expect(mockExistingListings).toHaveBeenCalledWith({}, ['gone-listing']);
+  expect([...result.current.missingTargetIds].sort()).toEqual(['gone-listing', 'gone-user']);
+});
+
+it('fails the queue as a whole when a target check fails', async () => {
+  mockExistingUsers.mockResolvedValue({ error: new Error('boom') });
+
+  const { result } = await loaded();
+
+  expect(result.current.error).toBe("Couldn't load the moderation queue.");
+});
+```
+
+- [ ] **Step 2: Write the failing card tests** in `ReportCard.test.tsx`:
+
+```tsx
+it('says a purged member is gone, with no link and no ban', () => {
+  renderCard({
+    report: { ...POST_REPORT, target_type: 'user', target_id: 'user-5' },
+    post: undefined,
+    targetMissing: true,
+  });
+
+  expect(screen.getByText('Member no longer available')).toBeDefined();
+  expect(screen.queryByRole('link', { name: 'View member' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Ban user' })).toBeNull();
+});
+
+it('says a listing is gone, with no link', () => {
+  renderCard({
+    report: { ...POST_REPORT, target_type: 'listing', target_id: 'listing-7' },
+    post: undefined,
+    targetMissing: true,
+  });
+
+  expect(screen.getByText('Listing no longer available')).toBeDefined();
+  expect(screen.queryByRole('link', { name: 'View listing' })).toBeNull();
+});
+```
+
+In `moderation.test.tsx`, add `missingTargetIds: new Set<string>(),` to the `queue()` fixture, and this test:
+
+```tsx
+it('shows a reported member who is gone as no longer available', () => {
+  mocks.useModerationQueue.mockReturnValue(
+    queue({ missingTargetIds: new Set([USER_REPORT.target_id]) })
+  );
+  render(<ModerationPage />);
+
+  expect(screen.getByText('Member no longer available')).toBeDefined();
+});
+```
+
+Match the file's own names for the hook mock and the page component if they differ from `mocks.useModerationQueue` and `ModerationPage`.
+
+- [ ] **Step 3: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useModerationQueue.test.ts src/components/moderation/ReportCard.test.tsx src/pages/moderation.test.tsx`
+Expected: the new tests FAIL.
+
+- [ ] **Step 4: Fetch and expose the missing ids.** In `useModerationQueue.ts`:
+  - Import `getExistingListingIds` and `getExistingUserIds` from `@nepally/shared`.
+  - In `ModerationQueueState`, after `reportedPosts`, add:
+
+```ts
+/** Reported members and listings that no longer exist (or, for listings, are no longer active). */
+missingTargetIds: ReadonlySet<string>;
+```
+
+- Add `missingTargetIds: ReadonlySet<string>;` to `interface Queue`, and `missingTargetIds: new Set()` to `EMPTY_QUEUE`.
+- In `fetchQueue`, replace everything from `const postIds = …` to the end of the function with:
+
+```ts
+const idsOf = (type: 'post' | 'user' | 'listing') =>
+  Array.from(new Set(reports.filter((r) => r.target_type === type).map((r) => r.target_id)));
+const userIds = idsOf('user');
+const listingIds = idsOf('listing');
+// One batched query per kind: the reported posts (so a card can show the
+// title and offer "Ban author"), and which reported members and listings
+// still exist.
+const [reportedResult, usersResult, listingsResult] = await Promise.all([
+  getPostsByIds(supabase, idsOf('post')),
+  getExistingUserIds(supabase, userIds),
+  getExistingListingIds(supabase, listingIds),
+]);
+if (reportedResult.error || usersResult.error || listingsResult.error) return null;
+
+const found = new Set([...(usersResult.data ?? []), ...(listingsResult.data ?? [])]);
+return {
+  pendingPosts: postsResult.data ?? [],
+  reports,
+  reportedPosts: Object.fromEntries((reportedResult.data ?? []).map((p) => [p.id, p])),
+  missingTargetIds: new Set([...userIds, ...listingIds].filter((id) => !found.has(id))),
+};
+```
+
+- In the hook's final `return { … }`, add `missingTargetIds: queue.missingTargetIds,` after `reportedPosts: queue.reportedPosts,`.
+- Update the doc comment above `fetchQueue` to say "any of the requests".
+
+- [ ] **Step 5: Show it on the card.** In `ReportCard.tsx`:
+  - Add to `ReportCardProps`:
+
+```ts
+  /** A reported member or listing that no longer exists: no link and no ban. */
+  targetMissing?: boolean;
+```
+
+- Give `ReportTarget` a `targetMissing` prop (`{ report, post, targetMissing }: { report: ReportWithUsers; post: Post | undefined; targetMissing: boolean }`). At the top of its `user` branch add `if (targetMissing) return <Text className={styles.target}>Member no longer available</Text>;`, and at the top of its `listing` branch add `if (targetMissing) return <Text className={styles.target}>Listing no longer available</Text>;`.
+- In `ReportCard`, take `targetMissing = false`, pass it to `<ReportTarget … targetMissing={targetMissing} />`, and change the Ban user condition to `report.target_type === 'user' && !targetMissing`.
+- In `moderation.page.tsx`, pass `targetMissing={queue.missingTargetIds.has(report.target_id)}` to `ReportCard`.
+
+- [ ] **Step 6: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useModerationQueue.test.ts src/components/moderation src/pages/moderation.test.tsx`
+Expected: PASS.
+
+- [ ] **Step 7: Commit.**
+
+```bash
+git add apps/web/src/hooks/useModerationQueue.ts apps/web/src/hooks/useModerationQueue.test.ts apps/web/src/components/moderation/ReportCard.tsx apps/web/src/components/moderation/ReportCard.test.tsx apps/web/src/pages/moderation.page.tsx apps/web/src/pages/moderation.test.tsx
+git commit -m "feat(web): moderation shows reported members and listings that are gone"
+```
+
+- [ ] **Chunk 4 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check` and `npm run lint`, checking each exit code. Then a `code-reviewer` on the chunk's commits. Fix CRITICAL and HIGH in one `fix: address chunk 4 review` commit.
+
+### Chunk 5: legal, docs, ship
+
+### Task 3.19: Legal copy
+
+**Files:**
+
+- Modify: `apps/web/src/pages/privacy.page.tsx`, `apps/web/src/pages/help.page.tsx`, `apps/web/src/pages/terms.page.tsx`, `apps/web/src/pages/legal.test.tsx`, `packages/shared/src/constants/appConfig.ts`
+
+- [ ] **Step 1: Write the failing tests** in `legal.test.tsx`. Add to the Privacy test `'links to the Terms and explains deletion'`:
+
+```tsx
+expectMention(/29 days/);
+expectMention(/restore it by signing in/i);
+expectMention(/saved link/i);
+expectLink(/delete-account/, '/delete-account');
+```
+
+To the Help Center test:
+
+```tsx
+expectMention(/Delete account/);
+expectLink(/delete-account/, '/delete-account');
+```
+
+To the Terms page test that covers deletion, or a new one:
+
+```tsx
+it('points to in-app account deletion', () => {
+  render(<TermsPage />);
+
+  expectLink(/delete-account/, '/delete-account');
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/legal.test.tsx`
+Expected: FAIL.
+
+- [ ] **Step 3: Write the copy.**
+
+In `privacy.page.tsx`, replace the "How long we keep it" paragraph:
+
+```tsx
+<p>
+  We keep your account and content while your account is active. When you delete your account, it is
+  hidden from other members right away and deleted 29 days later: your profile, posts, comments, the
+  messages you sent, listings, events, and photos. Until then you can restore it by signing in. The
+  apps stop showing your photos right away, but a saved link to one keeps working until the photo is
+  deleted. Everything goes within 30 days. We may keep limited records longer where the law requires
+  it, for example payment records, or to investigate abuse.
+</p>
+```
+
+and the "Delete your account" bullet under "Your choices":
+
+```tsx
+<li>
+  Delete your account from Settings, or at{' '}
+  <Link href="/delete-account">nepally.us/delete-account</Link>. If you can&apos;t sign in, email{' '}
+  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from your account email and we will delete
+  your account for you.
+</li>
+```
+
+In `help.page.tsx`, replace the answer to "How do I delete my account?":
+
+```tsx
+<p>
+  Open your profile, then Settings &amp; more, then <strong>Delete account</strong>, or go to{' '}
+  <Link href="/delete-account">nepally.us/delete-account</Link>. Confirm it&apos;s you with your
+  password or Google, then choose Delete my account. Your account is hidden right away and deleted
+  after 29 days, along with your profile, posts, comments, the messages you sent, listings, and
+  photos. Sign in before then to restore it. If you can&apos;t sign in, email{' '}
+  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the email address on your account
+  with the subject &quot;Delete my account&quot;. See the{' '}
+  <Link href="/privacy">Privacy Policy</Link> for what we may need to keep and why.
+</p>
+```
+
+In `terms.page.tsx`, change "You can delete your account at any time (see the Help Center)" to: "You can delete your account at any time from Settings or at `<Link href="/delete-account">nepally.us/delete-account</Link>` (see the `<Link href="/help">Help Center</Link>`)."
+
+In `packages/shared/src/constants/appConfig.ts`, set `LEGAL_LAST_UPDATED` to the day this lands.
+
+- [ ] **Step 4: Run the tests.**
+
+Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/legal.test.tsx`
+Expected: PASS. The text still needs counsel review, like the rest of the legal pages.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add apps/web/src/pages/privacy.page.tsx apps/web/src/pages/help.page.tsx apps/web/src/pages/terms.page.tsx apps/web/src/pages/legal.test.tsx packages/shared/src/constants/appConfig.ts
+git commit -m "docs(web): legal copy for in-app account deletion"
+```
+
+### Task 3.20: Docs
+
+**Files:**
+
+- Modify: `docs/decisions/2026-09-18-long-lived-sessions.md`, `docs/plans/active/2026-09-18-production-launch.md`, `docs/plans/active/mobile-usability-security-hardening.md`, `docs/architecture/web-ui-system.md`, this plan
+
+- [ ] **Step 1: Amend the ADR.** In `2026-09-18-long-lived-sessions.md`, replace the "Sensitive actions ask the user to confirm who they are instead" bullet with:
+
+```markdown
+- Sensitive actions ask the user to confirm who they are instead: deleting the account, and changing email or password. Email accounts re-enter the password; Google and Apple accounts redo their provider sign-in (Google with `prompt=select_account`). _Amended 2026-10-01: an emailed code (`supabase.auth.reauthenticate()`) was the first choice, but its code can only be checked by a password change, so it can't gate deletion. See [account deletion](../specs/2026-09-28-account-deletion.md), D5._
+```
+
+Use the date the PR lands.
+
+- [ ] **Step 2: Fix the same claim elsewhere.** In `production-launch.md`, line 33's "Google and Apple accounts confirm an emailed one-time code" becomes "Google and Apple accounts redo their provider sign-in". Line 221's "an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts" becomes "redoing their provider sign-in for Google and Apple accounts". In `mobile-usability-security-hardening.md`, line 142's "(password, or an emailed code for Google/Apple accounts)" becomes "(password, or redoing the provider sign-in for Google/Apple accounts)".
+
+- [ ] **Step 3: Record the new components** in `web-ui-system.md`:
+  - Add `busyButtonProps` to the busy-controls paragraph, as the helper to use.
+  - Add the delete flow, the restore screen and the Delete account page to that paragraph's list of controls that follow the rule.
+  - Add rows for `AccountRestoreScreen` and `DeleteAccountFlow` (`components/account/`) to the component table nearest the auth components.
+
+- [ ] **Step 4: Check and commit.**
+
+Run: `npm run docs:check` and `npm run lint:md`, after `npx prettier --write` on each changed file.
+Expected: exit 0 for both.
+
+```bash
+git add docs/decisions/2026-09-18-long-lived-sessions.md docs/plans/active/2026-09-18-production-launch.md docs/plans/active/mobile-usability-security-hardening.md docs/architecture/web-ui-system.md
+git commit -m "docs: re-auth by provider sign-in; the account deletion components"
+```
+
+### Task 3.21: Gate, review, draft PR, staging check
+
+- [ ] **Step 1: Run the full gate** and check every exit code:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run lint:guards`
+  - `npm run test --workspace=packages/shared`
+  - from `C:\…`, `npm run test --workspace=apps/web`
+  - `npm run test --workspace=apps/mobile`
+  - `npm run docs:check`
+  - `npm run lint:md`
+
+  Then `npm run ci:local`, since drafts run no CI.
+
+- [ ] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (redirects, re-auth, the gate) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 3 review` commit; the rest go to Follow-ups.
+- [ ] **Step 3: Check staging's redirect allow-list.** In the Supabase dashboard for `tlusiongalvszftnzpoq`, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google falls back to the Site URL. This needs the user.
+- [ ] **Step 4: Ship the draft.**
+  - Push with `git push -u origin feat/account-deletion-web`.
+  - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
+  - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
+- [ ] **Step 5: Manual check on staging with the web app (needs the user).**
+  - Delete an email account and a Google account. Check the one-time Google account chooser, and that a different Google account is signed out.
+  - A second browser signed in as another member no longer sees the deleted member.
+  - Signing back in shows the restore screen, and Restore brings everything back.
+  - Moving a test account's date into the past with the service role shows "being deleted".
+
+**Acceptance:** a web member can delete their account on staging with a password and with Google. Another member no longer sees them. Signing back in shows the restore screen, and Restore brings everything back. After the date, the restore screen offers only Sign out. Moderation shows a purged member as no longer available. A chat with a pending or purged member shows "Unavailable account".
 
 ---
 
@@ -2222,19 +5312,19 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - Password re-auth uses `pauseAuthListener` / `resumeAuthListener` around `signInWithPassword`, the way `ChangePasswordScreen.tsx:66-100` does.
   - Google re-auth calls `services/auth/googleAuth.ts` with `prompt: 'select_account'`, then compares the returned session's user id with the one from before. `googleAuth.ts` exchanges the code straight into the live session. So on a mismatch, sign that session out and send the member to sign in again, as on web.
   - `profile_not_found` shows the `SUPPORT_EMAIL` fallback.
-  - Mobile `AuthContext.signOut` ignores Supabase's `{ error }` (`AuthContext.tsx:210-219`). Make it fall back to `signOut({ scope: 'local' })`, and test it.
+  - Mobile `AuthContext.signOut` ignores Supabase's `{ error }` (`AuthContext.tsx:210-219`), and that's fine. supabase-js removes the local session even when revoking it on the server fails (PR 3, "Found at the start of PR 3"), so it needs no local fallback.
   - Every async handler checks `navigation.isFocused()` before navigating or alerting, the same guard #109 added to chat starts.
-  - On success it shows an alert, "Your account will be deleted on _date_. Sign in before then to restore it.", then signs out globally (falling back to local) and runs `clearAllData()`.
+  - On success it shows an alert, "Your account will be deleted on _date_. Sign in before then to restore it.", then signs out and runs `clearAllData()`.
   - Tests cover every state in spec §7, following the golden rules in `apps/mobile/CLAUDE.md`.
 - **4.2 Navigation.**
   - Add `DeleteAccount: undefined` to the profile stack's param list in `apps/mobile/src/types/navigation.ts`, and the screen to `ProfileNavigator.tsx`. Export both new screens from `screens/profile/index.ts`, because `ProfileNavigator` imports from that barrel.
   - Add `AccountRestore: undefined` to `RootStackParamList` for the gate in 4.4. `RootNavigator` imports `AccountRestoreScreen` from its own file, not the barrel, which would pull in every profile screen (`RootNavigator.test.tsx:12-30` avoids that on purpose).
   - Add a "Delete account" item to the Profile dropdown menu in `ProfileScreen.tsx:411-428`, after Change Password. Update `ProfileScreen.test.tsx`.
-- **4.3 `AccountRestoreScreen`.** `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx` (+ test): **Restore my account** calls `cancelAccountDeletion` then refreshes the profile; **Keep deletion and sign out** signs out. After the date, or on `isDeletionInProgressError`, it shows "Your account is being deleted" with only Sign out, as on web.
+- **4.3 `AccountRestoreScreen`.** `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx` (+ test): **Restore my account** calls `cancelAccountDeletion` then refreshes the profile; **Keep deletion and sign out** signs out. After the date, or when `getAccountDeletionErrorCode(error)` is `DELETION_IN_PROGRESS`, it shows "Your account is being deleted" with only Sign out, as on web.
 - **4.4 The `RootNavigator` gate.** When `user?.deletion_scheduled_for` is set, show `AccountRestoreScreen` in place of onboarding and the main tabs. Update `RootNavigator.test.tsx`.
   - Mobile `AuthContext` declares its own `User` interface and copies a fixed list of fields from `getMyProfile()` (`AuthContext.tsx:13` and `:105-121`). So the column is loaded but dropped. Add it to both, or switch the context to the shared `User`.
   - Push: `AuthContext` calls `registerPushTokenForUser` on sign-in, before `refreshUser()` loads the profile. Move registration after the profile loads, skip it for a pending account, and register after a successful restore. Update `AuthContext.test.tsx`.
-- **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows the default avatar, and doesn't open a profile. The name is already `UNAVAILABLE_ACCOUNT_NAME`. These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer. PR 3's null guards already hide Block.
+- **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows the default avatar, and doesn't open a profile. The name is already `UNAVAILABLE_ACCOUNT_NAME`, and `formatPublicName` passes it through unchanged (PR 3, Task 3.4). These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer. PR 3's null guards already hide Block.
 - **4.6 Gate, review, draft PR.** Then run a Maestro flow once on a dev build: sign in, delete, sign in again, restore. Add it under `apps/mobile/.maestro/` if the flow is stable.
 
 **Acceptance:** on a device, a member can delete their account with a password and with Google. Signing back in shows the restore screen, and Restore works. Chats with a pending member show "Unavailable account".
@@ -2256,7 +5346,7 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - **When to act:** `EXPLAIN ANALYZE` on production-sized data shows the check dominating feed or search queries.
   - **The fix** (from the #112 database review): a `STABLE SECURITY DEFINER` function `pending_deletion_user_ids() RETURNS uuid[]`, reading the 048 partial index. The policies then use `NOT (author_id = ANY ((SELECT public.pending_deletion_user_ids())))`. The subselect is uncorrelated, so Postgres runs it once per query as an InitPlan.
   - Recorded here, not scheduled.
-- **Web has no central route guard.** The restore gate is new ground (3.5). Keep it one component with its own test, not scattered page checks.
+- **Web has no central route guard.** The restore gate is new ground (Task 3.14). Keep it one component with its own test, not scattered page checks.
 - **The scrub scans notifications.** `scrub_account_copies` matches `notifications.data` with no index, once per purged member. An index would slow every notification insert (every message, comment and like) for a job that runs a few times a week. If `notifications` grows past about a million rows, add `CREATE INDEX CONCURRENTLY … USING gin (data jsonb_path_ops)` in its own migration, and match with `data @> jsonb_build_object(…)`.
 - **Purge secrets are manual per environment.** Until the runbook is followed, the cron job fails and nobody is purged. The production launch checklist must include the runbook.
 - **Google re-auth can't force a password.** `prompt: 'select_account'` makes Google show its chooser, so re-auth never completes silently. But Google has no `prompt` that demands a password. Whoever holds a browser signed in to that Google account passes. That still needs that Google account on that device, which is what the ADR asks for (spec §6).
