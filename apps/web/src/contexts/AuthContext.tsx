@@ -10,15 +10,21 @@ import { requestWebPushPermission } from '../lib/webPush';
 
 const SIGN_OUT_FAILED = "Couldn't log you out. Please try again.";
 
+interface SignOutOptions {
+  /** Where to land once signed out; / by default. */
+  redirectTo?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   supabaseUser: SupabaseUser | null;
   loading: boolean;
   /**
-   * Signs out, clears the member and replaces the route with /. Resolves with
-   * `error` (a sentence to show) when it failed and the member is still signed in.
+   * Signs out, clears the member and replaces the route with `redirectTo`, or /.
+   * Resolves with `error` (a sentence to show) when it failed and the member is
+   * still signed in.
    */
-  signOut: () => Promise<{ error?: string }>;
+  signOut: (options?: SignOutOptions) => Promise<{ error?: string }>;
   /** True while signOut runs; Layout shows its loader so no page sees the user clear. */
   signingOut: boolean;
   /** Re-reads the member's profile; resolves with it, or null when none loaded. */
@@ -33,6 +39,18 @@ export const AuthContext = createContext<AuthContextType>({
   signingOut: false,
   refreshUser: async () => null,
 });
+
+// True while this browser still holds a session. Unsure counts as yes.
+async function hasLocalSession(): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session !== null;
+  } catch {
+    return true;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -79,9 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchUserProfile]);
 
-  // Register browser push subscription once per authenticated user in this app session.
+  // Push waits for the profile and skips an account pending deletion: its tokens
+  // were deleted by the request, and signing out wouldn't remove a new one. A
+  // restore clears the date, and the effect runs again.
+  const pushUserId = user && !user.deletion_scheduled_for ? user.id : null;
+
+  // Register browser push once per member in this app session, once their
+  // profile shows no pending deletion.
   useEffect(() => {
-    const userId = supabaseUser?.id;
+    const userId = pushUserId;
 
     if (!userId) {
       pushRegistrationAttemptedUserIdRef.current = null;
@@ -115,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [supabaseUser?.id]);
+  }, [pushUserId]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -153,22 +177,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Layout shows its loader while signingOut, which unmounts the page before
   // the user clears, so a protected page's `!user → /login` redirect never
-  // races the replace to /.
-  async function handleSignOut(): Promise<{ error?: string }> {
+  // races the replace.
+  async function handleSignOut(options: SignOutOptions = {}): Promise<{ error?: string }> {
     setSigningOut(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
       logClientEvent({ event: 'auth_sign_out_failed', context: { platform: 'web' }, error });
-      setSigningOut(false);
-      return { error: SIGN_OUT_FAILED };
+      // supabase-js drops this browser's session even when revoking it on
+      // the server fails, so the member may be signed out here already.
+      if (await hasLocalSession()) {
+        setSigningOut(false);
+        return { error: SIGN_OUT_FAILED };
+      }
     }
     setUser(null);
     setSupabaseUser(null);
     pushRegistrationAttemptedUserIdRef.current = null;
     try {
-      await router.replace('/');
+      await router.replace(options.redirectTo ?? '/');
     } finally {
       setSigningOut(false);
     }
