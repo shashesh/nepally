@@ -2001,7 +2001,17 @@ The user chose to close restore at the date, to use a 29-day grace period, and t
 - [x] **Step 4: Migration 051.** `decrement_post_comments_count_on_delete()`, `AFTER DELETE ON post_comments FOR EACH ROW`. It decrements, clamped at zero, only when `OLD.is_deleted = false`. It is SECURITY DEFINER with `search_path = ''`, and EXECUTE is revoked from client roles, like 041's triggers. `function-execute-smoke.ts` doesn't list trigger functions, so it needs no change. Both files parse with libpg-query 17.
 - [x] **Step 5: Docs.** Update `database-schema.md` (050, 051 and the comment triggers), the §5 table row and check step in `supabase-setup.md`, and the two check rows in `setup-and-testing.md`.
 - [x] **Step 6: Gate and review.** The gate from Task 2.6 Step 1 passed. The `code-reviewer` and `security-reviewer` each found no CRITICAL or HIGH issues. Both flagged the cross-clock margin, and the code reviewer flagged the untested margin. Both were fixed in `fix: address Task 2.8 review` (see Step 1), and the gate passed again.
-- [ ] **Step 7: Apply on staging (needs the user).** Apply 050 (`account_deletion_timing`) and 051 (`post_comments_delete_count`) with `apply_migration`, and realign the tracker rows to `050` and `051`. Then redeploy `purge-deleted-accounts`. The new `index.ts` calls the 050 functions, so deploying it before 050 would make every run fail (closed: nothing is purged). Check that `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`. Then `npm run test:security:account-deletion` and `npm run test:security:functions` must exit 0. After the user sets the secrets (Task 2.7 Step 2), `npm run test:security:account-purge` must too. The next migration number is 052.
+- [x] **Step 7: Apply on staging (needs the user).** Apply 050 (`account_deletion_timing`) and 051 (`post_comments_delete_count`) with `apply_migration`, and realign the tracker rows to `050` and `051`. Then redeploy `purge-deleted-accounts`. The new `index.ts` calls the 050 functions, so deploying it before 050 would make every run fail (closed: nothing is purged). Check that `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`. Then `npm run test:security:account-deletion` and `npm run test:security:functions` must exit 0. After the user sets the secrets (Task 2.7 Step 2), `npm run test:security:account-purge` must too. The next migration number is 052.
+
+**Progress 2026-09-30:** at the user's request, 050 and 051 were applied to staging and their tracker rows realigned (the tracker ends `048`, `049`, `050`, `051`). What the database showed:
+
+- `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`.
+- `request_account_deletion` uses 29 days, and `cancel_account_deletion` raises `deletion_in_progress`.
+- `list_due_account_deletions` and `is_due_for_purge` are executable by `service_role` only.
+- The delete trigger is enabled, and no client role can execute its function.
+- The drift query found 0 posts with a wrong `comments_count`.
+
+`purge-deleted-accounts` was then redeployed. `npm run test:security:account-deletion` and `npm run test:security:functions` both pass. The security advisors show nothing new. A POST without the secret still gets 500, because the function secret isn't set yet, so the function fails closed. `test:security:account-purge` waits on the secrets (Task 2.7 Step 2).
 
 **Acceptance:**
 
