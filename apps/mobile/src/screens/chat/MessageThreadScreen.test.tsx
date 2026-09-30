@@ -169,7 +169,7 @@ describe('MessageThreadScreen avatar menu', () => {
       expect(screen.queryByText('Today')).toBeNull();
     });
 
-    it('gives last year\'s date its year and its own separator', async () => {
+    it("gives last year's date its year and its own separator", async () => {
       mockGetMessages.mockResolvedValue({
         data: [
           message('m1', 'A year ago', new Date(2025, 2, 5, 12)),
@@ -202,7 +202,7 @@ describe('MessageThreadScreen avatar menu', () => {
       (Alert.alert as jest.Mock).mockRestore();
     });
 
-    it('heads the thread with the other member\'s public name', async () => {
+    it("heads the thread with the other member's public name", async () => {
       const screen = render(<MessageThreadScreen />);
       await act(async () => {});
 
@@ -217,7 +217,28 @@ describe('MessageThreadScreen avatar menu', () => {
       fireEvent.press(screen.getByLabelText('Conversation options'));
       fireEvent.press(screen.getByText('Block User'));
 
-      expect(Alert.alert).toHaveBeenCalledWith('Block Bikal S.?', expect.any(String), expect.any(Array));
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Block Bikal S.?',
+        expect.any(String),
+        expect.any(Array)
+      );
+    });
+
+    it('offers no Block for a purged partner', async () => {
+      mockUseRoute.mockReturnValue({
+        params: {
+          conversationId: 'conv-1',
+          otherUserId: null,
+          otherUserName: 'Unavailable account',
+          otherUserTrustLevel: 0,
+          otherUserPhotoUrl: null,
+        },
+      });
+      const screen = render(<MessageThreadScreen />);
+      await act(async () => {});
+
+      expect(screen.queryByLabelText('Conversation options')).toBeNull();
+      expect(screen.getByText('Unavailable account')).toBeTruthy();
     });
   });
 

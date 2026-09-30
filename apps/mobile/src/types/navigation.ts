@@ -34,9 +34,11 @@ export type OnboardingStackParamList = {
  * Post creation stack parameter list
  */
 export type PostStackParamList = {
-  CreatePost: {
-    editPostId?: string;
-  } | undefined;
+  CreatePost:
+    | {
+        editPostId?: string;
+      }
+    | undefined;
 };
 
 /**
@@ -76,7 +78,8 @@ export type ChatStackParamList = {
   ConversationList: undefined;
   MessageThread: {
     conversationId: string;
-    otherUserId: string;
+    /** Null when the partner's account was purged. */
+    otherUserId: string | null;
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;

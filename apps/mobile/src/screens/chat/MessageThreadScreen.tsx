@@ -78,24 +78,27 @@ export default function MessageThreadScreen() {
   const currentViewportHeightRef = useRef(viewportHeight);
   const isKeyboardVisibleRef = useRef(false);
 
-  const openProfileMenuAt = useCallback((pageX: number, pageY: number) => {
-    const MENU_WIDTH = 160;
-    const MENU_HEIGHT = 56;
-    const EDGE_GAP = 8;
-    const VERTICAL_OFFSET = 8;
+  const openProfileMenuAt = useCallback(
+    (pageX: number, pageY: number) => {
+      const MENU_WIDTH = 160;
+      const MENU_HEIGHT = 56;
+      const EDGE_GAP = 8;
+      const VERTICAL_OFFSET = 8;
 
-    const maxLeft = Math.max(EDGE_GAP, viewportWidth - MENU_WIDTH - EDGE_GAP);
-    const left = Math.min(Math.max(EDGE_GAP, pageX), maxLeft);
+      const maxLeft = Math.max(EDGE_GAP, viewportWidth - MENU_WIDTH - EDGE_GAP);
+      const left = Math.min(Math.max(EDGE_GAP, pageX), maxLeft);
 
-    const belowTop = pageY + VERTICAL_OFFSET;
-    const canOpenBelow = belowTop + MENU_HEIGHT <= viewportHeight - EDGE_GAP;
-    const top = canOpenBelow
-      ? belowTop
-      : Math.max(EDGE_GAP, pageY - MENU_HEIGHT - VERTICAL_OFFSET);
+      const belowTop = pageY + VERTICAL_OFFSET;
+      const canOpenBelow = belowTop + MENU_HEIGHT <= viewportHeight - EDGE_GAP;
+      const top = canOpenBelow
+        ? belowTop
+        : Math.max(EDGE_GAP, pageY - MENU_HEIGHT - VERTICAL_OFFSET);
 
-    setProfileMenuPos({ top, left });
-    setProfileMenuVisible(true);
-  }, [viewportHeight, viewportWidth]);
+      setProfileMenuPos({ top, left });
+      setProfileMenuVisible(true);
+    },
+    [viewportHeight, viewportWidth]
+  );
 
   // Load messages (re-runs on Retry via reloadKey)
   useEffect(() => {
@@ -124,9 +127,7 @@ export default function MessageThreadScreen() {
         // Skip messages from current user — already handled by optimistic UI
         if (newMessage.sender_id === userId) {
           // Still update if the real message replaced a temp one (to sync read status etc.)
-          setMessages((prev) =>
-            prev.map((m) => (m.id === newMessage.id ? newMessage : m))
-          );
+          setMessages((prev) => prev.map((m) => (m.id === newMessage.id ? newMessage : m)));
           return;
         }
         // Add received message if not already present
@@ -142,9 +143,7 @@ export default function MessageThreadScreen() {
       },
       (updatedMessage) => {
         // Update read status
-        setMessages((prev) =>
-          prev.map((m) => (m.id === updatedMessage.id ? updatedMessage : m))
-        );
+        setMessages((prev) => prev.map((m) => (m.id === updatedMessage.id ? updatedMessage : m)));
       }
     );
 
@@ -248,9 +247,7 @@ export default function MessageThreadScreen() {
       const result = await sendMessage(supabase, conversationId, userId, text);
       if (result.data) {
         // Replace temp message with real one
-        setMessages((prev) =>
-          prev.map((m) => (m.id === tempMessage.id ? result.data! : m))
-        );
+        setMessages((prev) => prev.map((m) => (m.id === tempMessage.id ? result.data! : m)));
       } else if (result.error) {
         // Remove temp message on error
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
@@ -271,7 +268,7 @@ export default function MessageThreadScreen() {
           text: 'Block',
           style: 'destructive',
           onPress: async () => {
-            if (!user?.id) return;
+            if (!user?.id || !otherUserId) return;
             await blockUser(supabase, user.id, otherUserId);
             navigation.goBack();
           },
@@ -291,10 +288,8 @@ export default function MessageThreadScreen() {
   // A separator before each local calendar day's first message, labelled as web labels it.
   // `now` ticks, so Today becomes Yesterday on a thread left open past midnight.
   const flatData = useMemo(() => {
-    const items: Array<
-      { type: 'date'; data: string } |
-      { type: 'message'; data: ChatMessage }
-    > = [];
+    const items: Array<{ type: 'date'; data: string } | { type: 'message'; data: ChatMessage }> =
+      [];
     let lastDay = '';
 
     for (const msg of messages) {
@@ -355,15 +350,17 @@ export default function MessageThreadScreen() {
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(!menuVisible)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel="Conversation options"
-        >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
-        </TouchableOpacity>
+        {otherUserId ? (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setMenuVisible(!menuVisible)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Conversation options"
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Kebab Menu */}
@@ -387,7 +384,9 @@ export default function MessageThreadScreen() {
       >
         <View style={{ flex: 1 }}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setProfileMenuVisible(false)} />
-          <View style={[styles.profileDropdown, { top: profileMenuPos.top, left: profileMenuPos.left }]}>
+          <View
+            style={[styles.profileDropdown, { top: profileMenuPos.top, left: profileMenuPos.left }]}
+          >
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -449,9 +448,7 @@ export default function MessageThreadScreen() {
                 />
               );
             }}
-            keyExtractor={(item, index) =>
-              item.type === 'date' ? `date-${index}` : item.data.id
-            }
+            keyExtractor={(item, index) => (item.type === 'date' ? `date-${index}` : item.data.id)}
             contentContainerStyle={styles.messagesList}
             onContentSizeChange={() => {
               if (!loading) {
