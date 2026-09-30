@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  getExistingListingIds,
+  getExistingUserIds,
   getPendingPosts,
   getPostsByIds,
   setPostModerationStatus,
@@ -179,6 +181,46 @@ describe('setUserBanStatus', () => {
     const result = await setUserBanStatus(supabase, 'user-9', true);
 
     expect(result.error?.message).toBe('Only moderators can ban or unban users');
+    expect(result.data).toBeUndefined();
+  });
+});
+
+describe.each([
+  ['getExistingUserIds', getExistingUserIds, 'users'],
+  ['getExistingListingIds', getExistingListingIds, 'marketplace_listings'],
+] as const)('%s', (_name, fetchIds, table) => {
+  it('returns an empty list without querying when no ids are given', async () => {
+    const from = vi.fn();
+
+    const result = await fetchIds({ from } as unknown as SupabaseClient, []);
+
+    expect(result.data).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('returns the ids that still exist, from one query', async () => {
+    const query = { select: vi.fn(), in: vi.fn() };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({ data: [{ id: 'a' }], error: null });
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await fetchIds(supabase, ['a', 'b']);
+
+    expect(supabase.from).toHaveBeenCalledWith(table);
+    expect(query.select).toHaveBeenCalledWith('id');
+    expect(query.in).toHaveBeenCalledWith('id', ['a', 'b']);
+    expect(result.data).toEqual(['a']);
+  });
+
+  it('returns the error when the query fails', async () => {
+    const query = { select: vi.fn(), in: vi.fn() };
+    query.select.mockReturnValue(query);
+    query.in.mockResolvedValue({ data: null, error: new Error('boom') });
+    const supabase = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient;
+
+    const result = await fetchIds(supabase, ['a']);
+
+    expect(result.error?.message).toBe('boom');
     expect(result.data).toBeUndefined();
   });
 });

@@ -67,6 +67,49 @@ export async function getPostsByIds(
   }
 }
 
+/** The ids in `ids` that still have a row in `table`, in one query. */
+async function getExistingIds(
+  supabase: SupabaseClient,
+  table: 'users' | 'marketplace_listings',
+  ids: string[],
+  fallback: string
+): Promise<{ data?: string[]; error?: Error }> {
+  if (ids.length === 0) {
+    return { data: [] };
+  }
+
+  try {
+    const { data, error } = await supabase.from(table).select('id').in('id', ids);
+
+    if (error) throw error;
+
+    return { data: (data || []).map((row: { id: string }) => row.id) };
+  } catch (error) {
+    return { error: toApiError(error, fallback) };
+  }
+}
+
+/** Which reported members still exist. A purged account comes back missing. */
+export function getExistingUserIds(
+  supabase: SupabaseClient,
+  userIds: string[]
+): Promise<{ data?: string[]; error?: Error }> {
+  return getExistingIds(supabase, 'users', userIds, 'Failed to check reported members');
+}
+
+/** Which reported listings the moderator can still see: purged and no-longer-active ones come back missing. */
+export function getExistingListingIds(
+  supabase: SupabaseClient,
+  listingIds: string[]
+): Promise<{ data?: string[]; error?: Error }> {
+  return getExistingIds(
+    supabase,
+    'marketplace_listings',
+    listingIds,
+    'Failed to check reported listings'
+  );
+}
+
 /**
  * Approve ('active') or take down ('removed') a post. The status-transition
  * trigger rejects this for non-moderators.
