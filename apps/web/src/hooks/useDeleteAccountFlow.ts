@@ -107,12 +107,24 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
   async function handleContinue() {
     if (busy) return;
     setBusy(true);
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    setBusy(false);
+    let isRecent = false;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      isRecent = Boolean(session && isRecentSignIn(session.access_token));
+    } catch (sessionError) {
+      // Confirming again is the safe side: the server re-checks re-auth anyway.
+      logClientEvent({
+        event: 'account_delete_session_read_failed',
+        context: { platform: 'web' },
+        error: sessionError,
+      });
+    } finally {
+      setBusy(false);
+    }
     setNotice('');
-    setStep(session && isRecentSignIn(session.access_token) ? 'final' : 'confirm');
+    setStep(isRecent ? 'final' : 'confirm');
   }
 
   async function handlePassword(event: FormEvent) {

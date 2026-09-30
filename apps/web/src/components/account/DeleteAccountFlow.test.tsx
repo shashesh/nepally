@@ -105,6 +105,21 @@ describe('DeleteAccountFlow', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
   });
 
+  it("falls through to confirming when the session can't be read", async () => {
+    const readError = new Error('storage unavailable');
+    mocks.getSession.mockRejectedValue(readError);
+    render(<DeleteAccountFlow />);
+
+    await press('Continue');
+
+    expect(screen.getByRole('heading', { level: 1, name: "Confirm it's you" })).toBeDefined();
+    expect(mocks.logClientEvent).toHaveBeenCalledWith({
+      event: 'account_delete_session_read_failed',
+      context: { platform: 'web' },
+      error: readError,
+    });
+  });
+
   it('says so when the password is wrong', async () => {
     mocks.signInWithEmail.mockResolvedValue({
       error: Object.assign(new Error('Invalid login credentials'), { code: 'invalid_credentials' }),
