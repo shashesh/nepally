@@ -306,5 +306,15 @@ describe('AuthCallbackPage', () => {
 
       expect(mockPush).toHaveBeenCalledWith('/feed');
     });
+
+    it('ignores a ?redirect= back to /login, which would only lead into signing in again', async () => {
+      window.history.pushState({}, '', '/auth/callback?redirect=%2Flogin');
+      render(<AuthCallbackPage />);
+
+      await fireAuthEvent('SIGNED_IN');
+
+      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith('/feed');
+    });
   });
 });

@@ -63,6 +63,13 @@ describe('getSignInReturnPath', () => {
     expect(getSignInReturnPath('/loginhelp', ORIGIN)).toBe('/loginhelp');
   });
 
+  it('sees through trailing and dot segments to the path the router will open', () => {
+    expect(getSignInReturnPath('/login//', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/feed/../login', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/login/..', ORIGIN)).toBe('/');
+    expect(getSignInReturnPath('/auth/anything', ORIGIN)).toBeNull();
+  });
+
   it('still refuses an unsafe value, and anything that is not a string', () => {
     expect(getSignInReturnPath('//evil.com', ORIGIN)).toBeNull();
     expect(getSignInReturnPath(undefined, ORIGIN)).toBeNull();

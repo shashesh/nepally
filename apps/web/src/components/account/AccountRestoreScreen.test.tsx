@@ -72,9 +72,7 @@ describe('AccountRestoreScreen', () => {
     await press('Restore my account');
 
     expect(
-      screen.getByText(
-        "Your account is restored, but we couldn't reload it. Please refresh the page."
-      )
+      screen.getByText("We couldn't confirm the restore. Please refresh the page.")
     ).toBeDefined();
     expect(mocks.logClientEvent).toHaveBeenCalledWith(
       expect.objectContaining({ event: 'account_restore_reload_failed' })
@@ -91,9 +89,7 @@ describe('AccountRestoreScreen', () => {
     await press('Restore my account');
 
     expect(
-      screen.getByText(
-        "Your account is restored, but we couldn't reload it. Please refresh the page."
-      )
+      screen.getByText("We couldn't confirm the restore. Please refresh the page.")
     ).toBeDefined();
   });
 

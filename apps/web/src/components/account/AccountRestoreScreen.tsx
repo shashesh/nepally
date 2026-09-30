@@ -14,8 +14,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { AuthCard } from '../auth/AuthCard';
 import { busyButtonProps, notify } from '../ui';
 
-const RELOAD_FAILED =
-  "Your account is restored, but we couldn't reload it. Please refresh the page.";
+/**
+ * Restore succeeded, but the reloaded profile is missing or still dated, so we
+ * can't say for sure it's restored. Refreshing shows the database's answer.
+ */
+const RELOAD_FAILED = "We couldn't confirm the restore. Please refresh the page.";
 
 type Busy = 'restore' | 'sign-out' | null;
 
