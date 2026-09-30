@@ -3,11 +3,12 @@
  *
  * Verifies migration 041 (restrict_function_execute) against a real Supabase
  * project:
- *   1. anon cannot call the listing counters, the soft-delete RPCs, or the
- *      helpers no client uses.
+ *   1. anon cannot call the listing counters, the soft-delete RPCs, account
+ *      deletion functions (request_account_deletion, cancel_account_deletion,
+ *      amr_signed_in_within), or the helpers no client uses.
  *   2. anon and members can still call the RLS policy helpers (is_moderator,
- *      is_conversation_participant, is_conversation_creator), and read the
- *      tables whose policies call them.
+ *      is_conversation_participant, is_conversation_creator, is_pending_deletion),
+ *      and read the tables whose policies call them.
  *   3. A signed-in user can call the RPCs the apps use, but not the unused
  *      helpers.
  *   4. Triggers still fire for a signed-in user: liking a post bumps
@@ -38,6 +39,8 @@ const SIGNED_IN_RPCS: RpcCall[] = [
   { fn: 'increment_listing_contacts', args: { p_listing_id: MISSING_ID } },
   { fn: 'soft_delete_event', args: { p_event_id: MISSING_ID } },
   { fn: 'soft_delete_own_comment', args: { p_comment_id: MISSING_ID } },
+  { fn: 'request_account_deletion', args: {} },
+  { fn: 'cancel_account_deletion', args: {} },
 ];
 
 /** Helpers that RLS policies call as the querying role; anon and members must keep them. */
@@ -45,6 +48,7 @@ const POLICY_HELPER_RPCS: RpcCall[] = [
   { fn: 'is_moderator', args: {} },
   { fn: 'is_conversation_participant', args: { conv_id: MISSING_ID, uid: MISSING_ID } },
   { fn: 'is_conversation_creator', args: { conv_id: MISSING_ID, uid: MISSING_ID } },
+  { fn: 'is_pending_deletion', args: { p_user_id: MISSING_ID } },
 ];
 
 /** Helpers only the database itself uses; every client role must be refused. */
@@ -54,6 +58,8 @@ const INTERNAL_RPCS: RpcCall[] = [
   { fn: 'get_post_comment_count', args: { p_post_id: MISSING_ID } },
   { fn: 'get_metro_by_zip', args: { zip: '75001' } },
   { fn: 'build_notification_push_url', args: { p_type: 'system', p_data: {} } },
+  { fn: 'amr_signed_in_within', args: { p_amr: [], p_max_age_seconds: 600 } },
+  { fn: 'list_user_storage_objects', args: { p_user_id: MISSING_ID } },
 ];
 
 function requireEnv(name: string): string {

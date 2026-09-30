@@ -73,6 +73,11 @@ CREATE TABLE users (
   ban_reason TEXT,
   is_moderator BOOLEAN NOT NULL DEFAULT false,
 
+  -- Migration 048: NULL while the account is active; otherwise the purge
+  -- time, 30 days after the deletion request. See "Account deletion
+  -- (migration 048)".
+  deletion_scheduled_for TIMESTAMPTZ,
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -1394,6 +1399,15 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 - `guard_listing_status_transition()` is a `BEFORE UPDATE OF status` trigger on `marketplace_listings`. A client that isn't a moderator can't move a listing out of `removed`. Privileged contexts (`service_role`, `postgres`, `SECURITY DEFINER` functions) pass.
 - `guard_report_counts()` is a `BEFORE INSERT OR UPDATE OF reports_count` trigger on `posts` and `marketplace_listings`. Only privileged contexts and moderators may change the counter, and a row a client creates starts at 0 whatever count it sends.
 - These are trigger functions, so no client role holds EXECUTE on them. Live checks: `npm run test:security:emergency-post` and `npm run test:security:listing-reports`.
+
+### Account deletion (migration 048)
+
+- `users.deletion_scheduled_for timestamptz` is NULL while the account is active. While deletion is pending it holds the purge time, 30 days after the request. No client role has a column grant on it; the owner reads it through `get_my_profile()`. The 034 guard treats it as privileged.
+- `request_account_deletion()` (authenticated) needs a sign-in within the last 600 seconds, read from the JWT's `amr` claim by `amr_signed_in_within(amr, max_age)`. Otherwise it raises `reauth_required` (SQLSTATE `P0001`). It sets the purge time, deletes the caller's `device_tokens`, and returns the time. A repeated call returns the same time.
+- `cancel_account_deletion()` (authenticated) clears it.
+- `is_pending_deletion(uid)` (anon, authenticated) is the RLS helper. The SELECT policies on `users`, `posts`, `post_comments`, `marketplace_listings`, `events`, `event_rsvps` and `post_likes` hide a pending member's rows from everyone but that member and moderators. `user_follows` hides an edge when either end is pending, except from moderators. Messages and conversations are unchanged.
+- `list_user_storage_objects(uid)` (service_role) lists every storage object a user owns, for the purge in migration 049.
+- Live checks: `npm run test:security:account-deletion` and `npm run test:security:functions`.
 
 ---
 

@@ -85,7 +85,7 @@ The check runs against staging. Before 048 is applied, it fails because the func
 - Create: `scripts/security/account-deletion-smoke.ts`
 - Modify: `package.json` (the `scripts` block, after `test:security:listing-reports`)
 
-- [ ] **Step 1: Write the check.**
+- [x] **Step 1: Write the check.**
 
 ```ts
 /**
@@ -100,8 +100,9 @@ The check runs against staging. Before 048 is applied, it fails because the func
  *      30 days out, returns the same date when repeated, and removes the
  *      member's device tokens.
  *   4. While deletion is pending, another member cannot see the profile,
- *      post, comment, like, follows, listing, event or RSVP. A moderator and
- *      the member themself still can.
+ *      post, comment, like, follows, listing, event or RSVP. A moderator
+ *      still sees all of it. The member themself still sees everything
+ *      except follow edges, which are hidden when either end is pending.
  *   5. cancel_account_deletion makes everything visible again.
  *
  * Run: npm run test:security:account-deletion
@@ -215,7 +216,7 @@ async function borrow(
   if (error || !data) {
     throw new Error(`Failed to borrow a ${table} row: ${error?.message || 'none on this project'}`);
   }
-  return data as Record<string, unknown>;
+  return data as unknown as Record<string, unknown>;
 }
 
 async function insertRow(
@@ -512,11 +513,7 @@ async function main(): Promise<void> {
       'moderator while pending'
     );
     const ownerView = await visibleCounts(ownerClient, owner.id, fixtures);
-    expectCounts(
-      ownerView,
-      { profile: 1, post: 1, comment: 1, like: 1, listing: 1, event: 1, rsvp: 1 },
-      'owner while pending'
-    );
+    expectCounts(ownerView, { ...ALL_VISIBLE, follows: 0 }, 'owner while pending');
 
     const { data: ownProfile, error: ownProfileError } = await ownerClient
       .rpc('get_my_profile')
@@ -555,18 +552,18 @@ main().catch((error: unknown) => {
 });
 ```
 
-- [ ] **Step 2: Add the npm script.** In `package.json`, after the `test:security:listing-reports` line:
+- [x] **Step 2: Add the npm script.** In `package.json`, after the `test:security:listing-reports` line:
 
 ```json
     "test:security:account-deletion": "tsx scripts/security/account-deletion-smoke.ts",
 ```
 
-- [ ] **Step 3: Run it and watch it fail.** Export the env first. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from `scripts/.env`. `SUPABASE_ANON_KEY` is `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local`.
+- [x] **Step 3: Run it and watch it fail.** Export the env first. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from `scripts/.env`. `SUPABASE_ANON_KEY` is `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local`.
 
 Run: `npm run test:security:account-deletion`
 Expected: exit code 1, and `FAIL: amr_signed_in_within (fresh password sign-in) failed: Could not find the function public.amr_signed_in_within…`
 
-- [ ] **Step 4: Format and commit.**
+- [x] **Step 4: Format and commit.**
 
 ```bash
 npx prettier --write scripts/security/account-deletion-smoke.ts
@@ -583,7 +580,7 @@ git commit -m "test: add live check for account deletion requests and hiding"
 
 - Create: `supabase/migrations/048_account_deletion.sql`
 
-- [ ] **Step 1: Write the migration.**
+- [x] **Step 1: Write the migration.**
 
 ```sql
 -- 048_account_deletion.sql
@@ -931,9 +928,9 @@ ALTER POLICY user_follows_select_all ON public.user_follows
   );
 ```
 
-- [ ] **Step 2: Check each policy against its live condition.** Compare every `ALTER POLICY` with its condition under [Verified while planning](#verified-while-planning-2026-09-28). The original condition must survive unchanged, apart from the added visibility clause. The one intended exception: moderators can now see a pending member's active listings. The migration is applied and the check turns green in Task 1.5.
+- [x] **Step 2: Check each policy against its live condition.** Compare every `ALTER POLICY` with its condition under [Verified while planning](#verified-while-planning-2026-09-28). The original condition must survive unchanged, apart from the added visibility clause. The one intended exception: moderators can now see a pending member's active listings. The migration is applied and the check turns green in Task 1.5.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add supabase/migrations/048_account_deletion.sql
@@ -949,7 +946,7 @@ git commit -m "feat(db): add account deletion requests, restore and hiding (048)
 
 - Modify: `scripts/security/function-execute-smoke.ts:36-57` (the three `RpcCall` lists)
 
-- [ ] **Step 1: Add the new functions to the lists.** `cancel_account_deletion` comes straight after `request_account_deletion`, so the test member ends up active again.
+- [x] **Step 1: Add the new functions to the lists.** `cancel_account_deletion` comes straight after `request_account_deletion`, so the test member ends up active again.
 
 ```ts
 /** RPCs the apps call signed in; anon must be refused, authenticated let through. */
@@ -984,7 +981,7 @@ const INTERNAL_RPCS: RpcCall[] = [
 
 Also update the header comment's numbered list: item 1 names the RPCs anon can't call, item 2 the policy helpers. Add the new names to those sentences.
 
-- [ ] **Step 2: Commit.**
+- [x] **Step 2: Commit.**
 
 ```bash
 npx prettier --write scripts/security/function-execute-smoke.ts
@@ -1003,7 +1000,7 @@ git commit -m "test: cover account deletion functions in the function-execute ch
 - Modify: `docs/guides/setup-and-testing.md`: add `npm run test:security:account-deletion` to the list of security checks
 - Modify: this plan's PR table (mark PR 1 in progress)
 
-- [ ] **Step 1: Write the schema section.**
+- [x] **Step 1: Write the schema section.**
 
 ```markdown
 ### Account deletion (migration 048)
@@ -1018,7 +1015,7 @@ git commit -m "test: cover account deletion functions in the function-execute ch
 
 In the Users table section, add a row or bullet for the column in the same style as its neighbours.
 
-- [ ] **Step 2: Format, check and commit.**
+- [x] **Step 2: Format, check and commit.**
 
 ```bash
 npx prettier --write docs/architecture/database-schema.md docs/guides/setup-and-testing.md docs/plans/active/2026-09-28-account-deletion.md
@@ -1033,10 +1030,10 @@ git commit -m "docs: document account deletion schema (048)"
 
 ### Task 1.5: Gate, review, apply and verify
 
-- [ ] **Step 1: Run the gate** (see [How it runs](#how-it-runs)). The only code touched is in `scripts/`, so no workspace suites need to run. Run `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`. Check every exit code.
-- [ ] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 1 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled).
-- [ ] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-db`, open a **draft** PR against `master` with the template filled in, and request Copilot's review.
-- [ ] **Step 4: Apply 048 to staging**, once the user asks for it directly. Use `apply_migration` with name `account_deletion`, then realign the tracker row:
+- [x] **Step 1: Run the gate** (see [How it runs](#how-it-runs)). The only code touched is in `scripts/`, so no workspace suites need to run. Run `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`. Check every exit code.
+- [x] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 1 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled).
+- [x] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-db`, open a **draft** PR against `master` with the template filled in, and request Copilot's review.
+- [x] **Step 4: Apply 048 to staging**, once the user asks for it directly. Use `apply_migration` with name `account_deletion`, then realign the tracker row:
 
 ```sql
 UPDATE supabase_migrations.schema_migrations
@@ -1045,7 +1042,7 @@ UPDATE supabase_migrations.schema_migrations
  WHERE name = 'account_deletion' AND version <> '048';
 ```
 
-- [ ] **Step 5: Run the live checks against staging.** Every one must exit 0:
+- [x] **Step 5: Run the live checks against staging.** Every one must exit 0:
   - `npm run test:security:account-deletion`
   - `npm run test:security:functions`
   - `npm run test:security:users-privilege`
@@ -1056,8 +1053,10 @@ UPDATE supabase_migrations.schema_migrations
 
   If one fails, fix it forward in the same PR. Edit 048 and re-apply the changed statements with `execute_sql`, as 035 did.
 
-- [ ] **Step 6: Run `get_advisors`** (security and performance). Any new warning about the new functions or policies gets fixed or recorded in Follow-ups with a reason.
-- [ ] **Step 7:** Record in this plan and in memory that 048 is applied and realigned. The next migration number is 049.
+- [x] **Step 6: Run `get_advisors`** (security and performance). Any new warning about the new functions or policies gets fixed or recorded in Follow-ups with a reason.
+- [x] **Step 7:** Record in this plan and in memory that 048 is applied and realigned. The next migration number is 049.
+
+**Done 2026-09-28.** 048 was applied to staging and its tracker row realigned to `048`. All seven live checks passed. `users-pii` failed once, from a flake that predates 048 (see Follow-ups), and passed on both reruns. The advisors show no new findings beyond the intended ones: definer functions callable by clients, as with 041's helpers and RPCs, and the new, still-unused index.
 
 ---
 
@@ -1365,3 +1364,9 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
 - Locking a pending member's photos during the grace period. The buckets are public, so a saved URL keeps working until the purge (spec §6).
 - Blocking a banned member from signing up again with the same email after the purge.
 - Data export before deletion.
+- From the PR 1 review:
+  - `amr_signed_in_within()` relies on the default `SECURITY INVOKER`. Sibling migrations such as 046 write it out. The re-created 034 guard keeps its original header on purpose.
+  - The `profile_not_found` branch of `request_account_deletion()` has no live-check coverage. Every signed-in member has a profile row, so it only guards against drift.
+  - On Windows, every `scripts/security/*.ts` failure path exits 127, not 1. `process.exit(1)` races the Supabase client's handles and trips a libuv assertion. Any non-zero exit still means FAIL. A shared fix, such as setting `process.exitCode` and letting the event loop drain, would touch all the checks.
+- Both PR 1 reviewers flagged the `users` policy as reading a column clients have no SELECT grant on. That is a false positive. A rolled-back probe on staging (2026-09-28) showed that Postgres doesn't check column privileges for columns used only inside a policy. `anon` and `authenticated` read the granted columns normally.
+- `users-pii-smoke.ts` fails about 28% of the time, and has since before 048. Its fixture names end in `<timestamp>-<6 random base-36 chars>`. When the random part starts with a digit, Postgres's parser reads `-5abc12` as the signed integer `-5` plus `abc12`, but `build_prefix_tsquery` splits on the hyphen and searches `5abc12:*`, so `search_people` misses the fixture. Fix the fixture: start the random part with a letter. The same split affects any real name containing `-<digit>`, which is rare, so no search change is scheduled.
