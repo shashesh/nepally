@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { safeRedirectPath } from './redirect';
+import { getSignInReturnPath, safeRedirectPath } from './redirect';
 
 const ORIGIN = 'https://nepally.us';
 
@@ -45,5 +45,27 @@ describe('safeRedirectPath', () => {
     expect(safeRedirectPath('', ORIGIN)).toBeNull();
     expect(safeRedirectPath(undefined, ORIGIN)).toBeNull();
     expect(safeRedirectPath(['/feed'], ORIGIN)).toBeNull();
+  });
+});
+
+describe('getSignInReturnPath', () => {
+  it('refuses the sign-in pages, which only lead back into signing in', () => {
+    expect(getSignInReturnPath('/login', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/login/', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/login?redirect=%2Ffeed', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/auth/callback', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath('/auth/callback?redirect=/x', ORIGIN)).toBeNull();
+  });
+
+  it('passes every other safe path, without matching /login as a prefix', () => {
+    expect(getSignInReturnPath('/delete-account', ORIGIN)).toBe('/delete-account');
+    expect(getSignInReturnPath('/feed?tab=1', ORIGIN)).toBe('/feed?tab=1');
+    expect(getSignInReturnPath('/loginhelp', ORIGIN)).toBe('/loginhelp');
+  });
+
+  it('still refuses an unsafe value, and anything that is not a string', () => {
+    expect(getSignInReturnPath('//evil.com', ORIGIN)).toBeNull();
+    expect(getSignInReturnPath(undefined, ORIGIN)).toBeNull();
+    expect(getSignInReturnPath(['/feed'], ORIGIN)).toBeNull();
   });
 });

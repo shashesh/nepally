@@ -177,6 +177,23 @@ describe('LoginPage', () => {
     expect(mockReplace).toHaveBeenCalledWith('/delete-account');
   });
 
+  it('sends a signed-in visitor to the feed when ?redirect= is /login itself', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: '/login' },
+      isReady: true,
+    });
+    loginMocks.useAuthMock.mockReturnValue({
+      user: { id: 'user-1' },
+      refreshUser: mockRefreshUser,
+    });
+    render(<LoginPage />);
+    await act(async () => {});
+
+    expect(mockReplace).toHaveBeenCalledWith('/feed');
+  });
+
   it('passes a safe ?redirect= to Google sign-in', async () => {
     loginMocks.useRouterMock.mockReturnValue({
       push: mockPush,

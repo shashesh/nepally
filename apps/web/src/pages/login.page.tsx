@@ -6,7 +6,7 @@ import { Alert, Button, Divider, Loader, PasswordInput, Stack, TextInput } from 
 import {
   getAuthErrorMessage,
   logClientEvent,
-  safeRedirectPath,
+  getSignInReturnPath,
   validateEmail,
 } from '@nepally/shared';
 import { signInWithEmail } from '../lib/auth';
@@ -43,7 +43,7 @@ export default function LoginPage() {
   // one), or the feed. The router is never ready on the server, so window
   // is only read in the browser.
   const returnTo = router.isReady
-    ? safeRedirectPath(router.query.redirect, window.location.origin)
+    ? getSignInReturnPath(router.query.redirect, window.location.origin)
     : null;
   const destination = returnTo ?? '/feed';
   const [email, setEmail] = useState(queryEmail);

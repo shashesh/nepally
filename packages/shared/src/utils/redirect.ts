@@ -30,3 +30,14 @@ export function safeRedirectPath(value: unknown, origin: string): string | null 
     return null;
   }
 }
+
+/** Like safeRedirectPath, but never a sign-in page: those only lead back into signing in. */
+export function getSignInReturnPath(value: unknown, origin: string): string | null {
+  const path = safeRedirectPath(value, origin);
+  if (path === null) return null;
+  const pathname = new URL(path, origin).pathname.replace(/\/+$/, '');
+  if (pathname === '/login' || pathname === '/auth/callback' || pathname.startsWith('/auth/')) {
+    return null;
+  }
+  return path;
+}
