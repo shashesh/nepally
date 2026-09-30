@@ -42,4 +42,11 @@ describe('navItems', () => {
   it('has five tabs in the native-app order', () => {
     expect(getTabLinks({ trust_level: 1 }).map((tab) => tab.key)).toEqual(['home', 'events', 'create', 'marketplace', 'profile']);
   });
+
+  it('ends the Settings list with Delete account', () => {
+    expect(getSettingsLinks({ is_moderator: false }).at(-1)).toEqual({
+      label: 'Delete account',
+      href: '/delete-account',
+    });
+  });
 });
