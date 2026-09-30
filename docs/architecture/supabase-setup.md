@@ -304,6 +304,7 @@ supabase functions deploy create-promotion-checkout
 supabase functions deploy stripe-webhook
 supabase functions deploy verify-emergency-post
 supabase functions deploy get-metro-by-zip
+supabase functions deploy purge-deleted-accounts
 ```
 
 ### 4. Set Function Secrets
@@ -406,11 +407,12 @@ Expected behavior:
 
 ### 5. Scheduled Jobs
 
-Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`), not through edge functions, so there is no public endpoint to protect. Migrations create the jobs; nothing needs setting up by hand.
+Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`). Migrations create the jobs. Most run SQL directly, so they have no public endpoint to protect and need no setup. The one exception is `purge-deleted-accounts`. It calls an edge function, because deleting stored files needs the Storage API, and that call needs the secrets below to be set once in each environment.
 
-| Job                      | Schedule            | Runs                                                                                     | Migration |
-| ------------------------ | ------------------- | ---------------------------------------------------------------------------------------- | --------- |
-| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired | `046`     |
+| Job                      | Schedule            | Runs                                                                                                                                                                                                                                                  | Migration           |
+| ------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired                                                                                                                                                              | `046`               |
+| `purge-deleted-accounts` | Hourly, on the hour | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts an hour past the end of their 29-day grace period: their storage objects, the copies of their words in other members' notifications and chat previews, then the auth user | `049`, `050`, `052` |
 
 Check the jobs and their recent runs:
 
@@ -422,6 +424,41 @@ SELECT j.jobname, d.status, d.return_message, d.start_time
  ORDER BY d.start_time DESC
  LIMIT 20;
 ```
+
+#### Account purge secrets (once per environment)
+
+The purge job and its edge function share a secret. Until both halves below are set, the job fails harmlessly and nobody is purged. Never paste the secret into a commit, a PR, an issue or a chat.
+
+1. Generate a secret in your terminal: `openssl rand -hex 32`.
+2. Give it to the edge function:
+
+   ```bash
+   npx supabase secrets set ACCOUNT_PURGE_SECRET=<secret> --project-ref <project-ref>
+   ```
+
+3. Store it and the project URL in Vault, in the dashboard's SQL editor:
+
+   ```sql
+   SELECT vault.create_secret('<secret>', 'account_purge_secret');
+   SELECT vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+   ```
+
+   To rotate the secret, repeat step 2 and run `SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'account_purge_secret'), '<new secret>');`.
+
+4. On staging only, for the live check: add `ACCOUNT_PURGE_SECRET=<secret>` to `scripts/.env` (git-ignored) and export it with the other script credentials, for example `set -a; . scripts/.env; set +a`. The npm scripts don't load that file themselves. Then run `npm run test:security:account-purge`. Never run it against production: it purges every due account.
+5. After the next hourly run, check it:
+
+   ```sql
+   SELECT d.status, d.return_message, d.start_time
+     FROM cron.job_run_details d JOIN cron.job j USING (jobid)
+    WHERE j.jobname = 'purge-deleted-accounts'
+    ORDER BY d.start_time DESC
+    LIMIT 5;
+
+   SELECT status_code, content, created FROM net._http_response ORDER BY created DESC LIMIT 5;
+   ```
+
+   The function's logs, in the dashboard under Edge Functions → purge-deleted-accounts, show the `{ purged, skipped, failed }` summary for each run.
 
 ## Local Development with Supabase CLI
 

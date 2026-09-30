@@ -5,7 +5,9 @@
  * project:
  *   1. anon cannot call the listing counters, the soft-delete RPCs, account
  *      deletion functions (request_account_deletion, cancel_account_deletion,
- *      amr_signed_in_within), or the helpers no client uses.
+ *      amr_signed_in_within, and the purge's list_due_account_deletions,
+ *      is_due_for_purge and scrub_account_copies), or the helpers no client
+ *      uses.
  *   2. anon and members can still call the RLS policy helpers (is_moderator,
  *      is_conversation_participant, is_conversation_creator, is_pending_deletion),
  *      and read the tables whose policies call them.
@@ -60,6 +62,9 @@ const INTERNAL_RPCS: RpcCall[] = [
   { fn: 'build_notification_push_url', args: { p_type: 'system', p_data: {} } },
   { fn: 'amr_signed_in_within', args: { p_amr: [], p_max_age_seconds: 600 } },
   { fn: 'list_user_storage_objects', args: { p_user_id: MISSING_ID } },
+  { fn: 'list_due_account_deletions', args: { p_limit: 1 } },
+  { fn: 'is_due_for_purge', args: { p_user_id: MISSING_ID } },
+  { fn: 'scrub_account_copies', args: { p_user_id: MISSING_ID } },
 ];
 
 function requireEnv(name: string): string {

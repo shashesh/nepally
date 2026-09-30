@@ -1062,32 +1062,236 @@ UPDATE supabase_migrations.schema_migrations
 
 ## PR 2 — Purge: edge function and migration 049
 
-Break this PR into steps when it starts. It needs 048 applied on staging.
+Branch `feat/account-deletion-purge`, stacked on PR 1. It needs 048 applied on staging, which happened 2026-09-28.
+
+**Found at the start of PR 2 (2026-09-28):**
+
+- **The root lint and type-check cover the workspaces only.** Nothing checks `supabase/functions` today. The purge core gets `node --test` tests, run by the new `npm run functions:test`, and a strict `tsc` run in the gate. `index.ts` imports from `esm.sh` and uses `Deno`, so the live check in Task 2.4 is what exercises it.
+- **Root `package.json` has no `"type"`.** Node 24's syntax detection runs the `.ts` test as ESM, and type stripping handles the types. The core must use only erasable TypeScript: no enums, no namespaces, no parameter properties.
+- **`supabase-setup.md` §5 is out of date for this job.** It says scheduled jobs run SQL and need no manual setup. The purge is the exception, so that text changes in Task 2.5.
+- **pg_net stops waiting after 5 seconds by default.** The cron call sets `timeout_milliseconds := 60000`.
+- **Uploads must come from the user.** Objects uploaded with the service role have no `owner_id`, so the live check uploads as the user. `storage-rls-smoke.ts` shows the pattern: a 4-byte fake JPEG with `contentType: 'image/jpeg'`.
 
 **Files:**
 
-- Create: `supabase/functions/purge-deleted-accounts/purge.ts`: the core, with no imports beyond types and no Deno APIs
-- Create: `supabase/functions/purge-deleted-accounts/purge.test.ts`: `node:test` + `node:assert/strict`
-- Create: `supabase/functions/purge-deleted-accounts/index.ts`: the Deno handler
-- Modify: `supabase/config.toml`: `[functions.purge-deleted-accounts]` with `verify_jwt = false`
+- Create: `supabase/functions/purge-deleted-accounts/purge.ts`
+- Create: `supabase/functions/purge-deleted-accounts/purge.test.ts`
+- Create: `supabase/functions/purge-deleted-accounts/index.ts`
+- Modify: `supabase/config.toml`
 - Create: `supabase/migrations/049_purge_deleted_accounts_cron.sql`
-- Create: `supabase/migrations/050_account_deletion_timing.sql`: restore closes at the date, the grace period becomes 29 days, the job runs hourly
-- Create: `supabase/migrations/051_post_comments_delete_count.sql`: the missing `comments_count` delete trigger
-- Create: `supabase/migrations/052_scrub_account_copies.sql`: `liker_id` on like notifications, and `scrub_account_copies(p_user_id)` for the purge
-- Modify: `scripts/security/account-deletion-smoke.ts`: a cancel after the date is refused; a new date is 29 days out
-- Modify: `scripts/security/account-purge-smoke.ts`: a purged member's comment lowers the other post's `comments_count`
-- Modify: `package.json`: `"functions:test": "node --test \"supabase/functions/*/*.test.ts\""`, and add `npm run functions:test` to `test`, `test:ci` and `test:coverage:ci`, next to `guards:test`
-- Docs: `docs/architecture/supabase-setup.md` (section 5, Scheduled jobs: the job, and a runbook for the secrets), `docs/architecture/database-schema.md` (049), this plan
+- Create: `scripts/security/account-purge-smoke.ts`
+- Modify: `package.json`: `functions:test`, wired into `test`, `test:ci` and `test:coverage:ci`; and `test:security:account-purge`
+- Docs: `docs/architecture/supabase-setup.md` (§3 deploy list, §5 Scheduled Jobs and the secrets runbook), `docs/architecture/database-schema.md` (049), `docs/guides/setup-and-testing.md` (the new check), this plan
 
-**The core's interface** (`purge.ts`), which the handler wires to Supabase:
+### Task 2.1: The purge core, test first
+
+**Files:**
+
+- Create: `supabase/functions/purge-deleted-accounts/purge.test.ts`
+- Create: `supabase/functions/purge-deleted-accounts/purge.ts`
+- Modify: `package.json` (`scripts`)
+
+- [x] **Step 1: Add the test script.** In `package.json`, add `"functions:test": "node --test \"supabase/functions/*/*.test.ts\"",` after `guards:test`. Then, in `test`, `test:ci` and `test:coverage:ci`, change `npm run guards:test` to `npm run guards:test && npm run functions:test`.
+
+- [x] **Step 2: Write the failing tests.**
 
 ```ts
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  PURGE_BATCH_SIZE,
+  purgeDueAccounts,
+  secretsMatch,
+  type PurgeDeps,
+  type StorageObjectRef,
+} from './purge.ts';
+
+type FakeOptions = {
+  due?: string[];
+  restored?: string[];
+  /** Due on the first check, restored by the second. */
+  restoresMidPurge?: string[];
+  objects?: Record<string, StorageObjectRef[]>;
+  failStorageFor?: string[];
+  failDeleteFor?: string[];
+};
+
+/** In-memory deps. Object paths start with `<userId>/`, like the real buckets. */
+function fakeDeps(options: FakeOptions = {}) {
+  const calls = {
+    listDueUserIds: [] as number[],
+    listStorageObjects: [] as string[],
+    removeObjects: [] as { bucketId: string; paths: string[] }[],
+    deleteAuthUser: [] as string[],
+  };
+  const failures: string[] = [];
+  const stillDueChecks = new Map<string, number>();
+
+  const deps: PurgeDeps = {
+    async listDueUserIds(limit) {
+      calls.listDueUserIds.push(limit);
+      return options.due ?? [];
+    },
+    async isStillDue(userId) {
+      const checks = (stillDueChecks.get(userId) ?? 0) + 1;
+      stillDueChecks.set(userId, checks);
+      if ((options.restoresMidPurge ?? []).includes(userId)) return checks === 1;
+      return !(options.restored ?? []).includes(userId);
+    },
+    async listStorageObjects(userId) {
+      calls.listStorageObjects.push(userId);
+      return options.objects?.[userId] ?? [];
+    },
+    async removeObjects(bucketId, paths) {
+      const failing = options.failStorageFor ?? [];
+      if (paths.some((path) => failing.some((userId) => path.startsWith(`${userId}/`)))) {
+        throw new Error('storage unavailable');
+      }
+      calls.removeObjects.push({ bucketId, paths });
+    },
+    async deleteAuthUser(userId) {
+      if ((options.failDeleteFor ?? []).includes(userId)) {
+        throw new Error('auth unavailable');
+      }
+      calls.deleteAuthUser.push(userId);
+    },
+    logFailure(userId) {
+      failures.push(userId);
+    },
+  };
+
+  return { deps, calls, failures };
+}
+
+function objectsFor(userId: string, bucketId: string, count: number): StorageObjectRef[] {
+  return Array.from({ length: count }, (_, i) => ({
+    bucket_id: bucketId,
+    name: `${userId}/${i}.jpg`,
+  }));
+}
+
+test('does nothing when no account is due', async () => {
+  const { deps, calls } = fakeDeps();
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 0, failed: 0 });
+  assert.deepEqual(calls.listDueUserIds, [PURGE_BATCH_SIZE]);
+  assert.deepEqual(calls.deleteAuthUser, []);
+});
+
+test('skips a user who restored their account after the batch was listed', async () => {
+  const { deps, calls } = fakeDeps({ due: ['u1'], restored: ['u1'] });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 1, failed: 0 });
+  assert.deepEqual(calls.listStorageObjects, []);
+  assert.deepEqual(calls.deleteAuthUser, []);
+});
+
+test('removes objects bucket by bucket in chunks of 100, then deletes the auth user', async () => {
+  const { deps, calls } = fakeDeps({
+    due: ['u1'],
+    objects: {
+      u1: [...objectsFor('u1', 'post-photos', 250), { bucket_id: 'avatars', name: 'u1.jpg' }],
+    },
+  });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 1, skipped: 0, failed: 0 });
+  assert.deepEqual(
+    calls.removeObjects.map(({ bucketId, paths }) => [bucketId, paths.length]),
+    [
+      ['post-photos', 100],
+      ['post-photos', 100],
+      ['post-photos', 50],
+      ['avatars', 1],
+    ]
+  );
+  assert.deepEqual(calls.deleteAuthUser, ['u1']);
+});
+
+test('keeps the account when the user restores while their files are being removed', async () => {
+  const { deps, calls } = fakeDeps({
+    due: ['u1'],
+    restoresMidPurge: ['u1'],
+    objects: { u1: objectsFor('u1', 'post-photos', 1) },
+  });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 1, failed: 0 });
+  assert.equal(calls.removeObjects.length, 1);
+  assert.deepEqual(calls.deleteAuthUser, []);
+});
+
+test('keeps the auth user when storage removal fails, and carries on with the next user', async () => {
+  const { deps, calls, failures } = fakeDeps({
+    due: ['u1', 'u2'],
+    objects: { u1: objectsFor('u1', 'post-photos', 2), u2: objectsFor('u2', 'post-photos', 1) },
+    failStorageFor: ['u1'],
+  });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 1, skipped: 0, failed: 1 });
+  assert.deepEqual(calls.deleteAuthUser, ['u2']);
+  assert.deepEqual(failures, ['u1']);
+});
+
+test('counts a failed auth delete as a failure', async () => {
+  const { deps, failures } = fakeDeps({ due: ['u1'], failDeleteFor: ['u1'] });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 0, skipped: 0, failed: 1 });
+  assert.deepEqual(failures, ['u1']);
+});
+
+test('deletes each due user once, in order', async () => {
+  const { deps, calls } = fakeDeps({ due: ['u1', 'u2', 'u3'] });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 3, skipped: 0, failed: 0 });
+  assert.deepEqual(calls.deleteAuthUser, ['u1', 'u2', 'u3']);
+});
+
+test('secretsMatch accepts only the exact secret', () => {
+  assert.equal(secretsMatch('s3cret-value', 's3cret-value'), true);
+  assert.equal(secretsMatch('s3cret-valuE', 's3cret-value'), false);
+  assert.equal(secretsMatch('s3cret', 's3cret-value'), false);
+  assert.equal(secretsMatch('', 's3cret-value'), false);
+  assert.equal(secretsMatch('', ''), false);
+});
+```
+
+- [x] **Step 3: Run it and watch it fail.**
+
+Run: `npm run functions:test`
+Expected: a non-zero exit, because `./purge.ts` doesn't exist (`ERR_MODULE_NOT_FOUND`).
+
+- [x] **Step 4: Write the core.**
+
+```ts
+/**
+ * Core of the purge-deleted-accounts edge function (scheduled by migration
+ * 049). For each account whose deletion grace period has ended it removes
+ * the user's storage objects, then deletes the auth user; 048's ON DELETE
+ * CASCADE chain removes their rows.
+ *
+ * No Deno APIs and no remote imports, so `node --test` can run the tests
+ * (npm run functions:test). index.ts wires PurgeDeps to Supabase.
+ */
+
 export type StorageObjectRef = { bucket_id: string; name: string };
 
 export interface PurgeDeps {
-  /** Users an hour past their date by the database's clock, oldest first (050). */
+  /** Users whose deletion_scheduled_for <= now(), oldest first. */
   listDueUserIds(limit: number): Promise<string[]>;
-  /** Re-read before touching the user and again before deleting the auth user. */
+  /** Re-read before touching the user, and again before deleting the auth user. */
   isStillDue(userId: string): Promise<boolean>;
   listStorageObjects(userId: string): Promise<StorageObjectRef[]>;
   /** Throws on failure. */
@@ -1099,84 +1303,779 @@ export interface PurgeDeps {
 
 export type PurgeSummary = { purged: number; skipped: number; failed: number };
 
+/** Accounts handled per run; the rest wait for the next daily run. */
 export const PURGE_BATCH_SIZE = 50;
+/** Paths per Storage API remove() call. */
 export const STORAGE_REMOVE_CHUNK_SIZE = 100;
 
-export async function purgeDueAccounts(deps: PurgeDeps): Promise<PurgeSummary>;
+function groupPathsByBucket(objects: readonly StorageObjectRef[]): Map<string, string[]> {
+  return objects.reduce(
+    (byBucket, { bucket_id, name }) =>
+      byBucket.set(bucket_id, [...(byBucket.get(bucket_id) ?? []), name]),
+    new Map<string, string[]>()
+  );
+}
 
-/** Constant-time string comparison for the x-purge-secret header. */
-export function secretsMatch(provided: string, expected: string): boolean;
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
+    items.slice(i * size, (i + 1) * size)
+  );
+}
+
+async function purgeAccount(deps: PurgeDeps, userId: string): Promise<'purged' | 'skipped'> {
+  if (!(await deps.isStillDue(userId))) return 'skipped';
+
+  const objects = await deps.listStorageObjects(userId);
+  for (const [bucketId, paths] of groupPathsByBucket(objects)) {
+    for (const batch of chunk(paths, STORAGE_REMOVE_CHUNK_SIZE)) {
+      await deps.removeObjects(bucketId, batch);
+    }
+  }
+
+  // Check again: the user may have restored while their files were being
+  // removed. The files are gone either way (the Storage API isn't
+  // transactional with Postgres), but the account survives.
+  if (!(await deps.isStillDue(userId))) return 'skipped';
+
+  await deps.deleteAuthUser(userId);
+  return 'purged';
+}
+
+export async function purgeDueAccounts(deps: PurgeDeps): Promise<PurgeSummary> {
+  const userIds = await deps.listDueUserIds(PURGE_BATCH_SIZE);
+  const summary: PurgeSummary = { purged: 0, skipped: 0, failed: 0 };
+
+  for (const userId of userIds) {
+    try {
+      const outcome = await purgeAccount(deps, userId);
+      summary[outcome] += 1;
+    } catch (error) {
+      summary.failed += 1;
+      deps.logFailure(userId, error);
+    }
+  }
+
+  return summary;
+}
+
+/**
+ * Constant-time comparison for the x-purge-secret header, the same approach
+ * as send-push-notification's timingSafeEqual: the length difference is
+ * folded into the accumulator instead of returning early. An empty expected
+ * secret never matches, so a missing env var can't open the endpoint.
+ */
+export function secretsMatch(provided: string, expected: string): boolean {
+  if (expected.length === 0) return false;
+
+  const encoder = new TextEncoder();
+  const a = encoder.encode(provided);
+  const b = encoder.encode(expected);
+  const maxLength = Math.max(a.length, b.length);
+
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < maxLength; i++) {
+    diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
+  }
+  return diff === 0;
+}
 ```
 
-**A restore can't race the purge.** Re-reading the row doesn't close the gap before `deleteUser`, because a restore could still land after the last read. Instead, migration 050 closes restore at the date, and the purge only takes accounts an hour past it. The database decides both, by `now()`, so the two can't disagree. Once the purge can pick an account, no member can restore it. The re-reads stay, for service-role changes such as a support restore.
+- [x] **Step 5: Run the tests and watch them pass.**
 
-**Tasks:**
+Run: `npm run functions:test`
+Expected: 7 tests pass, exit 0.
 
-- **2.1 The purge core, test first.** Tests cover:
-  - nothing due → `{0, 0, 0}` and no deletes
-  - a user who is no longer due → skipped, with no storage or auth call
-  - objects grouped by bucket and removed in chunks of 100, e.g. 250 objects in one bucket makes three calls
-  - a storage failure → counted as failed, `deleteAuthUser` not called for that user, the next user still processed
-  - an auth delete failure → counted as failed
-  - success → `deleteAuthUser` called once per user
-  - `secretsMatch`: equal, different, different length, empty
-- **2.2 The handler (`index.ts`).**
-  - `POST` only.
-  - It reads `x-purge-secret` and compares it with `Deno.env.get('ACCOUNT_PURGE_SECRET')` using `secretsMatch`. It returns 401 if the secret is missing or wrong, and 500 if the env var isn't set.
-  - It builds the deps from a service-role client:
-    - `listDueUserIds`: `rpc('list_due_account_deletions', { p_limit })`
-    - `isStillDue`: `rpc('is_due_for_purge', { p_user_id })`
-    - `listStorageObjects`: `rpc('list_user_storage_objects')`
-    - `removeObjects`: `storage.from(bucket).remove(paths)`, throwing on `error`
-    - `deleteAuthUser`: `auth.admin.deleteUser`, throwing on `error`
-  - It responds `200 { purged, skipped, failed }`. It logs ids and error messages only, never names or emails.
-- **2.3 `config.toml`** gets `verify_jwt = false`. The shared secret is the auth, as with `send-push-notification`'s key check.
-- **2.4 Migration 049.** One named `cron.schedule('purge-deleted-accounts', '0 9 * * *', $$ … $$)`.
-  - The job body calls `net.http_post`:
-    - `url`: `(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/purge-deleted-accounts'`
-    - headers: `Content-Type: application/json` and `x-purge-secret` from the Vault secret `account_purge_secret`
-    - `body`: `'{}'::jsonb`
-  - The header comment follows the 046 style: problem, what it does, why Vault, idempotent, how to verify, rollback (`cron.unschedule('purge-deleted-accounts')`).
-  - No secret values appear in the file.
-- **2.4a Migration 050, test first.**
-  - `scripts/security/account-deletion-smoke.ts` gets two checks:
-    - Set a pending user's date to the past with the service role, then call `cancel_account_deletion` as that user. It must raise `deletion_in_progress` and leave the date in place.
-    - A new request's date is 29 days out.
-  - `CREATE OR REPLACE FUNCTION public.cancel_account_deletion()` keeps 048's body, but first locks the row and reads the date. If the date is `<= now()`, it raises `deletion_in_progress` (`P0001`). The grants carry over. `CREATE OR REPLACE` keeps them.
-  - `CREATE OR REPLACE FUNCTION public.request_account_deletion()` with `c_grace_period := interval '29 days'`.
-  - `list_due_account_deletions(p_limit)` and `is_due_for_purge(p_user_id)`, service role only: due at `now() - interval '1 hour'`. The purge calls these, so it never compares against its own clock. The live purge check has a member 30 minutes past their date, who must survive the run. `function-execute-smoke.ts` lists both as internal.
-  - `cron.schedule('purge-deleted-accounts', '0 * * * *', …)` with 049's body. A named schedule replaces the job.
-  - Header comment: the race it closes, the "within 30 days" arithmetic, and why it isn't a change to 048 or 049 (both already applied to staging).
-- **2.4b Migration 051, test first.**
-  - `scripts/security/account-purge-smoke.ts` gets a check. The throwaway user comments on another throwaway user's post. After the purge, that post's `comments_count` is back to what it was.
-  - `decrement_post_comments_count_on_delete()`, `AFTER DELETE ON post_comments FOR EACH ROW`. When `OLD.is_deleted = false`, it runs `comments_count = GREATEST(0, comments_count - 1)` on `OLD.post_id`. Copy the existing `post_likes` delete trigger's form and grants (041: trigger functions get no grant).
-  - `function-execute-smoke.ts` doesn't list trigger functions (041's default privileges cover them), so it needs no change.
-- **2.4c Migration 052, test first (spec §4.6).**
-  - `account-purge-smoke.ts`: the waiting member gets a message and a comment notification from the due member, and their shared conversation's `last_message` is the due member's. After the purge, both notifications are gone, and `last_message` is the waiting member's own last message.
-  - `function-execute-smoke.ts` lists `scrub_account_copies` as internal.
-  - `CREATE OR REPLACE FUNCTION public.notify_on_new_like()` with 004's body, plus `'liker_id', NEW.user_id` in `data`.
-  - `scrub_account_copies(p_user_id uuid)`, `service_role` only, as the spec describes.
-  - The purge core gains a `scrubCopies(userId)` dep, called after the second re-read and before `deleteAuthUser`, with node tests for it: called once per purged user; a failure counts as failed and skips `deleteAuthUser`.
-- **2.5 Wire `functions:test`** into the root scripts listed under Files.
-- **2.6 The runbook** in `supabase-setup.md` §5, for each environment:
-  1. Generate a secret locally with `openssl rand -hex 32`.
-  2. `npx supabase secrets set ACCOUNT_PURGE_SECRET=<value> --project-ref <ref>`.
-  3. In the SQL editor, `select vault.create_secret('<value>', 'account_purge_secret');` and `select vault.create_secret('https://<ref>.supabase.co', 'project_url');`.
-  4. To check it: `select * from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'purge-deleted-accounts') order by start_time desc limit 5;` and the function's logs.
-  5. Secret values never go into a commit, a PR or a chat transcript.
-- **2.7 Gate, reviews (`code-reviewer` + `security-reviewer`), draft PR.**
-- **2.8 Staging rollout**, on the user's direct request:
-  1. Deploy with `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`.
-  2. The user sets the two secrets following the runbook.
-  3. Apply 049 to 052 and realign their tracker rows. Apply 050 and 052 before deploying the function, which calls their functions.
-  4. Manual run: create a throwaway user with an avatar and a post photo. Request deletion (signed in), then set `deletion_scheduled_for` to yesterday with the service role. POST to the function with the secret. Confirm the auth user, the profile row, the post and both storage objects are gone.
+- [x] **Step 6: Type-check strictly.**
+
+Run: `npx tsc --ignoreConfig --noEmit --strict --skipLibCheck --module nodenext --moduleResolution nodenext --target es2022 --types node --allowImportingTsExtensions supabase/functions/purge-deleted-accounts/purge.ts supabase/functions/purge-deleted-accounts/purge.test.ts`
+Expected: exit 0.
+
+- [x] **Step 7: Format and commit.**
+
+```bash
+npx prettier --write supabase/functions/purge-deleted-accounts/purge.ts supabase/functions/purge-deleted-accounts/purge.test.ts
+git add supabase/functions/purge-deleted-accounts/purge.ts supabase/functions/purge-deleted-accounts/purge.test.ts package.json
+```
+
+```bash
+git commit -m "feat: add account purge core with node tests"
+```
+
+### Task 2.2: The edge function handler
+
+**Files:**
+
+- Create: `supabase/functions/purge-deleted-accounts/index.ts`
+- Modify: `supabase/config.toml` (after `[functions.stripe-webhook]`)
+
+- [x] **Step 1: Write the handler.**
+
+```ts
+/**
+ * purge-deleted-accounts — Supabase Edge Function
+ *
+ * Deletes accounts whose 30-day deletion grace period has ended (spec:
+ * docs/specs/2026-09-28-account-deletion.md). For each due user it removes
+ * every storage object they own, then deletes the auth user; ON DELETE
+ * CASCADE removes their rows. The pg_cron job from migration 049 calls it
+ * daily.
+ *
+ * Auth: verify_jwt = false in config.toml. The caller must send an
+ * x-purge-secret header equal to the ACCOUNT_PURGE_SECRET function secret.
+ * Setup: docs/architecture/supabase-setup.md, "Scheduled Jobs".
+ *
+ * Response: 200 { purged, skipped, failed }. Logs user ids and error
+ * messages only, never names or emails.
+ */
+
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { purgeDueAccounts, secretsMatch, type PurgeDeps, type StorageObjectRef } from './purge.ts';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function buildDeps(supabase: SupabaseClient): PurgeDeps {
+  return {
+    async listDueUserIds(limit) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .lte('deletion_scheduled_for', new Date().toISOString())
+        .order('deletion_scheduled_for', { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []).map((row: { id: string }) => row.id);
+    },
+    async isStillDue(userId) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .lte('deletion_scheduled_for', new Date().toISOString())
+        .maybeSingle();
+      if (error) throw error;
+      return data !== null;
+    },
+    async listStorageObjects(userId) {
+      const { data, error } = await supabase.rpc('list_user_storage_objects', {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+      return (data ?? []) as StorageObjectRef[];
+    },
+    async removeObjects(bucketId, paths) {
+      const { error } = await supabase.storage.from(bucketId).remove(paths);
+      if (error) throw error;
+    },
+    async deleteAuthUser(userId) {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      if (error) throw error;
+    },
+    logFailure(userId, error) {
+      console.error(`purge-deleted-accounts: user ${userId} failed: ${errorMessage(error)}`);
+    },
+  };
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
+
+  const expectedSecret = Deno.env.get('ACCOUNT_PURGE_SECRET') ?? '';
+  if (expectedSecret.length === 0) {
+    console.error('purge-deleted-accounts: ACCOUNT_PURGE_SECRET is not set');
+    return new Response('Server misconfigured', { status: 500 });
+  }
+  if (!secretsMatch(req.headers.get('x-purge-secret') ?? '', expectedSecret)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+
+  try {
+    const summary = await purgeDueAccounts(buildDeps(supabase));
+    console.log(`purge-deleted-accounts: ${JSON.stringify(summary)}`);
+    return Response.json(summary);
+  } catch (error) {
+    console.error(`purge-deleted-accounts: run failed: ${errorMessage(error)}`);
+    return new Response('Purge failed', { status: 500 });
+  }
+});
+```
+
+- [x] **Step 2: Register the function.** In `supabase/config.toml`, after the `[functions.stripe-webhook]` block:
+
+```toml
+[functions.purge-deleted-accounts]
+verify_jwt = false
+```
+
+- [x] **Step 3: Format and commit.** Tests for this glue come in Task 2.4.
+
+```bash
+npx prettier --write supabase/functions/purge-deleted-accounts/index.ts
+git add supabase/functions/purge-deleted-accounts/index.ts supabase/config.toml
+```
+
+```bash
+git commit -m "feat: add purge-deleted-accounts edge function"
+```
+
+### Task 2.3: Migration 049, the daily job
+
+**Files:**
+
+- Create: `supabase/migrations/049_purge_deleted_accounts_cron.sql`
+
+- [x] **Step 1: Write the migration.**
+
+```sql
+-- 049_purge_deleted_accounts_cron.sql
+-- ADDITIVE / non-destructive: one pg_cron job. No schema changes.
+-- Runs the purge-deleted-accounts edge function once a day: the second half
+-- of in-app account deletion (spec: docs/specs/2026-09-28-account-deletion.md;
+-- 048 added the request, restore and hiding).
+--
+--   Why an edge function, when 046 moved promotion expiry into SQL: a purge
+--   must delete the user's files, and only the Storage API deletes the
+--   stored files. Deleting rows from storage.objects in SQL would leave the
+--   files behind. The function removes the files, then deletes the auth
+--   user, and the ON DELETE CASCADE chain removes every row.
+--
+--   The job reads two Vault secrets when it runs, so no secret is stored in
+--   this file or in cron.job:
+--     project_url           https://<project-ref>.supabase.co
+--     account_purge_secret  the same value as the function's
+--                           ACCOUNT_PURGE_SECRET secret
+--   They are created by hand in each environment (runbook:
+--   docs/architecture/supabase-setup.md, "Scheduled Jobs"). Until they
+--   exist the call fails, cron.job_run_details records the failure, and
+--   nothing is deleted.
+--
+--   Daily at 09:00 UTC, early morning across the US. pg_net sends the
+--   request in the background; the 60 s timeout (default 5 s) gives the
+--   function time to answer, and its logs record what it purged.
+--
+--   cron.schedule with a job name replaces an existing job of that name,
+--   so re-running this migration does not add a second job.
+--
+-- Idempotent: the named cron.schedule can be re-run.
+--
+-- Verify: SELECT jobname, schedule, active FROM cron.job; then, after the
+-- secrets exist, npm run test:security:account-purge against staging.
+--
+-- Rollback (forward-only): a new migration that runs
+--   SELECT cron.unschedule('purge-deleted-accounts');
+
+SELECT cron.schedule(
+  'purge-deleted-accounts',
+  '0 9 * * *',
+  $job$
+  SELECT net.http_post(
+    url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url')
+           || '/functions/v1/purge-deleted-accounts',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-purge-secret',
+      (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'account_purge_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+  $job$
+);
+```
+
+- [x] **Step 2: Commit.**
+
+```bash
+git add supabase/migrations/049_purge_deleted_accounts_cron.sql
+```
+
+```bash
+git commit -m "feat(db): schedule the daily account purge (049)"
+```
+
+### Task 2.4: A live check for the purge
+
+**Files:**
+
+- Create: `scripts/security/account-purge-smoke.ts`
+- Modify: `package.json` (after `test:security:account-deletion`)
+
+The check runs a **real purge** on the target project. Every account whose date has passed is deleted, not only the check's own. On staging nobody else is due. It needs `ACCOUNT_PURGE_SECRET` in the environment; keep it in the git-ignored `scripts/.env`.
+
+- [x] **Step 1: Write the check.** Follow the helpers and style of `scripts/security/account-deletion-smoke.ts`. The same `requireEnv`, `randomToken`, `assertCondition`, `NO_SESSION_AUTH` and `signIn` shapes live in this file too, as they do in every other check.
+
+```ts
+/**
+ * Live smoke test: the purge-deleted-accounts edge function (migration 049).
+ *
+ * Against a real Supabase project where 048 is applied, the function is
+ * deployed and its secret is set:
+ *   1. A POST without the right x-purge-secret is refused (401).
+ *   2. A member uploads an avatar and a post photo, requests deletion, and
+ *      has the purge date moved into the past. After a POST with the secret,
+ *      the auth user, the profile row and both storage objects are gone.
+ *   3. A second pending member whose date is still in the future is left
+ *      alone.
+ *
+ * This runs a REAL purge: every account whose date has passed is deleted,
+ * not only this test's.
+ *
+ * Run: npm run test:security:account-purge
+ * Env: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY,
+ *      ACCOUNT_PURGE_SECRET
+ */
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
+type UserFixture = { id: string; email: string; password: string };
+
+const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Projects this check may run against. It deletes every due account, so a
+ * production ref must never be added. Staging: nusa-staging.
+ */
+const PURGE_ALLOWED_PROJECT_REFS = ['tlusiongalvszftnzpoq'];
+
+const NO_SESSION_AUTH = {
+  autoRefreshToken: false,
+  persistSession: false,
+  detectSessionInUrl: false,
+} as const;
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required env var: ${name}`);
+  }
+  return value;
+}
+
+function randomToken(length = 8): string {
+  return Math.random()
+    .toString(36)
+    .slice(2, 2 + length);
+}
+
+function assertCondition(condition: unknown, message: string): void {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+/** `abcd` for `https://abcd.supabase.co`; anything else (a custom domain) is refused. */
+function projectRef(url: string): string {
+  return new URL(url).hostname.split('.')[0];
+}
+
+async function createUser(service: SupabaseClient, prefix: string): Promise<UserFixture> {
+  const suffix = `${Date.now()}-${randomToken(6)}`;
+  const email = `${prefix}.${suffix}@example.com`;
+  const password = `P@ss-${randomToken(12)}`;
+
+  const { data, error } = await service.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: `${prefix} ${suffix}` },
+  });
+  if (error || !data.user) {
+    throw new Error(`Failed to create auth user ${email}: ${error?.message || 'unknown error'}`);
+  }
+
+  const { error: profileError } = await service.from('users').insert({
+    id: data.user.id,
+    email,
+    full_name: `${prefix} ${suffix}`,
+    trust_level: 1,
+  });
+  if (profileError) {
+    await service.auth.admin.deleteUser(data.user.id);
+    throw new Error(`Failed to create profile row for ${email}: ${profileError.message}`);
+  }
+
+  return { id: data.user.id, email, password };
+}
+
+async function signIn(url: string, anonKey: string, fixture: UserFixture): Promise<SupabaseClient> {
+  const client = createClient(url, anonKey, { auth: NO_SESSION_AUTH });
+  const { data, error } = await client.auth.signInWithPassword({
+    email: fixture.email,
+    password: fixture.password,
+  });
+  if (error || !data.session) {
+    throw new Error(
+      `Failed to sign in test user ${fixture.email}: ${error?.message || 'no session'}`
+    );
+  }
+  return createClient(url, anonKey, {
+    auth: NO_SESSION_AUTH,
+    global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+  });
+}
+
+async function upload(client: SupabaseClient, bucket: string, path: string): Promise<void> {
+  const { error } = await client.storage
+    .from(bucket)
+    .upload(path, FAKE_JPEG, { contentType: 'image/jpeg' });
+  assertCondition(!error, `Upload to ${bucket}/${path} failed: ${error?.message}`);
+}
+
+async function requestDeletion(client: SupabaseClient): Promise<void> {
+  const { error } = await client.rpc('request_account_deletion');
+  assertCondition(!error, `request_account_deletion failed: ${error?.message}`);
+}
+
+async function setPurgeDate(service: SupabaseClient, userId: string, when: Date): Promise<void> {
+  const { error } = await service
+    .from('users')
+    .update({ deletion_scheduled_for: when.toISOString() })
+    .eq('id', userId);
+  assertCondition(!error, `Moving the purge date failed: ${error?.message}`);
+}
+
+async function callPurge(url: string, secret: string): Promise<Response> {
+  return fetch(`${url}/functions/v1/purge-deleted-accounts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-purge-secret': secret },
+    body: '{}',
+  });
+}
+
+async function ownedObjects(service: SupabaseClient, userId: string): Promise<number> {
+  const { data, error } = await service.rpc('list_user_storage_objects', { p_user_id: userId });
+  assertCondition(!error, `list_user_storage_objects failed: ${error?.message}`);
+  return ((data ?? []) as unknown[]).length;
+}
+
+async function main(): Promise<void> {
+  const url = requireEnv('SUPABASE_URL');
+  const anonKey = requireEnv('SUPABASE_ANON_KEY');
+  const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const purgeSecret = requireEnv('ACCOUNT_PURGE_SECRET');
+  const ref = projectRef(url);
+  assertCondition(
+    PURGE_ALLOWED_PROJECT_REFS.includes(ref),
+    `Refusing to run a real purge on project "${ref}". Allowed: ${PURGE_ALLOWED_PROJECT_REFS.join(', ')}`
+  );
+  const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
+  const createdUsers: string[] = [];
+
+  try {
+    // 1. Wrong secret.
+    const refused = await callPurge(url, `${purgeSecret}-wrong`);
+    assertCondition(refused.status === 401, `A wrong secret should get 401, got ${refused.status}`);
+
+    // 2. A due member with an avatar and a post photo.
+    const due = await createUser(service, 'purge-due');
+    createdUsers.push(due.id);
+    const dueClient = await signIn(url, anonKey, due);
+    await upload(dueClient, 'avatars', `${due.id}.jpg`);
+    await upload(dueClient, 'post-photos', `${due.id}/purge-smoke.jpg`);
+    assertCondition(
+      (await ownedObjects(service, due.id)) === 2,
+      'The due member should own 2 objects'
+    );
+    await requestDeletion(dueClient);
+    await setPurgeDate(service, due.id, new Date(Date.now() - DAY_MS));
+
+    // 3. A pending member whose date is still ahead.
+    const waiting = await createUser(service, 'purge-waiting');
+    createdUsers.push(waiting.id);
+    await requestDeletion(await signIn(url, anonKey, waiting));
+
+    const response = await callPurge(url, purgeSecret);
+    assertCondition(response.ok, `The purge should answer 200, got ${response.status}`);
+    const summary = (await response.json()) as { purged: number; skipped: number; failed: number };
+    assertCondition(
+      summary.purged >= 1,
+      `The purge should report at least one purge: ${JSON.stringify(summary)}`
+    );
+    assertCondition(
+      summary.failed === 0,
+      `The purge reported failures: ${JSON.stringify(summary)}`
+    );
+
+    const { data: authUser } = await service.auth.admin.getUserById(due.id);
+    assertCondition(!authUser?.user, 'The due auth user should be gone');
+    const { data: profile } = await service
+      .from('users')
+      .select('id')
+      .eq('id', due.id)
+      .maybeSingle();
+    assertCondition(!profile, 'The due profile row should be gone');
+    assertCondition(
+      (await ownedObjects(service, due.id)) === 0,
+      "The due member's objects should be gone"
+    );
+
+    const { data: waitingProfile } = await service
+      .from('users')
+      .select('id, deletion_scheduled_for')
+      .eq('id', waiting.id)
+      .maybeSingle();
+    assertCondition(
+      waitingProfile?.deletion_scheduled_for,
+      'The member whose date is still ahead should be untouched'
+    );
+
+    console.log('PASS: account purge smoke test verified.');
+  } finally {
+    for (const userId of createdUsers) {
+      const { data: leftovers } = await service.rpc('list_user_storage_objects', {
+        p_user_id: userId,
+      });
+      for (const { bucket_id, name } of (leftovers ?? []) as {
+        bucket_id: string;
+        name: string;
+      }[]) {
+        await service.storage.from(bucket_id).remove([name]);
+      }
+      // The due user is normally gone already; deleting again just errors.
+      await service.auth.admin.deleteUser(userId);
+    }
+  }
+}
+
+main().catch((error: unknown) => {
+  console.error('FAIL:', error instanceof Error ? error.message : error);
+  process.exit(1);
+});
+```
+
+- [x] **Step 2: Add the npm script** after `test:security:account-deletion`:
+
+```json
+    "test:security:account-purge": "tsx scripts/security/account-purge-smoke.ts",
+```
+
+- [x] **Step 3: Type-check it strictly.**
+
+Run: `npx tsc --ignoreConfig --noEmit --strict --skipLibCheck --module nodenext --moduleResolution nodenext --target es2022 --types node scripts/security/account-purge-smoke.ts`
+Expected: exit 0. The check itself runs in Task 2.7, once the function is deployed and the secrets are set.
+
+- [x] **Step 4: Format and commit.**
+
+```bash
+npx prettier --write scripts/security/account-purge-smoke.ts
+git add scripts/security/account-purge-smoke.ts package.json
+```
+
+```bash
+git commit -m "test: add live check for the account purge"
+```
+
+### Task 2.5: Docs
+
+**Files:**
+
+- Modify: `docs/architecture/supabase-setup.md`: add `supabase functions deploy purge-deleted-accounts` to the §3 deploy list. In §5 Scheduled Jobs, rewrite the opening paragraph and add the job row and a runbook (below).
+- Modify: `docs/architecture/database-schema.md`: one bullet under `### Account deletion (migration 048)`: "Migration 049 schedules the daily `purge-deleted-accounts` job (pg_cron + pg_net, secrets in Vault). See supabase-setup.md, Scheduled Jobs."
+- Modify: `docs/guides/setup-and-testing.md`: a row for `npm run test:security:account-purge` next to the account-deletion row. Say that it runs a real purge and needs `ACCOUNT_PURGE_SECRET`.
+- Modify: this plan: tick Tasks 2.1–2.5.
+
+- [x] **Step 1: Rewrite §5's opening paragraph.**
+
+```markdown
+Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`). Migrations create the jobs. Most run SQL directly, so they have no public endpoint to protect and need no setup. The one exception is `purge-deleted-accounts`. It calls an edge function, because deleting stored files needs the Storage API, and that call needs the secrets below to be set once in each environment.
+```
+
+- [x] **Step 2: Add the table row.**
+
+```markdown
+| `purge-deleted-accounts` | Daily, 09:00 UTC | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts whose 30-day grace period has ended: their storage objects, then the auth user | `049` |
+```
+
+- [x] **Step 3: Add the runbook** after the existing SQL block in §5:
+
+````markdown
+#### Account purge secrets (once per environment)
+
+The purge job and its edge function share a secret. Until both halves below are set, the job fails harmlessly and nobody is purged. Never paste the secret into a commit, a PR, an issue or a chat.
+
+1. Generate a secret in your terminal: `openssl rand -hex 32`.
+2. Give it to the edge function:
+
+   ```bash
+   npx supabase secrets set ACCOUNT_PURGE_SECRET=<secret> --project-ref <project-ref>
+   ```
+
+3. Store it and the project URL in Vault, in the dashboard's SQL editor:
+
+   ```sql
+   SELECT vault.create_secret('<secret>', 'account_purge_secret');
+   SELECT vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+   ```
+
+   To rotate the secret, repeat step 2 and run `SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'account_purge_secret'), '<new secret>');`.
+
+4. On staging only, for the live check: add `ACCOUNT_PURGE_SECRET=<secret>` to `scripts/.env` (git-ignored) and export it with the other script credentials, for example `set -a; . scripts/.env; set +a`. The npm scripts don't load that file themselves. Then run `npm run test:security:account-purge`. Never run it against production: it purges every due account.
+5. After the next 09:00 UTC run, check it:
+
+   ```sql
+   SELECT d.status, d.return_message, d.start_time
+     FROM cron.job_run_details d JOIN cron.job j USING (jobid)
+    WHERE j.jobname = 'purge-deleted-accounts'
+    ORDER BY d.start_time DESC
+    LIMIT 5;
+
+   SELECT status_code, content, created FROM net._http_response ORDER BY created DESC LIMIT 5;
+   ```
+
+   The function's logs, in the dashboard under Edge Functions → purge-deleted-accounts, show the `{ purged, skipped, failed }` summary for each run.
+````
+
+- [x] **Step 4: Format, check and commit.**
+
+```bash
+npx prettier --write docs/architecture/supabase-setup.md docs/architecture/database-schema.md docs/guides/setup-and-testing.md docs/plans/active/2026-09-28-account-deletion.md
+npm run docs:check
+npm run lint:md
+git add docs/architecture/supabase-setup.md docs/architecture/database-schema.md docs/guides/setup-and-testing.md docs/plans/active/2026-09-28-account-deletion.md
+```
+
+```bash
+git commit -m "docs: document the account purge job and its secrets (049)"
+```
+
+### Task 2.6: Gate, review, draft PR
+
+- [x] **Step 1: Run the gate.** Run `npm run type-check`, `npm run lint`, `npm run lint:guards`, `npm run guards:test`, `npm run functions:test`, `npm run docs:check` and `npm run lint:md`, plus the two strict `tsc` commands from Tasks 2.1 and 2.4. Check every exit code.
+- [x] **Step 2: Review.** Dispatch a `code-reviewer` agent and a `security-reviewer` agent on the PR 2 commits only. Fix CRITICAL and HIGH in one `fix: address PR 2 review` commit; put the rest in [Follow-ups](#follow-ups-not-scheduled). Tell reviewers about the column-privilege probe recorded in Follow-ups.
+- [x] **Step 3: Ship the draft.** Push with `git push -u origin feat/account-deletion-purge`. Open a **draft** PR against `master`, noting that it is stacked on #112, and request Copilot's review.
+
+### Task 2.7: Staging rollout (needs the user)
+
+Each step runs only when the user asks for it directly.
+
+- [x] **Step 1: Deploy the function.** Run `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`. The Supabase CLI is already logged in on this machine.
+- [ ] **Step 2: The user sets the secrets**, following the runbook in `supabase-setup.md` §5. That's the function secret, the two Vault secrets, and `ACCOUNT_PURGE_SECRET` in `scripts/.env`. The secret value must not pass through the chat.
+- [x] **Step 3: Apply 049** with `apply_migration`, name `purge_deleted_accounts_cron`. Realign its tracker row to `049`. Check that `SELECT jobname, schedule, active FROM cron.job;` lists `purge-deleted-accounts | 0 9 * * * | t`.
+- [ ] **Step 4: Run the live checks.** `npm run test:security:account-purge` and `npm run test:security:account-deletion` must both exit 0.
+- [ ] **Step 5: Record it.** Note in this plan and in memory that 049 is applied and the function deployed. The next migration number is 050.
+
+**Progress 2026-09-28:** the function is deployed; the CLI bundled it server-side, with no Docker needed. A POST without a secret gets the handler's `500 Server misconfigured`, and GET gets 405, so `verify_jwt = false` is live and the function fails closed. 049 is applied and realigned to `049`. `cron.job` lists `purge-deleted-accounts | 0 9 * * * | active`, running as `postgres`, which can read `vault.decrypted_secrets`. Waiting on the user for the secrets (Step 2). Until then the 09:00 UTC run fails harmlessly.
+
+### Task 2.8: Timing and counter fixes from the spec review (050, 051)
+
+Review of #111 (2026-09-30) found four problems in the applied design:
+
+- A restore could land between the purge's last re-read and `deleteUser`, and the account would still be deleted.
+- The 30-day grace period plus a daily run broke the privacy policy's "within 30 days".
+- `post_comments` has no hard-delete trigger, so a purge left `posts.comments_count` too high for good.
+- A 30-vs-29-day check with a one-day tolerance couldn't tell the two apart.
+
+The user chose to close restore at the date, to use a 29-day grace period, and to add the trigger (spec §4.4, §4.5).
+
+**Files:**
+
+- Modify: `supabase/functions/purge-deleted-accounts/purge.ts`, `purge.test.ts`, `index.ts`
+- Create: `supabase/migrations/050_account_deletion_timing.sql`, `supabase/migrations/051_post_comments_delete_count.sql`
+- Modify: `scripts/security/account-deletion-smoke.ts`, `scripts/security/account-purge-smoke.ts`, `scripts/security/function-execute-smoke.ts`
+- Docs: `database-schema.md`, `supabase-setup.md` §5, `setup-and-testing.md`, this plan
+
+- [x] **Step 1: The one-hour margin.**
+  - The first version computed the cutoff in the function: `purgeCutoff(new Date())`, one hour before the runtime's clock, unit-tested.
+  - Review (Step 6) found two problems. The guarantee still depended on the function's clock staying within an hour of the database's. And nothing live tested the margin.
+  - So the margin moved into SQL. `list_due_account_deletions(limit)` and `is_due_for_purge(uid)` in 050 use `now() - interval '1 hour'`, and `index.ts` calls them. `purgeCutoff` and its unit test were removed.
+- [x] **Step 2: The live checks, first.**
+  - `account-deletion-smoke.ts` expects 29 days, within a 10-minute tolerance instead of a day. A new step 6 moves a pending date into the past with the service role and expects `cancel_account_deletion` to raise `deletion_in_progress` and keep the date.
+  - `account-purge-smoke.ts` has the due member comment on the waiting member's post. It expects `comments_count` to go from 1 back to 0 after the purge. A third member, whose date passed 30 minutes ago, must survive the purge: that is the margin.
+  - `function-execute-smoke.ts` lists `list_due_account_deletions` and `is_due_for_purge` as internal. Every client role must be refused.
+  - The deletion check failed against staging as expected: "Deletion should be scheduled 29 days out, got …" (2026-09-30).
+- [x] **Step 3: Migration 050.**
+  - It replaces `request_account_deletion()` with 048's body and a 29-day `c_grace_period`. A diff against 048 shows only that line.
+  - It replaces `cancel_account_deletion()`: it locks the row and returns if nothing is pending, raises `deletion_in_progress` (`P0001`) once the date is `<= now()`, and otherwise clears the date.
+  - It restates both grants.
+  - It adds `list_due_account_deletions(p_limit)`, which returns `TABLE (id uuid)`, oldest date first, and `is_due_for_purge(p_user_id)`, which returns a boolean. Both are `STABLE` SQL with `search_path = ''`, due at `now() - interval '1 hour'`, and executable by `service_role` only.
+  - It reschedules `purge-deleted-accounts` to `'0 * * * *'` with 049's job body, which is byte-identical.
+- [x] **Step 4: Migration 051.** `decrement_post_comments_count_on_delete()`, `AFTER DELETE ON post_comments FOR EACH ROW`. It decrements, clamped at zero, only when `OLD.is_deleted = false`. It is SECURITY DEFINER with `search_path = ''`, and EXECUTE is revoked from client roles, like 041's triggers. `function-execute-smoke.ts` doesn't list trigger functions, so it needs no change. Both files parse with libpg-query 17.
+- [x] **Step 5: Docs.** Update `database-schema.md` (050, 051 and the comment triggers), the §5 table row and check step in `supabase-setup.md`, and the two check rows in `setup-and-testing.md`.
+- [x] **Step 6: Gate and review.** The gate from Task 2.6 Step 1 passed. The `code-reviewer` and `security-reviewer` each found no CRITICAL or HIGH issues. Both flagged the cross-clock margin, and the code reviewer flagged the untested margin. Both were fixed in `fix: address Task 2.8 review` (see Step 1), and the gate passed again.
+- [x] **Step 7: Apply on staging (needs the user).** Apply 050 (`account_deletion_timing`) and 051 (`post_comments_delete_count`) with `apply_migration`, and realign the tracker rows to `050` and `051`. Then redeploy `purge-deleted-accounts`. The new `index.ts` calls the 050 functions, so deploying it before 050 would make every run fail (closed: nothing is purged). Check that `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`. Then `npm run test:security:account-deletion` and `npm run test:security:functions` must exit 0. After the user sets the secrets (Task 2.7 Step 2), `npm run test:security:account-purge` must too. The next migration number is 052.
+
+**Progress 2026-09-30:** at the user's request, 050 and 051 were applied to staging and their tracker rows realigned (the tracker ends `048`, `049`, `050`, `051`). What the database showed:
+
+- `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`.
+- `request_account_deletion` uses 29 days, and `cancel_account_deletion` raises `deletion_in_progress`.
+- `list_due_account_deletions` and `is_due_for_purge` are executable by `service_role` only.
+- The delete trigger is enabled, and no client role can execute its function.
+- The drift query found 0 posts with a wrong `comments_count`.
+
+`purge-deleted-accounts` was then redeployed. `npm run test:security:account-deletion` and `npm run test:security:functions` both pass. The security advisors show nothing new. A POST without the secret still gets 500, because the function secret isn't set yet, so the function fails closed. `test:security:account-purge` waits on the secrets (Task 2.7 Step 2).
 
 **Acceptance:**
 
-- `npm run functions:test` passes locally and is part of `npm run test`.
-- A POST without the secret gets 401.
-- The manual staging run purges exactly the throwaway user.
-- `cron.job` lists `purge-deleted-accounts`.
+- `npm run functions:test` passes and is part of `npm run test`.
+- The live purge check passes on staging: a wrong secret gets 401, and a due account loses its auth user, profile and files, while a pending account whose date is still ahead, or passed less than an hour ago, is untouched. The purged member's comment stops counting.
+- The live deletion check passes: 29 days, and a cancel after the date is refused.
+- `cron.job` lists `purge-deleted-accounts` hourly.
+
+### Task 2.9: Scrub copies (052) and the #112 review's test gaps
+
+The full review of #111 (2026-09-30) found that other members keep copies of a purged member's words: message, comment and like notifications, and `conversations.last_message`. The user chose to scrub them at the purge (spec §4.6). The #112 review found gaps in the deletion check.
+
+**Files:**
+
+- Modify: `supabase/functions/purge-deleted-accounts/purge.ts`, `purge.test.ts`, `index.ts`
+- Create: `supabase/migrations/052_scrub_account_copies.sql`
+- Modify: `scripts/security/account-deletion-smoke.ts`, `account-purge-smoke.ts`, `function-execute-smoke.ts`
+- Docs: `database-schema.md`, `supabase-setup.md` §5, `setup-and-testing.md`, the spec (§4.1 views, §6 promotions), this plan
+
+- [x] **Step 1: The purge core, test first.**
+  - Two node tests failed first. One checks that the scrub runs once per member, just before their auth delete. The other checks that a failed scrub counts as failed and keeps the auth user.
+  - Then `PurgeDeps.scrubCopies(userId)` was added. `purgeAccount` calls it after the second re-read. `index.ts` wires it to `rpc('scrub_account_copies')`. 10 tests pass.
+  - The stale "daily run" comment now says hourly.
+- [x] **Step 2: The deletion check's gaps (from the #112 review), run against staging.** All pass on staging (2026-09-30), because they test 048 and 050, which are applied. The check now covers:
+  - A signed-out visitor, who loses the profile, post, comment, like and helper score while the member is pending.
+  - `marketplace_listings_view` and `user_helper_scores`, which hide the member from other members.
+  - A private-RSVP event: its RSVP stays hidden from members and moderators, pending or not, and the owner still sees it.
+  - `not_authenticated` for request and cancel without a user JWT.
+  - The 034 guard's INSERT branch: a new member's own profile insert can't set `deletion_scheduled_for`, because `authenticated` holds an INSERT grant on the column.
+  - `listing_promotions_display` isn't hidden, and needs no check. See spec §4.1.
+- [x] **Step 3: The 052 checks, first.**
+  - `function-execute-smoke.ts` lists `scrub_account_copies` as internal. It failed against staging with PGRST202, as expected.
+  - `account-purge-smoke.ts` gives the waiting member three copies of the due member's words: a like (with `notify_likes = 'all'`), a comment and a message notification. The due member also writes the newest message in their shared chat, whose preview is set to it. After the purge, all three notifications must be gone, and the preview must be the waiting member's message and time. The check deletes the conversation in `finally`, because conversations don't cascade from users.
+- [x] **Step 4: Migration 052.**
+  - `notify_on_new_like()` is 004's body plus `'liker_id', NEW.user_id`. The diff shows only that line. Staging's live body matched 004 apart from CRLF line endings.
+  - `scrub_account_copies(p_user_id)`, `service_role` only, as spec §4.6 describes. It resets a chat preview only where the member wrote the newest message.
+  - It parses with libpg-query 17.
+- [x] **Step 5: Docs.**
+- [x] **Step 6: Gate, then a full review of #113** (code, security, database and test coverage), then `npm run ci:local`, because the PR is a draft.
+  - The gate passed, and so did `npm run ci:local`: lint, guards, type-check, unit tests with coverage, and web E2E.
+  - No reviewer found a CRITICAL issue. The security reviewer found nothing to fix: clients can't insert notifications, so no one can forge a row that the scrub would delete for someone else.
+  - Fixed in `fix: address the full #113 review`:
+    - 052's preview reset finds each chat's newest message once, instead of in three subqueries, and breaks timestamp ties on `id`.
+    - `index.ts` checks `SUPABASE_URL` and the service key, and creates the client inside the `try`.
+    - The deletion check backdates by 5 minutes, not a day. That's inside the purge's margin, so a real hourly purge on staging can't take its account mid-test.
+    - New node test: a failed due-list lookup fails the run.
+    - The purge check covers GET → 405; a soft-deleted comment not counted down twice; the purged member's own post taking its comments with it; a chat the other member spoke last in staying untouched; and a chat with only the purged member's messages emptying its preview.
+  - Kept, with the reason in 052's header: the notification DELETE scans the table (see Risks).
+- [ ] **Step 7: Staging (needs the user).** Items 1–3 are done; item 4 waits on the secrets.
+  1. Apply 052 (`scrub_account_copies`) and realign the tracker row to `052`.
+  2. Redeploy `purge-deleted-accounts`. It calls `scrub_account_copies`, so it must go after 052.
+  3. `npm run test:security:functions` must pass.
+  4. With the secrets set, `npm run test:security:account-purge` must pass too. The next migration number is 053.
+
+**Progress 2026-09-30 (052):** at the user's request, 052 was applied to staging and its tracker row realigned. The tracker now ends `050`, `051`, `052`.
+
+- `notify_on_new_like` stores `liker_id`.
+- `scrub_account_copies` is executable by `service_role` only.
+- A call with an id that matches nothing, in a rolled-back transaction, ran cleanly. That shows the column references resolve.
+- Then `purge-deleted-accounts` was redeployed.
+- `npm run test:security:functions` and `npm run test:security:account-deletion` pass, and the security advisors show nothing new.
+- The function still answers 500 to a POST without the secret (the function secret isn't set yet) and 405 to a GET.
+- `test:security:account-purge` waits on the secrets (Task 2.7 Step 2).
+- `reauth_required` through the real RPC stays untested live: a real session can't be made stale on demand. `amr_signed_in_within` is tested directly, and the RPC calls it with `auth.jwt() -> 'amr'`.
 
 ---
 
@@ -1353,8 +2252,12 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
 
 ## Risks
 
-- **RLS cost.** `is_pending_deletion` is a SECURITY DEFINER function, so Postgres can't inline it and runs one primary-key lookup per row it checks. That's fine at launch scale. If feed queries slow down, replace it with a join against a partial index, or cache pending ids per statement. Recorded here, not scheduled.
+- **RLS cost.** `is_pending_deletion` is a SECURITY DEFINER function, so Postgres can't inline it and runs one primary-key lookup per row it checks. `user_follows` runs it twice. Wrapping it in `(SELECT …)` doesn't help, because its argument is a row column. That's fine at launch scale.
+  - **When to act:** `EXPLAIN ANALYZE` on production-sized data shows the check dominating feed or search queries.
+  - **The fix** (from the #112 database review): a `STABLE SECURITY DEFINER` function `pending_deletion_user_ids() RETURNS uuid[]`, reading the 048 partial index. The policies then use `NOT (author_id = ANY ((SELECT public.pending_deletion_user_ids())))`. The subselect is uncorrelated, so Postgres runs it once per query as an InitPlan.
+  - Recorded here, not scheduled.
 - **Web has no central route guard.** The restore gate is new ground (3.5). Keep it one component with its own test, not scattered page checks.
+- **The scrub scans notifications.** `scrub_account_copies` matches `notifications.data` with no index, once per purged member. An index would slow every notification insert (every message, comment and like) for a job that runs a few times a week. If `notifications` grows past about a million rows, add `CREATE INDEX CONCURRENTLY … USING gin (data jsonb_path_ops)` in its own migration, and match with `data @> jsonb_build_object(…)`.
 - **Purge secrets are manual per environment.** Until the runbook is followed, the cron job fails and nobody is purged. The production launch checklist must include the runbook.
 - **Google re-auth can't force a password.** `prompt: 'select_account'` makes Google show its chooser, so re-auth never completes silently. But Google has no `prompt` that demands a password. Whoever holds a browser signed in to that Google account passes. That still needs that Google account on that device, which is what the ADR asks for (spec §6).
 
@@ -1370,3 +2273,8 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - On Windows, every `scripts/security/*.ts` failure path exits 127, not 1. `process.exit(1)` races the Supabase client's handles and trips a libuv assertion. Any non-zero exit still means FAIL. A shared fix, such as setting `process.exitCode` and letting the event loop drain, would touch all the checks.
 - Both PR 1 reviewers flagged the `users` policy as reading a column clients have no SELECT grant on. That is a false positive. A rolled-back probe on staging (2026-09-28) showed that Postgres doesn't check column privileges for columns used only inside a policy. `anon` and `authenticated` read the granted columns normally.
 - `users-pii-smoke.ts` fails about 28% of the time, and has since before 048. Its fixture names end in `<timestamp>-<6 random base-36 chars>`. When the random part starts with a digit, Postgres's parser reads `-5abc12` as the signed integer `-5` plus `abc12`, but `build_prefix_tsquery` splits on the hyphen and searches `5abc12:*`, so `search_people` misses the fixture. Fix the fixture: start the random part with a letter. The same split affects any real name containing `-<digit>`, which is rare, so no search change is scheduled.
+- From the PR 2 review:
+  - A small restore race remains. A member who restores while the purge is removing their files keeps the account but loses those files. Closing it fully would mean `cancel_account_deletion()` refusing once `deletion_scheduled_for` has passed, so "restore before the date" becomes the strict rule. That's a user-visible change to the restore screen, so it needs the user's decision first.
+  - `index.ts` builds the Supabase client outside its `try`. The env vars it reads are injected by Supabase, but a missing one would skip the function's own 500 response.
+  - `PURGE_BATCH_SIZE` is 50 per day. A larger backlog drains oldest-first over several days. For the same reason, the live purge check could miss its own user if more than 50 older accounts were ever due on staging.
+  - pg_net holds the outbound request, including the `x-purge-secret` header, in `net.http_request_queue` until it is sent. The secret commands in the runbook can land in shell or SQL-editor history. The endpoint has no rate limit; the 256-bit secret is its protection.
