@@ -238,8 +238,8 @@ copies too.
   `PublicUser`.
 - **Chat:** `getConversations` returns `other_user_available`, and keeps
   conversations whose partner is gone (§5.6).
-- **Login return path:** `safeRedirectPath(value)` returns a same-origin path or
-  null (§5.3).
+- **Login return path:** `safeRedirectPath(value, origin)` returns a same-origin
+  path or null (§5.3). Callers pass `window.location.origin`.
 - **API** (`src/api/accountDeletion.ts`), taking a `SupabaseClient` and returning
   the usual `{ data, error }`:
   - `requestAccountDeletion(supabase)` returns the scheduled date. It maps

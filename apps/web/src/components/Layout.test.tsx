@@ -42,6 +42,7 @@ vi.mock('./account/AccountRestoreScreen', () => ({
 }));
 
 import Layout from './Layout';
+import { FOOTER_LINKS } from './layout/navItems';
 
 const member = { id: 'user-1', full_name: 'Test User', email: 'test@example.com', trust_level: 1, profile_photo: null, is_moderator: false };
 
@@ -89,18 +90,21 @@ describe('Layout', () => {
     expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
   });
 
-  it('keeps the legal pages readable for a member pending deletion', () => {
-    mocks.useRouter.mockReturnValue({ pathname: '/privacy', query: {}, push: mocks.push });
-    mocks.useAuth.mockReturnValue({
-      user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
-      loading: false,
-      signOut: mocks.signOut,
-    });
-    render(<Layout>Privacy text</Layout>);
+  it.each(FOOTER_LINKS.map((link) => link.href))(
+    'keeps %s, a footer page, readable for a member pending deletion',
+    (pathname) => {
+      mocks.useRouter.mockReturnValue({ pathname, query: {}, push: mocks.push });
+      mocks.useAuth.mockReturnValue({
+        user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+        loading: false,
+        signOut: mocks.signOut,
+      });
+      render(<Layout>Legal text</Layout>);
 
-    expect(screen.getByText('Privacy text')).toBeDefined();
-    expect(screen.queryByText(/Restore screen/)).toBeNull();
-  });
+      expect(screen.getByText('Legal text')).toBeDefined();
+      expect(screen.queryByText(/Restore screen/)).toBeNull();
+    }
+  );
 
   it('gates /delete-account too, so a pending member cannot skip Restore', () => {
     mocks.useRouter.mockReturnValue({ pathname: '/delete-account', query: {}, push: mocks.push });

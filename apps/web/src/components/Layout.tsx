@@ -7,7 +7,7 @@ import { useNotificationsFeed } from '../hooks/useNotificationsFeed';
 import { useUnreadMessageCount } from '../hooks/useUnreadMessageCount';
 import { AccountRestoreScreen } from './account/AccountRestoreScreen';
 import { BottomTabBar } from './layout/BottomTabBar';
-import { isTaskRoute } from './layout/navItems';
+import { FOOTER_LINKS, isTaskRoute } from './layout/navItems';
 import { PublicShell } from './layout/PublicShell';
 import { SearchEntry } from './layout/SearchEntry';
 import { SideRail } from './layout/SideRail';
@@ -20,8 +20,11 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-/** Pages a member pending deletion can still read. Every other page shows the restore screen. */
-const OPEN_WHILE_PENDING_DELETION = new Set(['/privacy', '/terms', '/help']);
+/**
+ * Pages a member pending deletion can still read: the footer's legal pages, so
+ * every footer link works (spec §5.3). Every other page shows the restore screen.
+ */
+const OPEN_WHILE_PENDING_DELETION = new Set(FOOTER_LINKS.map((link) => link.href));
 
 export default function Layout({ children }: LayoutProps) {
   const { user, loading, signingOut, signOut } = useAuth();
