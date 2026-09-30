@@ -5,6 +5,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { toApiError } from '../utils/apiError';
 import type { ConversationWithParticipant } from '../types/chat';
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
 
 /**
  * Get all conversations for a user, with other participant info and post context.
@@ -77,15 +78,14 @@ export async function getConversations(
     }
 
     // Fetch profile photos and trust levels for other participants
-    const otherUserIds = Array.from(new Set(
-      (otherParticipants || []).map((op) => op.user_id)
-    ));
+    const otherUserIds = Array.from(new Set((otherParticipants || []).map((op) => op.user_id)));
     const userInfoMap = new Map<string, { profile_photo: string | null; trust_level: number }>();
     if (otherUserIds.length > 0) {
-      const { data: userProfiles } = await supabase
+      const { data: userProfiles, error: usersError } = await supabase
         .from('users')
         .select('id, profile_photo, trust_level')
         .in('id', otherUserIds);
+      if (usersError) throw usersError;
       if (userProfiles) {
         for (const u of userProfiles) {
           userInfoMap.set(u.id, {
@@ -96,23 +96,26 @@ export async function getConversations(
       }
     }
 
-    // Assemble results
+    // Assemble results. A partner is unavailable when their users row didn't
+    // come back: hidden by RLS while pending deletion, or gone after the
+    // purge. A purged partner's participant row is gone too; the
+    // conversation stays, with no partner id.
     const result: ConversationWithParticipant[] = [];
     for (const conv of conversations || []) {
       const other = otherMap.get(conv.id);
-      if (!other) continue;
-      if (blockedUserIds.has(other.user_id)) continue;
+      if (other && blockedUserIds.has(other.user_id)) continue;
 
-      const userInfo = userInfoMap.get(other.user_id);
+      const userInfo = other ? userInfoMap.get(other.user_id) : undefined;
       result.push({
         id: conv.id,
         last_message: conv.last_message,
         last_message_time: conv.last_message_time,
         created_at: conv.created_at,
-        other_user_id: other.user_id,
-        other_user_name: other.name,
+        other_user_id: other?.user_id ?? null,
+        other_user_name: other && userInfo ? other.name : UNAVAILABLE_ACCOUNT_NAME,
         other_user_photo: userInfo?.profile_photo ?? null,
         other_user_trust_level: userInfo?.trust_level ?? 0,
+        other_user_available: userInfo !== undefined,
         unread_count: unreadMap.get(conv.id) || 0,
       });
     }
@@ -170,24 +173,20 @@ export async function getOrCreateConversation(
     if (convError) throw convError;
 
     // Add current user first (passes RLS: user_id = auth.uid())
-    const { error: selfPartError } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: newConv.id,
-        user_id: currentUserId,
-        name: currentUserName,
-      });
+    const { error: selfPartError } = await supabase.from('conversation_participants').insert({
+      conversation_id: newConv.id,
+      user_id: currentUserId,
+      name: currentUserName,
+    });
 
     if (selfPartError) throw selfPartError;
 
     // Then add other user
-    const { error: otherPartError } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: newConv.id,
-        user_id: otherUserId,
-        name: otherUserName,
-      });
+    const { error: otherPartError } = await supabase.from('conversation_participants').insert({
+      conversation_id: newConv.id,
+      user_id: otherUserId,
+      name: otherUserName,
+    });
 
     if (otherPartError) throw otherPartError;
 
