@@ -5,7 +5,13 @@ import { FOOTER_LINKS } from './navItems';
 import styles from './PublicShell.module.css';
 
 /** Shell for signed-out visitors: brand, Log in / Sign up, legal footer. */
-export function PublicShell({ children }: { children: ReactNode }) {
+export function PublicShell({
+  children,
+  showAuthLinks = true,
+}: {
+  children: ReactNode;
+  showAuthLinks?: boolean;
+}) {
   return (
     <div className={styles.root}>
       <header className={styles.header}>
@@ -14,14 +20,16 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <span className={styles.brandDot} aria-hidden="true" />
             Nepally
           </Link>
-          <Group gap="xs">
-            <Button variant="default" component={Link} href="/login">
-              Log in
-            </Button>
-            <Button component={Link} href="/signup">
-              Sign up
-            </Button>
-          </Group>
+          {showAuthLinks ? (
+            <Group gap="xs">
+              <Button variant="default" component={Link} href="/login">
+                Log in
+              </Button>
+              <Button component={Link} href="/signup">
+                Sign up
+              </Button>
+            </Group>
+          ) : null}
         </div>
       </header>
 

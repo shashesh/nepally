@@ -36,6 +36,10 @@ vi.mock('./layout/SearchEntry', () => ({
     return React.createElement('input', { 'aria-label': 'Search Nepally' });
   },
 }));
+vi.mock('./account/AccountRestoreScreen', () => ({
+  AccountRestoreScreen: ({ scheduledFor }: { scheduledFor: string }) =>
+    React.createElement('p', null, `Restore screen for ${scheduledFor}`),
+}));
 
 import Layout from './Layout';
 
@@ -70,6 +74,45 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('main').textContent).toContain('Page content');
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
+  });
+
+  it('shows a member pending deletion the restore screen instead of the page, with no Log in', () => {
+    mocks.useAuth.mockReturnValue({
+      user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+      loading: false,
+      signOut: mocks.signOut,
+    });
+    render(<Layout>Page content</Layout>);
+
+    expect(screen.getByText('Restore screen for 2999-01-01T00:00:00Z')).toBeDefined();
+    expect(screen.queryByText('Page content')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
+  });
+
+  it('keeps the legal pages readable for a member pending deletion', () => {
+    mocks.useRouter.mockReturnValue({ pathname: '/privacy', query: {}, push: mocks.push });
+    mocks.useAuth.mockReturnValue({
+      user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+      loading: false,
+      signOut: mocks.signOut,
+    });
+    render(<Layout>Privacy text</Layout>);
+
+    expect(screen.getByText('Privacy text')).toBeDefined();
+    expect(screen.queryByText(/Restore screen/)).toBeNull();
+  });
+
+  it('gates /delete-account too, so a pending member cannot skip Restore', () => {
+    mocks.useRouter.mockReturnValue({ pathname: '/delete-account', query: {}, push: mocks.push });
+    mocks.useAuth.mockReturnValue({
+      user: { ...member, deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+      loading: false,
+      signOut: mocks.signOut,
+    });
+    render(<Layout>Delete page</Layout>);
+
+    expect(screen.queryByText('Delete page')).toBeNull();
+    expect(screen.getByText(/Restore screen/)).toBeDefined();
   });
 
   describe('signed in', () => {
