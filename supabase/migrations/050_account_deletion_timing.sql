@@ -1,6 +1,7 @@
 -- 050_account_deletion_timing.sql
--- ADDITIVE / non-destructive: two functions replaced in place and one pg_cron
--- job rescheduled. No schema or data changes.
+-- ADDITIVE / non-destructive: two functions replaced in place, two
+-- service_role functions added, and one pg_cron job rescheduled. No schema or
+-- data changes.
 --
 -- Two timing fixes to account deletion (spec:
 -- docs/specs/2026-09-28-account-deletion.md §4.4), found in review after 048
@@ -11,10 +12,15 @@
 --   auth user, but a restore could still land between that read and the
 --   delete, and the restored account would be lost. Now cancel refuses once
 --   deletion_scheduled_for has passed, raising 'deletion_in_progress'
---   (SQLSTATE P0001, which the apps match on). The purge only takes an
---   account an hour past its date (PURGE_CLOCK_MARGIN_MS in the function),
---   so any account the purge can pick is one no member can restore. The row
---   lock keeps a request and a cancel from interleaving.
+--   (SQLSTATE P0001, which the apps match on).
+--
+--   The purge asks the database which accounts are due, through
+--   list_due_account_deletions(limit) and is_due_for_purge(uid). An account
+--   is due an hour after its date, by now() here. Both "due" and "can
+--   restore" are decided by the same clock, so any account the purge can
+--   pick is one no member can restore. The hour also covers a cancel whose
+--   transaction began just before the date. The row lock keeps a request and
+--   a cancel from interleaving. Both functions are service_role only.
 --
 --   "Within 30 days" holds. The privacy policy promises removal within 30
 --   days. With a 30-day grace period and a daily run, removal landed up to
@@ -33,13 +39,15 @@
 -- Idempotent: CREATE OR REPLACE, GRANT/REVOKE and the named cron.schedule
 -- can all be re-run.
 --
--- Verify: npm run test:security:account-deletion and
--- npm run test:security:functions against staging, then
+-- Verify: npm run test:security:account-deletion,
+-- npm run test:security:functions and npm run test:security:account-purge
+-- (after the function is redeployed) against staging, then
 --   SELECT jobname, schedule, active FROM cron.job;
 -- lists purge-deleted-accounts | 0 * * * * | t.
 --
 -- Rollback (forward-only): a new migration that restores 048's bodies of
--- both functions and reschedules the job with 049's '0 9 * * *'.
+-- both functions, reschedules the job with 049's '0 9 * * *', and drops the
+-- two due-check functions once no deployed purge calls them.
 
 -- ---------------------------------------------------------------------------
 -- 1) request_account_deletion(): 29 days
@@ -135,7 +143,44 @@ REVOKE EXECUTE ON FUNCTION public.cancel_account_deletion() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.cancel_account_deletion() TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
--- 3) The purge job runs hourly (049's body, new schedule)
+-- 3) Which accounts are due, by the database's clock
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.list_due_account_deletions(p_limit integer)
+RETURNS TABLE (id uuid)
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT u.id
+    FROM public.users u
+   WHERE u.deletion_scheduled_for <= now() - interval '1 hour'
+   ORDER BY u.deletion_scheduled_for
+   LIMIT p_limit;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_due_for_purge(p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+      FROM public.users u
+     WHERE u.id = p_user_id
+       AND u.deletion_scheduled_for <= now() - interval '1 hour'
+  );
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.list_due_account_deletions(integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.list_due_account_deletions(integer) TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.is_due_for_purge(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_due_for_purge(uuid) TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- 4) The purge job runs hourly (049's body, new schedule)
 -- ---------------------------------------------------------------------------
 
 SELECT cron.schedule(

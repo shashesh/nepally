@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PURGE_BATCH_SIZE,
-  purgeCutoff,
   purgeDueAccounts,
   secretsMatch,
   type PurgeDeps,
@@ -160,11 +159,6 @@ test('deletes each due user once, in order', async () => {
 
   assert.deepEqual(summary, { purged: 3, skipped: 0, failed: 0 });
   assert.deepEqual(calls.deleteAuthUser, ['u1', 'u2', 'u3']);
-});
-
-test('an account is due only an hour after its date, to absorb clock drift', () => {
-  assert.equal(purgeCutoff(new Date('2026-10-30T09:00:00.000Z')), '2026-10-30T08:00:00.000Z');
-  assert.equal(purgeCutoff(new Date('2026-10-30T00:30:00.000Z')), '2026-10-29T23:30:00.000Z');
 });
 
 test('secretsMatch accepts only the exact secret', () => {

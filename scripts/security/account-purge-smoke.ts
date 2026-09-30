@@ -9,7 +9,10 @@
  *      the auth user, the profile row and both storage objects are gone.
  *   3. A second pending member whose date is still in the future is left
  *      alone.
- *   4. The due member's comment on the second member's post stops counting:
+ *   4. A third member whose date passed 30 minutes ago is left alone too.
+ *      The purge waits an hour past the date by the database's clock
+ *      (migration 050), so no restore can race it.
+ *   5. The due member's comment on the second member's post stops counting:
  *      that post's comments_count drops back (migration 051).
  *
  * This runs a REAL purge: every account whose date has passed is deleted,
@@ -25,6 +28,8 @@ type UserFixture = { id: string; email: string; password: string };
 
 const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Inside the purge's one-hour margin (050), with room for clock drift either way. */
+const JUST_PAST_MS = 30 * 60 * 1000;
 
 /**
  * Projects this check may run against. It deletes every due account, so a
@@ -216,7 +221,13 @@ async function main(): Promise<void> {
     createdUsers.push(waiting.id);
     await requestDeletion(await signIn(url, anonKey, waiting));
 
-    // 4. The due member comments on the waiting member's post.
+    // 4. A member whose date passed only 30 minutes ago.
+    const justPast = await createUser(service, 'purge-just-past');
+    createdUsers.push(justPast.id);
+    await requestDeletion(await signIn(url, anonKey, justPast));
+    await setPurgeDate(service, justPast.id, new Date(Date.now() - JUST_PAST_MS));
+
+    // 5. The due member comments on the waiting member's post.
     const location = await borrow(
       service,
       'posts',
@@ -274,6 +285,16 @@ async function main(): Promise<void> {
     assertCondition(
       waitingProfile?.deletion_scheduled_for,
       'The member whose date is still ahead should be untouched'
+    );
+
+    const { data: justPastProfile } = await service
+      .from('users')
+      .select('id')
+      .eq('id', justPast.id)
+      .maybeSingle();
+    assertCondition(
+      justPastProfile,
+      'The member whose date passed 30 minutes ago should wait for the one-hour margin'
     );
 
     const countAfter = await commentsCount(service, postId);

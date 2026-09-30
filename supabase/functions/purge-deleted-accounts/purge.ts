@@ -11,9 +11,13 @@
 export type StorageObjectRef = { bucket_id: string; name: string };
 
 export interface PurgeDeps {
-  /** Users whose deletion_scheduled_for <= purgeCutoff(now), oldest first. */
+  /**
+   * Users an hour past their deletion date by the database's clock, oldest
+   * first (list_due_account_deletions, migration 050). The database decides,
+   * so "due" and cancel_account_deletion's refusal share one clock.
+   */
   listDueUserIds(limit: number): Promise<string[]>;
-  /** Re-read before touching the user, and again before deleting the auth user. */
+  /** Re-read before touching the user, and again before deleting the auth user (is_due_for_purge). */
   isStillDue(userId: string): Promise<boolean>;
   listStorageObjects(userId: string): Promise<StorageObjectRef[]>;
   /** Throws on failure. */
@@ -29,19 +33,6 @@ export type PurgeSummary = { purged: number; skipped: number; failed: number };
 export const PURGE_BATCH_SIZE = 50;
 /** Paths per Storage API remove() call. */
 export const STORAGE_REMOVE_CHUNK_SIZE = 100;
-/**
- * How long an account waits past its date before the purge takes it.
- * cancel_account_deletion() refuses once the date has passed by the
- * database's clock (migration 050). This margin makes sure that holds before
- * the purge, reading this runtime's clock, picks the account, so a restore
- * can never race a purge.
- */
-export const PURGE_CLOCK_MARGIN_MS = 60 * 60 * 1000;
-
-/** ISO timestamp: accounts whose deletion_scheduled_for is at or before it are due. */
-export function purgeCutoff(now: Date): string {
-  return new Date(now.getTime() - PURGE_CLOCK_MARGIN_MS).toISOString();
-}
 
 function groupPathsByBucket(objects: readonly StorageObjectRef[]): Map<string, string[]> {
   return objects.reduce(
