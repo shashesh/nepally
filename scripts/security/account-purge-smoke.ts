@@ -14,6 +14,10 @@
  *      (migration 050), so no restore can race it.
  *   5. The due member's comment on the second member's post stops counting:
  *      that post's comments_count drops back (migration 051).
+ *   6. Copies of the due member's words in the second member's rows are
+ *      scrubbed (migration 052): the message, comment and like notifications
+ *      naming them are deleted, and their shared chat's preview falls back
+ *      to the second member's own last message.
  *
  * This runs a REAL purge: every account whose date has passed is deleted,
  * not only this test's.
@@ -30,6 +34,8 @@ const FAKE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Inside the purge's one-hour margin (050), with room for clock drift either way. */
 const JUST_PAST_MS = 30 * 60 * 1000;
+const WAITING_MESSAGE = 'Account purge smoke test: message from the member who stays';
+const DUE_MESSAGE = 'Account purge smoke test: message from the member being purged';
 
 /**
  * Projects this check may run against. It deletes every due account, so a
@@ -171,6 +177,25 @@ async function commentsCount(service: SupabaseClient, postId: string): Promise<n
   return data.comments_count as number;
 }
 
+/** Notifications the recipient holds that name the author as sender, commenter or liker. */
+async function copiesOf(
+  service: SupabaseClient,
+  recipientId: string,
+  authorId: string
+): Promise<number> {
+  const { data, error } = await service
+    .from('notifications')
+    .select('id')
+    .eq('user_id', recipientId)
+    .or(
+      `data->>sender_id.eq.${authorId},data->>commenter_id.eq.${authorId},data->>liker_id.eq.${authorId}`
+    );
+  if (error) {
+    throw new Error(`Reading notifications failed: ${error.message}`);
+  }
+  return (data ?? []).length;
+}
+
 async function callPurge(url: string, secret: string): Promise<Response> {
   return fetch(`${url}/functions/v1/purge-deleted-accounts`, {
     method: 'POST',
@@ -197,6 +222,7 @@ async function main(): Promise<void> {
   );
   const service = createClient(url, serviceKey, { auth: NO_SESSION_AUTH });
   const createdUsers: string[] = [];
+  let conversationId: string | undefined;
 
   try {
     // 1. Wrong secret.
@@ -252,6 +278,56 @@ async function main(): Promise<void> {
       'The comment should count before the purge'
     );
 
+    // 6. More copies of the due member's words in the waiting member's rows:
+    // a like notification (every like notifies once notify_likes is 'all')
+    // and a chat whose preview is the due member's last message.
+    const { error: settingsError } = await service
+      .from('user_settings')
+      .upsert({ user_id: waiting.id, notify_likes: 'all' }, { onConflict: 'user_id' });
+    assertCondition(!settingsError, `Setting notify_likes failed: ${settingsError?.message}`);
+    const { error: likeError } = await service
+      .from('post_likes')
+      .insert({ post_id: postId, user_id: due.id });
+    assertCondition(!likeError, `Liking the post failed: ${likeError?.message}`);
+
+    conversationId = await insertRow(service, 'conversations', { creator_id: waiting.id });
+    const { error: participantsError } = await service.from('conversation_participants').insert([
+      { conversation_id: conversationId, user_id: waiting.id, name: 'Purge smoke waiting' },
+      { conversation_id: conversationId, user_id: due.id, name: 'Purge smoke due' },
+    ]);
+    assertCondition(
+      !participantsError,
+      `Adding participants failed: ${participantsError?.message}`
+    );
+    const waitingSentAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const dueSentAt = new Date(Date.now() - 60 * 1000).toISOString();
+    const { error: messagesError } = await service.from('messages').insert([
+      {
+        conversation_id: conversationId,
+        sender_id: waiting.id,
+        text: WAITING_MESSAGE,
+        timestamp: waitingSentAt,
+      },
+      {
+        conversation_id: conversationId,
+        sender_id: due.id,
+        text: DUE_MESSAGE,
+        timestamp: dueSentAt,
+      },
+    ]);
+    assertCondition(!messagesError, `Sending messages failed: ${messagesError?.message}`);
+    const { error: previewError } = await service
+      .from('conversations')
+      .update({ last_message: DUE_MESSAGE, last_message_time: dueSentAt })
+      .eq('id', conversationId);
+    assertCondition(!previewError, `Setting the chat preview failed: ${previewError?.message}`);
+
+    const copiesBefore = await copiesOf(service, waiting.id, due.id);
+    assertCondition(
+      copiesBefore === 3,
+      `The waiting member should hold message, comment and like notifications from the due member, found ${copiesBefore}`
+    );
+
     const response = await callPurge(url, purgeSecret);
     assertCondition(response.ok, `The purge should answer 200, got ${response.status}`);
     const summary = (await response.json()) as { purged: number; skipped: number; failed: number };
@@ -303,8 +379,31 @@ async function main(): Promise<void> {
       `The purged member's comment should stop counting, comments_count is ${countAfter}`
     );
 
+    const copiesAfter = await copiesOf(service, waiting.id, due.id);
+    assertCondition(
+      copiesAfter === 0,
+      `Notifications naming the purged member should be scrubbed, found ${copiesAfter}`
+    );
+    const { data: chat, error: chatError } = await service
+      .from('conversations')
+      .select('last_message, last_message_time')
+      .eq('id', conversationId)
+      .single();
+    if (chatError || !chat) {
+      throw new Error(`Reading the chat failed: ${chatError?.message || 'no row'}`);
+    }
+    assertCondition(
+      chat.last_message === WAITING_MESSAGE &&
+        new Date(chat.last_message_time as string).getTime() === new Date(waitingSentAt).getTime(),
+      `The chat preview should fall back to the waiting member's message, got ${JSON.stringify(chat)}`
+    );
+
     console.log('PASS: account purge smoke test verified.');
   } finally {
+    if (conversationId) {
+      // Conversations don't cascade from users; remove this one by hand.
+      await service.from('conversations').delete().eq('id', conversationId);
+    }
     for (const userId of createdUsers) {
       const { data: leftovers } = await service.rpc('list_user_storage_objects', {
         p_user_id: userId,
