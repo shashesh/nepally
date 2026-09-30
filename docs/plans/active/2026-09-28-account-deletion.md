@@ -1084,7 +1084,7 @@ Break this PR into steps when it starts. It needs 048 applied on staging.
 export type StorageObjectRef = { bucket_id: string; name: string };
 
 export interface PurgeDeps {
-  /** Users whose deletion_scheduled_for <= purgeCutoff(now), oldest first. */
+  /** Users an hour past their date by the database's clock, oldest first (050). */
   listDueUserIds(limit: number): Promise<string[]>;
   /** Re-read before touching the user and again before deleting the auth user. */
   isStillDue(userId: string): Promise<boolean>;
@@ -1100,11 +1100,6 @@ export type PurgeSummary = { purged: number; skipped: number; failed: number };
 
 export const PURGE_BATCH_SIZE = 50;
 export const STORAGE_REMOVE_CHUNK_SIZE = 100;
-/** How long past its date an account waits, to absorb clock drift between the function and the database. */
-export const PURGE_CLOCK_MARGIN_MS = 60 * 60 * 1000;
-
-/** ISO cutoff: accounts whose date is at or before it are due. */
-export function purgeCutoff(now: Date): string;
 
 export async function purgeDueAccounts(deps: PurgeDeps): Promise<PurgeSummary>;
 
@@ -1112,13 +1107,12 @@ export async function purgeDueAccounts(deps: PurgeDeps): Promise<PurgeSummary>;
 export function secretsMatch(provided: string, expected: string): boolean;
 ```
 
-**A restore can't race the purge.** Re-reading the row doesn't close the gap before `deleteUser`, because a restore could still land after the last read. Instead, migration 050 closes restore at the date, and the purge only takes accounts `PURGE_CLOCK_MARGIN_MS` past it. Once the purge can pick an account, no member can restore it. The re-reads stay, for service-role changes such as a support restore.
+**A restore can't race the purge.** Re-reading the row doesn't close the gap before `deleteUser`, because a restore could still land after the last read. Instead, migration 050 closes restore at the date, and the purge only takes accounts an hour past it. The database decides both, by `now()`, so the two can't disagree. Once the purge can pick an account, no member can restore it. The re-reads stay, for service-role changes such as a support restore.
 
 **Tasks:**
 
 - **2.1 The purge core, test first.** Tests cover:
   - nothing due → `{0, 0, 0}` and no deletes
-  - `purgeCutoff` is an hour before now
   - a user who is no longer due → skipped, with no storage or auth call
   - objects grouped by bucket and removed in chunks of 100, e.g. 250 objects in one bucket makes three calls
   - a storage failure → counted as failed, `deleteAuthUser` not called for that user, the next user still processed
@@ -1129,8 +1123,8 @@ export function secretsMatch(provided: string, expected: string): boolean;
   - `POST` only.
   - It reads `x-purge-secret` and compares it with `Deno.env.get('ACCOUNT_PURGE_SECRET')` using `secretsMatch`. It returns 401 if the secret is missing or wrong, and 500 if the env var isn't set.
   - It builds the deps from a service-role client:
-    - `listDueUserIds`: `from('users').select('id').lte('deletion_scheduled_for', purgeCutoff(new Date())).order('deletion_scheduled_for').limit(n)`
-    - `isStillDue`: the same filter on one id
+    - `listDueUserIds`: `rpc('list_due_account_deletions', { p_limit })`
+    - `isStillDue`: `rpc('is_due_for_purge', { p_user_id })`
     - `listStorageObjects`: `rpc('list_user_storage_objects')`
     - `removeObjects`: `storage.from(bucket).remove(paths)`, throwing on `error`
     - `deleteAuthUser`: `auth.admin.deleteUser`, throwing on `error`
@@ -1149,6 +1143,7 @@ export function secretsMatch(provided: string, expected: string): boolean;
     - A new request's date is 29 days out.
   - `CREATE OR REPLACE FUNCTION public.cancel_account_deletion()` keeps 048's body, but first locks the row and reads the date. If the date is `<= now()`, it raises `deletion_in_progress` (`P0001`). The grants carry over. `CREATE OR REPLACE` keeps them.
   - `CREATE OR REPLACE FUNCTION public.request_account_deletion()` with `c_grace_period := interval '29 days'`.
+  - `list_due_account_deletions(p_limit)` and `is_due_for_purge(p_user_id)`, service role only: due at `now() - interval '1 hour'`. The purge calls these, so it never compares against its own clock. The live purge check has a member 30 minutes past their date, who must survive the run. `function-execute-smoke.ts` lists both as internal.
   - `cron.schedule('purge-deleted-accounts', '0 * * * *', …)` with 049's body. A named schedule replaces the job.
   - Header comment: the race it closes, the "within 30 days" arithmetic, and why it isn't a change to 048 or 049 (both already applied to staging).
 - **2.4b Migration 051, test first.**
