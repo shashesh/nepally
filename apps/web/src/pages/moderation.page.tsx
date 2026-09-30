@@ -211,6 +211,7 @@ function ModerationView({ moderatorId }: { moderatorId: string | null }) {
               key={report.id}
               report={report}
               post={report.target_type === 'post' ? queue.reportedPosts[report.target_id] : undefined}
+              targetMissing={queue.missingTargetIds.has(report.target_id)}
               now={now}
               locked={locked}
               busyAction={busyActionFor(report.id)}

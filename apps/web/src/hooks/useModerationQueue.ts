@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  getExistingListingIds,
+  getExistingUserIds,
   getPendingPosts,
   getPostsByIds,
   listReports,
@@ -18,6 +20,8 @@ export interface ModerationQueueState {
   reports: ReportWithUsers[];
   /** Posts named by post reports, by id. A missing id means the post is gone. */
   reportedPosts: Readonly<Record<string, Post>>;
+  /** Reported members and listings that no longer exist (or, for listings, are no longer active). */
+  missingTargetIds: ReadonlySet<string>;
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -55,11 +59,12 @@ interface Queue {
   pendingPosts: Post[];
   reports: ReportWithUsers[];
   reportedPosts: Record<string, Post>;
+  missingTargetIds: ReadonlySet<string>;
 }
 
-const EMPTY_QUEUE: Queue = { pendingPosts: [], reports: [], reportedPosts: {} };
+const EMPTY_QUEUE: Queue = { pendingPosts: [], reports: [], reportedPosts: {}, missingTargetIds: new Set() };
 
-/** Null when any of the three requests failed: the queue fails as a whole. */
+/** Null when any of the requests failed: the queue fails as a whole. */
 async function fetchQueue(): Promise<Queue | null> {
   const [postsResult, reportsResult] = await Promise.all([
     getPendingPosts(supabase),
@@ -68,16 +73,26 @@ async function fetchQueue(): Promise<Queue | null> {
   if (postsResult.error || reportsResult.error) return null;
 
   const reports = reportsResult.data ?? [];
-  // One batched query for every reported post, so a card can show its title
-  // and offer "Ban author" without leaving the page.
-  const postIds = Array.from(new Set(reports.filter((r) => r.target_type === 'post').map((r) => r.target_id)));
-  const reportedResult = await getPostsByIds(supabase, postIds);
-  if (reportedResult.error) return null;
+  const idsOf = (type: 'post' | 'user' | 'listing') =>
+    Array.from(new Set(reports.filter((r) => r.target_type === type).map((r) => r.target_id)));
+  const userIds = idsOf('user');
+  const listingIds = idsOf('listing');
+  // One batched query per kind: the reported posts (so a card can show the
+  // title and offer "Ban author"), and which reported members and listings
+  // still exist.
+  const [reportedResult, usersResult, listingsResult] = await Promise.all([
+    getPostsByIds(supabase, idsOf('post')),
+    getExistingUserIds(supabase, userIds),
+    getExistingListingIds(supabase, listingIds),
+  ]);
+  if (reportedResult.error || usersResult.error || listingsResult.error) return null;
 
+  const found = new Set([...(usersResult.data ?? []), ...(listingsResult.data ?? [])]);
   return {
     pendingPosts: postsResult.data ?? [],
     reports,
     reportedPosts: Object.fromEntries((reportedResult.data ?? []).map((p) => [p.id, p])),
+    missingTargetIds: new Set([...userIds, ...listingIds].filter((id) => !found.has(id))),
   };
 }
 
@@ -231,6 +246,7 @@ export function useModerationQueue(moderatorId: string | null): ModerationQueueS
     pendingPosts: queue.pendingPosts,
     reports: queue.reports,
     reportedPosts: queue.reportedPosts,
+    missingTargetIds: queue.missingTargetIds,
     loading: hasModerator && loading,
     error,
     reload,

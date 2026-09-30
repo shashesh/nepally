@@ -95,6 +95,29 @@ describe('ReportCard', () => {
     expect(props.onBan).toHaveBeenCalledWith('user-5', 'this member');
   });
 
+  it('says a purged member is gone, with no link and no ban', () => {
+    renderCard({
+      report: { ...POST_REPORT, target_type: 'user', target_id: 'user-5' },
+      post: undefined,
+      targetMissing: true,
+    });
+
+    expect(screen.getByText('Member no longer available')).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'View member' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ban user' })).toBeNull();
+  });
+
+  it('says a listing is gone, with no link', () => {
+    renderCard({
+      report: { ...POST_REPORT, target_type: 'listing', target_id: 'listing-7' },
+      post: undefined,
+      targetMissing: true,
+    });
+
+    expect(screen.getByText('Listing no longer available')).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'View listing' })).toBeNull();
+  });
+
   it('keeps a message report private and offers only Dismiss', () => {
     renderCard({ report: { ...POST_REPORT, target_type: 'message', target_id: 'm-1' }, post: undefined });
 

@@ -2,6 +2,8 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getPendingPosts,
+  getExistingListingIds,
+  getExistingUserIds,
   getPostsByIds,
   listReports,
   resolveReport,
@@ -17,6 +19,8 @@ vi.mock('@nepally/shared', async (importOriginal) => ({
   getPendingPosts: vi.fn(),
   listReports: vi.fn(),
   getPostsByIds: vi.fn(),
+  getExistingUserIds: vi.fn(),
+  getExistingListingIds: vi.fn(),
   setPostModerationStatus: vi.fn(),
   resolveReport: vi.fn(),
   setUserBanStatus: vi.fn(),
@@ -27,6 +31,8 @@ vi.mock('../lib/supabase', () => ({ supabase: {} }));
 const mockPending = getPendingPosts as ReturnType<typeof vi.fn>;
 const mockReports = listReports as ReturnType<typeof vi.fn>;
 const mockPostsByIds = getPostsByIds as ReturnType<typeof vi.fn>;
+const mockExistingUsers = getExistingUserIds as ReturnType<typeof vi.fn>;
+const mockExistingListings = getExistingListingIds as ReturnType<typeof vi.fn>;
 const mockStatus = setPostModerationStatus as ReturnType<typeof vi.fn>;
 const mockResolve = resolveReport as ReturnType<typeof vi.fn>;
 const mockBan = setUserBanStatus as ReturnType<typeof vi.fn>;
@@ -73,6 +79,8 @@ describe('useModerationQueue', () => {
       ],
     });
     mockPostsByIds.mockResolvedValue({ data: [post('p-reported', 'author-1')] });
+    mockExistingUsers.mockResolvedValue({ data: ['author-2'] });
+    mockExistingListings.mockResolvedValue({ data: [] });
     mockStatus.mockResolvedValue({ data: {} });
     mockResolve.mockResolvedValue({ data: {} });
     mockBan.mockResolvedValue({ data: {} });
@@ -89,8 +97,32 @@ describe('useModerationQueue', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('marks reported members and listings that no longer exist', async () => {
+    mockReports.mockResolvedValue({
+      data: [
+        report('r1', { target_type: 'user', target_id: 'author-2' }),
+        report('r2', { target_type: 'user', target_id: 'gone-user' }),
+        report('r3', { target_type: 'listing', target_id: 'gone-listing' }),
+      ],
+    });
+
+    const { result } = await loaded();
+
+    expect(mockExistingUsers).toHaveBeenCalledWith({}, ['author-2', 'gone-user']);
+    expect(mockExistingListings).toHaveBeenCalledWith({}, ['gone-listing']);
+    expect([...result.current.missingTargetIds].sort()).toEqual(['gone-listing', 'gone-user']);
+  });
+
+  it('fails the queue as a whole when a target check fails', async () => {
+    mockExistingUsers.mockResolvedValue({ error: new Error('boom') });
+
+    const { result } = await loaded();
+
+    expect(result.current.error).toBe("Couldn't load the moderation queue.");
+  });
+
   it.each([
-    ['pending posts', () => mockPending.mockResolvedValueOnce({ error: new Error('down') })],
+    ['pending posts',() => mockPending.mockResolvedValueOnce({ error: new Error('down') })],
     ['reports', () => mockReports.mockResolvedValueOnce({ error: new Error('down') })],
     ['reported posts', () => mockPostsByIds.mockResolvedValueOnce({ error: new Error('down') })],
   ])('fails as a whole when %s fail to load, and reloads', async (_what, fail) => {
