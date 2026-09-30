@@ -3081,6 +3081,10 @@ describe('safeRedirectPath', () => {
       ' /feed',
       'javascript:alert(1)',
       'feed',
+      // Dot segments that the parser collapses into `//evil.com`
+      '/.//evil.com',
+      '/..//evil.com',
+      '/a/..//evil.com',
     ]) {
       expect(safeRedirectPath(value, ORIGIN)).toBeNull();
     }
@@ -3130,6 +3134,9 @@ export function safeRedirectPath(value: unknown, origin: string): string | null 
   try {
     const url = new URL(value, origin);
     if (url.origin !== new URL(origin).origin) return null;
+    // Dot segments collapse during parsing: `/.//evil.com` becomes `//evil.com`,
+    // which a browser reads as another site. Check the normalised path too.
+    if (url.pathname.startsWith('//')) return null;
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return null;
@@ -5327,6 +5334,8 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - Mobile `AuthContext` declares its own `User` interface and copies a fixed list of fields from `getMyProfile()` (`AuthContext.tsx:13` and `:105-121`). So the column is loaded but dropped. Add it to both, or switch the context to the shared `User`.
   - Push: `AuthContext` calls `registerPushTokenForUser` on sign-in, before `refreshUser()` loads the profile. Move registration after the profile loads, skip it for a pending account, and register after a successful restore. Update `AuthContext.test.tsx`.
 - **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows the default avatar, and doesn't open a profile. The name is already `UNAVAILABLE_ACCOUNT_NAME`, and `formatPublicName` passes it through unchanged (PR 3, Task 3.4). These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer. PR 3's null guards already hide Block.
+  - `NotificationsScreen.tsx:165-175` opens `MessageThread` straight from a notification, with `otherUserName: target.senderName ?? notif.title`, and the thread never refetches. So a pending partner's real name, photo, Block and Conversation options all show. Resolve the partner through `getConversations` (in the handler or the thread screen) and use its `other_user_name`, `other_user_id`, `other_user_photo` and `other_user_available`. Found in the PR 3 chunk 2 review.
+  - Hide Block for an unavailable (pending) partner too, once the flag reaches the thread. Blocking a hidden member does no harm, but "Block Unavailable account?" reads oddly.
 - **4.6 Gate, review, draft PR.** Then run a Maestro flow once on a dev build: sign in, delete, sign in again, restore. Add it under `apps/mobile/.maestro/` if the flow is stable.
 
 **Acceptance:** on a device, a member can delete their account with a password and with Google. Signing back in shows the restore screen, and Restore works. Chats with a pending member show "Unavailable account".
@@ -5377,3 +5386,10 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - `getLastSignInAt` accepts `Infinity` as a timestamp (`Number.isFinite` would close it; a server-signed token can't carry one), and `isRecentSignIn` treats a future timestamp as recent.
   - Cheap test gaps: a two-part token, a non-JSON payload, an already-padded segment, a non-ASCII `user_metadata` name, an `Error`-shaped PostgREST error with a code as its message, and `not_authenticated` falling back to the generic sentence.
   - `isDeletionDatePassed`'s doc could say, as `isRecentSignIn`'s does, that the client clock is a hint and the server's `deletion_in_progress` decides.
+- From the PR 3 chunk 2 reviews (no CRITICAL or HIGH; the plan's `safeRedirectPath` let `/.//evil.com` normalise to `//evil.com`, which the implementer caught and fixed in Task 3.7):
+  - An empty thread with a purged partner shows "No messages yet. Say hello!" right above "This account has been deleted…" (`pages/messages/[id].page.tsx`, which also reuses `styles.firstMessage` for the new line). Hide the hello line when `other_user_id` is null, and give the line its own class.
+  - `getOrCreateConversation` inserts the two participant rows separately. If the second insert fails, the orphan now shows as "Unavailable account" with no composer, the same as a purged partner (before, it was skipped). Clean up the orphan, or make the insert atomic.
+  - A chat partner can still read a pending member's `conversation_participants.name` through PostgREST (008's policy lets participants read each other's rows). The UI no longer shows it, and only people who already chatted with the member can read it. Closing it needs a database change, such as a view without the column.
+  - `safeRedirectPath` accepts any length. A very long `?redirect=` could push the OAuth `redirectTo` past URL limits and fail that member's Google sign-in. Cap it at about 2 KB. Optionally refuse targets under `/auth/callback` and `/login`, which only chain back to themselves.
+  - `getExistingIds` sends the whole id list in one `.in()`. The moderation queue's page size bounds it today, but more than 1000 ids would hit `max_rows` and show real targets as gone. Chunk it, or assert the bound at the call site.
+  - Tests: cover the "no partner ids, so the `users` query is skipped" branch in `getConversations` explicitly.
