@@ -90,7 +90,8 @@ export default function TermsPage() {
 
       <h2>8. Ending your account</h2>
       <p>
-        You can delete your account at any time (see the <Link href="/help">Help Center</Link>). We may suspend or
+        You can delete your account at any time from Settings or at{' '}
+        <Link href="/delete-account">nepally.us/delete-account</Link> (see the <Link href="/help">Help Center</Link>). We may suspend or
         terminate accounts that break these Terms. Sections 5, 9, 10, and 11 survive termination.
       </p>
 

@@ -45,6 +45,10 @@ describe('Privacy Policy page', () => {
 
     expectLink(/Terms of Service/, '/terms');
     expectMention(/delete your account/i);
+    expectMention(/29 days/);
+    expectMention(/restore it by signing in/i);
+    expectMention(/saved link/i);
+    expectLink(/delete-account/, '/delete-account');
   });
 });
 
@@ -58,6 +62,12 @@ describe('Terms of Service page', () => {
     expectMention(/18 years/);
     expectLink(/Privacy Policy/, '/privacy');
     expectLink(/Community Guidelines/, '/guidelines');
+  });
+
+  it('points to in-app account deletion', () => {
+    render(<TermsPage />);
+
+    expectLink(/delete-account/, '/delete-account');
   });
 });
 
@@ -81,7 +91,9 @@ describe('Help Center page', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Help Center' })).toBeDefined();
     expectMention(/Verified/);
     expectMention(/report/i);
-    expectMention(/delete your account/i);
+    expectMention(/delete my account/i);
+    expectMention(/Delete account/);
+    expectLink(/delete-account/, '/delete-account');
     expectLink(/support@nepally\.us/, 'mailto:support@nepally.us');
     expectLink(/Privacy Policy/, '/privacy');
   });

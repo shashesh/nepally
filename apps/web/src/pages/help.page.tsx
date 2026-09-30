@@ -127,10 +127,13 @@ export default function HelpPage() {
         </FaqItem>
         <FaqItem question="How do I delete my account?">
           <p>
-            Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the email address on your account with the
-            subject &quot;Delete my account&quot;. We will confirm the request and delete your account, including your
-            profile, posts, comments, messages, listings, and photos, within 30 days. See the <Link href="/privacy">Privacy Policy</Link> for what
-            we may need to keep and why.
+            Open your profile, then Settings &amp; more, then <strong>Delete account</strong>, or go to{' '}
+            <Link href="/delete-account">nepally.us/delete-account</Link>. Confirm it&apos;s you with your password or
+            Google, then choose Delete my account. Your account is hidden right away and deleted after 29 days, along
+            with your profile, posts, comments, the messages you sent, listings, and photos. Sign in before then to
+            restore it. If you can&apos;t sign in, email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from
+            the email address on your account with the subject &quot;Delete my account&quot;. See the{' '}
+            <Link href="/privacy">Privacy Policy</Link> for what we may need to keep and why.
           </p>
         </FaqItem>
       </Faq>

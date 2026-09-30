@@ -93,9 +93,12 @@ export default function PrivacyPage() {
 
       <h2>How long we keep it</h2>
       <p>
-        We keep your account and content while your account is active. When you delete your account, we remove your
-        profile, posts, comments, messages, listings, and photos within 30 days. We may keep limited records longer
-        where the law requires it, for example payment records, or to investigate abuse.
+        We keep your account and content while your account is active. When you delete your account, it is hidden from
+        other members right away and deleted 29 days later: your profile, posts, comments, the messages you sent,
+        listings, events, and photos. Until then you can restore it by signing in. The apps stop showing your photos
+        right away, but a saved link to one keeps working until the photo is deleted. Everything goes within 30 days. We
+        may keep limited records longer where the law requires it, for example payment records, or to investigate
+        abuse.
       </p>
 
       <h2>Your choices</h2>
@@ -104,8 +107,9 @@ export default function PrivacyPage() {
         <li>Turn notifications on or off per category in Notification Preferences.</li>
         <li>Revoke location permission in your device settings; you can still enter a ZIP code manually.</li>
         <li>
-          Delete your account. See the <Link href="/help">Help Center</Link> for the steps, or email{' '}
-          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from your account email and we will delete your account for you.
+          Delete your account from Settings, or at <Link href="/delete-account">nepally.us/delete-account</Link>. If you
+          can&apos;t sign in, email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from your account email and we
+          will delete your account for you.
         </li>
       </ul>
 
