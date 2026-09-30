@@ -5401,3 +5401,16 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - `/login?redirect=/login` for a signed-in visitor renders a blank page (one replace to the same route, then nothing). Treat `/login` targets as null.
   - After an email sign-in, `useRedirectWhen`'s replace and the handler's push both navigate (pre-existing, harmless).
   - Check once on a preview URL that Supabase's `/**` allow-list matches a `redirectTo` with a query string. If it doesn't, Supabase falls back to the Site URL and the return path is lost.
+- From the PR 3 chunk 4 review (no CRITICAL or HIGH; the Google round trip and the moderation path were traced end to end):
+  - `DeleteAccountFlow` is one 235-line function (7 state values, 4 handlers, 5 JSX branches), well over the 50-line guideline. Split it into step components (`ExplainStep`, `PasswordConfirmStep`, `GoogleConfirmStep`, `FinalStep`, `WrongAccountStep`) with a `useDeleteAccountFlow` hook.
+  - `handleContinue` doesn't catch a rejected `getSession()`, which would leave Continue busy with no message. Wrap it, reset `busy` in `finally`, and fall through to confirm.
+  - Restore ignores `refreshUser()` returning null (or a profile still carrying a date), so a failed reload shows the same screen with no feedback. Show "Restored, but we couldn't reload your account. Please refresh the page."
+  - Back from Google after cancelling there, the stored id still matches, so the flow jumps to the final step and only the server's `reauth_required` sends it back. Also require `isRecentSignIn` before choosing the final step.
+  - When the other Google account is itself pending deletion, Layout shows that account's restore screen, the flow never mounts, and `REAUTH_USER_KEY` stays behind (harmless: the next Google start overwrites it).
+  - Layout still polls unread counts and notifications for a pending member. Pass a null user id to those hooks while `deletion_scheduled_for` is set.
+  - `handleGoogle` never clears `notice`, and `handlePassword` clears it only on success; clear it whenever an error shows.
+  - Focus falls to `<body>` when the step changes. Move it to the new card's heading.
+  - After a successful `signInWithGoogle`, `busy` stays true on purpose, but a back-forward-cache restore leaves the Google button stuck. Reset it on `pageshow` with `persisted`.
+  - The wrong-account effect's `signOut(...).finally(...)` has no `.catch`, so a rejection goes unhandled (the redirect still runs).
+  - If signing out fails after the delete and `refreshUser()` then returns null, the remounted flow shows Explain again under the toast.
+  - Missing tests: the wrong-account path removing the stored key, a `getSession` failure in Continue, `sessionStorage` throwing in the Google start, the double-press guard, and `refreshUser` returning null on restore.
