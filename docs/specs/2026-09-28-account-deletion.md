@@ -135,10 +135,11 @@ object the user owns, whatever the path convention.
 - `verify_jwt = false` in `supabase/config.toml`. The caller must send
   `x-purge-secret`, compared in constant time with the `ACCOUNT_PURGE_SECRET`
   function secret (the same approach as `send-push-notification`).
-- Uses a service-role client. Per run it selects up to 50 users whose
-  `deletion_scheduled_for` is at least an hour in the past. The hour covers any
-  clock drift between the function and the database. Then for each one:
-  1. Re-reads the row and skips the user if it is no longer due.
+- Uses a service-role client. Per run it asks the database for up to 50 users whose
+  `deletion_scheduled_for` is at least an hour in the past, by the database's
+  clock (`list_due_account_deletions`, §4.4). Then for each one:
+  1. Re-reads the row (`is_due_for_purge`) and skips the user if it is no longer
+     due.
   2. Calls `list_user_storage_objects`, groups the paths by bucket and removes
      them through the Storage API in chunks of 100.
   3. If storage removal succeeded, re-reads the row again, then calls
@@ -146,9 +147,9 @@ object the user owns, whatever the path convention.
   4. On any failure, logs the user id and error, then moves on. That user is
      retried on the next run.
 - **A restore can't race the purge.** `cancel_account_deletion` refuses once the
-  date has passed (§4.4), and the purge only takes accounts an hour past it. A
-  member can't clear a due date, and without that no re-read could close the gap
-  before `deleteUser`. The two re-reads still cover a service-role change, such as
+  date has passed (§4.4), and the purge only takes accounts an hour past it. Both
+  checks read the database's clock, so they can't disagree. A member can't clear a
+  due date, and without that no re-read could close the gap before `deleteUser`. The two re-reads still cover a service-role change, such as
   support restoring an account by hand. Files already removed when that happens
   stay gone, but the account survives.
 - Responds with counts only (`purged`, `skipped`, `failed`). It never logs names or
@@ -177,6 +178,10 @@ problems. Both are fixed in one new migration.
   the date, before the purge has run, shows "Your account is being deleted" (§5.5).
   Under 048 alone, a restore could land after the purge's last re-read and still
   lose the account.
+- **The database decides what is due.** `list_due_account_deletions(limit)` and
+  `is_due_for_purge(uid)`, service role only, treat an account as due an hour
+  after its date, by `now()`. The purge's due check and cancel's refusal share one
+  clock, and the hour covers a cancel whose transaction began just before the date.
 - **"Within 30 days" holds.** `request_account_deletion()` sets the date 29 days
   out instead of 30, and the job runs hourly (`'0 * * * *'`) instead of daily. An
   account is purged at most about two hours after its date: the one-hour margin
@@ -365,12 +370,14 @@ message. While the partner is pending, messages can still be sent (§6).
   - a new request's date is 29 days out (050)
 - **Live purge check** `npm run test:security:account-purge`: besides removing the
   user, their files and their rows, a purged member's comment on another member's
-  post lowers that post's `comments_count` (051).
+  post lowers that post's `comments_count` (051). A member whose date passed 30
+  minutes ago survives the run (the one-hour margin, 050).
+- **Live function-execute check:** no client role can call
+  `list_due_account_deletions` or `is_due_for_purge`.
 - **Shared unit tests for chat:** `getConversations` marks a hidden or purged partner
   unavailable and keeps the conversation.
 - **Edge function unit tests** with injected clients:
   - nothing is due
-  - the due cutoff is an hour before now
   - a user who is no longer due is skipped
   - a storage failure skips that user and continues
   - on success, `deleteUser` is called once per user
