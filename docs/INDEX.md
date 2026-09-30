@@ -60,13 +60,14 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
+- [plans/active/2026-09-28-account-deletion.md](plans/active/2026-09-28-account-deletion.md) — in-app account deletion in 5 PRs: migration 048 (request/cancel/hiding), purge edge function + 049–052 (hourly cron, restore deadline, comment count, scrub copies), shared + web, mobile, ship docs
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-_None active._
+- [specs/2026-09-28-account-deletion.md](specs/2026-09-28-account-deletion.md) — in-app account deletion (web + mobile): 29-day hidden grace period, restore on sign-in until the date, recent sign-in check, hourly purge of auth user, photos and copies in other members' notifications, public `/delete-account` page
 
 Shipped designs live in [archive/specs/](archive/specs/).
 
