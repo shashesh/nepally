@@ -2060,11 +2060,21 @@ The full review of #111 (2026-09-30) found that other members keep copies of a p
     - New node test: a failed due-list lookup fails the run.
     - The purge check covers GET → 405; a soft-deleted comment not counted down twice; the purged member's own post taking its comments with it; a chat the other member spoke last in staying untouched; and a chat with only the purged member's messages emptying its preview.
   - Kept, with the reason in 052's header: the notification DELETE scans the table (see Risks).
-- [ ] **Step 7: Staging (needs the user).**
+- [ ] **Step 7: Staging (needs the user).** Items 1–3 are done; item 4 waits on the secrets.
   1. Apply 052 (`scrub_account_copies`) and realign the tracker row to `052`.
   2. Redeploy `purge-deleted-accounts`. It calls `scrub_account_copies`, so it must go after 052.
   3. `npm run test:security:functions` must pass.
   4. With the secrets set, `npm run test:security:account-purge` must pass too. The next migration number is 053.
+
+**Progress 2026-09-30 (052):** at the user's request, 052 was applied to staging and its tracker row realigned. The tracker now ends `050`, `051`, `052`.
+
+- `notify_on_new_like` stores `liker_id`.
+- `scrub_account_copies` is executable by `service_role` only.
+- A call with an id that matches nothing, in a rolled-back transaction, ran cleanly. That shows the column references resolve.
+- Then `purge-deleted-accounts` was redeployed.
+- `npm run test:security:functions` and `npm run test:security:account-deletion` pass, and the security advisors show nothing new.
+- The function still answers 500 to a POST without the secret (the function secret isn't set yet) and 405 to a GET.
+- `test:security:account-purge` waits on the secrets (Task 2.7 Step 2).
 - `reauth_required` through the real RPC stays untested live: a real session can't be made stale on demand. `amr_signed_in_within` is tested directly, and the RPC calls it with `auth.jwt() -> 'amr'`.
 
 ---
