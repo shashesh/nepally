@@ -1,11 +1,11 @@
 /**
  * purge-deleted-accounts — Supabase Edge Function
  *
- * Deletes accounts whose 30-day deletion grace period has ended (spec:
- * docs/specs/2026-09-28-account-deletion.md). For each due user it removes
- * every storage object they own, then deletes the auth user; ON DELETE
- * CASCADE removes their rows. The pg_cron job from migration 049 calls it
- * daily.
+ * Deletes accounts whose deletion grace period has ended, an hour after
+ * their date (spec: docs/specs/2026-09-28-account-deletion.md). For each due
+ * user it removes every storage object they own, then deletes the auth user;
+ * ON DELETE CASCADE removes their rows. The pg_cron job from migration 049
+ * calls it, hourly since migration 050.
  *
  * Auth: verify_jwt = false in config.toml. The caller must send an
  * x-purge-secret header equal to the ACCOUNT_PURGE_SECRET function secret.
@@ -16,7 +16,13 @@
  */
 
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { purgeDueAccounts, secretsMatch, type PurgeDeps, type StorageObjectRef } from './purge.ts';
+import {
+  purgeCutoff,
+  purgeDueAccounts,
+  secretsMatch,
+  type PurgeDeps,
+  type StorageObjectRef,
+} from './purge.ts';
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -28,7 +34,7 @@ function buildDeps(supabase: SupabaseClient): PurgeDeps {
       const { data, error } = await supabase
         .from('users')
         .select('id')
-        .lte('deletion_scheduled_for', new Date().toISOString())
+        .lte('deletion_scheduled_for', purgeCutoff(new Date()))
         .order('deletion_scheduled_for', { ascending: true })
         .limit(limit);
       if (error) throw error;
@@ -39,7 +45,7 @@ function buildDeps(supabase: SupabaseClient): PurgeDeps {
         .from('users')
         .select('id')
         .eq('id', userId)
-        .lte('deletion_scheduled_for', new Date().toISOString())
+        .lte('deletion_scheduled_for', purgeCutoff(new Date()))
         .maybeSingle();
       if (error) throw error;
       return data !== null;
