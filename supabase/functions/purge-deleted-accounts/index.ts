@@ -4,9 +4,10 @@
  * Deletes accounts whose deletion grace period has ended, an hour after
  * their date by the database's clock (spec:
  * docs/specs/2026-09-28-account-deletion.md). For each due user it removes
- * every storage object they own, then deletes the auth user; ON DELETE
- * CASCADE removes their rows. The pg_cron job from migration 049 calls it,
- * hourly since migration 050.
+ * every storage object they own, scrubs copies of their words from other
+ * members' notifications and chat previews (052), then deletes the auth
+ * user; ON DELETE CASCADE removes their rows. The pg_cron job from migration
+ * 049 calls it, hourly since migration 050.
  *
  * Auth: verify_jwt = false in config.toml. The caller must send an
  * x-purge-secret header equal to the ACCOUNT_PURGE_SECRET function secret.
@@ -46,6 +47,10 @@ function buildDeps(supabase: SupabaseClient): PurgeDeps {
     },
     async removeObjects(bucketId, paths) {
       const { error } = await supabase.storage.from(bucketId).remove(paths);
+      if (error) throw error;
+    },
+    async scrubCopies(userId) {
+      const { error } = await supabase.rpc('scrub_account_copies', { p_user_id: userId });
       if (error) throw error;
     },
     async deleteAuthUser(userId) {

@@ -15,6 +15,7 @@ type FakeOptions = {
   restoresMidPurge?: string[];
   objects?: Record<string, StorageObjectRef[]>;
   failStorageFor?: string[];
+  failScrubFor?: string[];
   failDeleteFor?: string[];
 };
 
@@ -24,7 +25,10 @@ function fakeDeps(options: FakeOptions = {}) {
     listDueUserIds: [] as number[],
     listStorageObjects: [] as string[],
     removeObjects: [] as { bucketId: string; paths: string[] }[],
+    scrubCopies: [] as string[],
     deleteAuthUser: [] as string[],
+    /** Scrubs and deletes in the order they happened, e.g. `scrub:u1`, `delete:u1`. */
+    order: [] as string[],
   };
   const failures: string[] = [];
   const stillDueChecks = new Map<string, number>();
@@ -51,11 +55,19 @@ function fakeDeps(options: FakeOptions = {}) {
       }
       calls.removeObjects.push({ bucketId, paths });
     },
+    async scrubCopies(userId) {
+      if ((options.failScrubFor ?? []).includes(userId)) {
+        throw new Error('scrub failed');
+      }
+      calls.scrubCopies.push(userId);
+      calls.order.push(`scrub:${userId}`);
+    },
     async deleteAuthUser(userId) {
       if ((options.failDeleteFor ?? []).includes(userId)) {
         throw new Error('auth unavailable');
       }
       calls.deleteAuthUser.push(userId);
+      calls.order.push(`delete:${userId}`);
     },
     logFailure(userId) {
       failures.push(userId);
@@ -126,7 +138,27 @@ test('keeps the account when the user restores while their files are being remov
 
   assert.deepEqual(summary, { purged: 0, skipped: 1, failed: 0 });
   assert.equal(calls.removeObjects.length, 1);
+  assert.deepEqual(calls.scrubCopies, []);
   assert.deepEqual(calls.deleteAuthUser, []);
+});
+
+test("scrubs copies of each member's words just before deleting their auth user", async () => {
+  const { deps, calls } = fakeDeps({ due: ['u1', 'u2'] });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 2, skipped: 0, failed: 0 });
+  assert.deepEqual(calls.order, ['scrub:u1', 'delete:u1', 'scrub:u2', 'delete:u2']);
+});
+
+test('keeps the auth user when the scrub fails, and carries on with the next user', async () => {
+  const { deps, calls, failures } = fakeDeps({ due: ['u1', 'u2'], failScrubFor: ['u1'] });
+
+  const summary = await purgeDueAccounts(deps);
+
+  assert.deepEqual(summary, { purged: 1, skipped: 0, failed: 1 });
+  assert.deepEqual(calls.deleteAuthUser, ['u2']);
+  assert.deepEqual(failures, ['u1']);
 });
 
 test('keeps the auth user when storage removal fails, and carries on with the next user', async () => {

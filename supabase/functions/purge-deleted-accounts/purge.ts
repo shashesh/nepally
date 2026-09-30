@@ -1,8 +1,9 @@
 /**
  * Core of the purge-deleted-accounts edge function (scheduled by migration
  * 049). For each account whose deletion grace period has ended it removes
- * the user's storage objects, then deletes the auth user; 048's ON DELETE
- * CASCADE chain removes their rows.
+ * the user's storage objects, scrubs the copies of their words kept in other
+ * members' rows (052), then deletes the auth user; 048's ON DELETE CASCADE
+ * chain removes their own rows.
  *
  * No Deno APIs and no remote imports, so `node --test` can run the tests
  * (npm run functions:test). index.ts wires PurgeDeps to Supabase.
@@ -22,6 +23,13 @@ export interface PurgeDeps {
   listStorageObjects(userId: string): Promise<StorageObjectRef[]>;
   /** Throws on failure. */
   removeObjects(bucketId: string, paths: string[]): Promise<void>;
+  /**
+   * Deletes other members' notifications that quote the user and resets chat
+   * previews they wrote (scrub_account_copies, 052). It must run before the
+   * auth user goes: it finds the user's conversations through rows the
+   * cascade removes. Throws on failure.
+   */
+  scrubCopies(userId: string): Promise<void>;
   /** Throws on failure. */
   deleteAuthUser(userId: string): Promise<void>;
   logFailure(userId: string, error: unknown): void;
@@ -29,7 +37,7 @@ export interface PurgeDeps {
 
 export type PurgeSummary = { purged: number; skipped: number; failed: number };
 
-/** Accounts handled per run; the rest wait for the next daily run. */
+/** Accounts handled per run; the rest wait for the next hourly run. */
 export const PURGE_BATCH_SIZE = 50;
 /** Paths per Storage API remove() call. */
 export const STORAGE_REMOVE_CHUNK_SIZE = 100;
@@ -63,6 +71,7 @@ async function purgeAccount(deps: PurgeDeps, userId: string): Promise<'purged' |
   // transactional with Postgres), but the account survives.
   if (!(await deps.isStillDue(userId))) return 'skipped';
 
+  await deps.scrubCopies(userId);
   await deps.deleteAuthUser(userId);
   return 'purged';
 }
