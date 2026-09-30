@@ -6,12 +6,22 @@ import { supabase } from './supabase';
 import { resendVerificationEmail } from '@nepally/shared';
 import type { EmailAuthResult, GoogleAuthResult } from '@nepally/shared';
 
-export async function signInWithGoogle(): Promise<GoogleAuthResult> {
+export interface GoogleSignInOptions {
+  /** Where Google hands the member back; /auth/callback by default. */
+  redirectTo?: string;
+  /** Always show Google's account chooser, so a re-auth can't complete silently. */
+  selectAccount?: boolean;
+}
+
+export async function signInWithGoogle(
+  options: GoogleSignInOptions = {}
+): Promise<GoogleAuthResult> {
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: options.redirectTo ?? `${window.location.origin}/auth/callback`,
+        ...(options.selectAccount ? { queryParams: { prompt: 'select_account' } } : {}),
       },
     });
     if (error) throw error;
@@ -65,10 +75,7 @@ export function resendSignupEmail(email: string): Promise<{ error?: Error }> {
   return resendVerificationEmail(supabase, email);
 }
 
-export async function signInWithEmail(
-  email: string,
-  password: string
-): Promise<EmailAuthResult> {
+export async function signInWithEmail(email: string, password: string): Promise<EmailAuthResult> {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,

@@ -27,12 +27,7 @@ vi.mock('@nepally/shared', async () => {
   };
 });
 
-import {
-  signUpWithEmail,
-  signInWithEmail,
-  signInWithGoogle,
-  resendSignupEmail,
-} from './auth';
+import { signUpWithEmail, signInWithEmail, signInWithGoogle, resendSignupEmail } from './auth';
 
 describe('signUpWithEmail', () => {
   beforeEach(() => {
@@ -237,6 +232,26 @@ describe('signInWithGoogle', () => {
     expect(window.location.href).toBe('https://accounts.google.com/o/oauth2/...');
   });
 
+  it('passes a return address and asks for the account chooser when told to', async () => {
+    authMocks.signInWithOAuthMock.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/o/oauth2/...' },
+      error: null,
+    });
+
+    await signInWithGoogle({
+      redirectTo: 'http://localhost:3000/delete-account?step=confirm',
+      selectAccount: true,
+    });
+
+    expect(authMocks.signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: 'http://localhost:3000/delete-account?step=confirm',
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+  });
+
   it('returns error when OAuth provider fails', async () => {
     authMocks.signInWithOAuthMock.mockResolvedValue({
       data: { url: null },
@@ -259,4 +274,3 @@ describe('signInWithGoogle', () => {
     expect(result.error?.message).toBe('No OAuth URL returned');
   });
 });
-
