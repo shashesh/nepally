@@ -1,6 +1,6 @@
 ---
 title: In-app account deletion
-status: planned
+status: in-progress
 created: 2026-09-28
 spec: docs/specs/2026-09-28-account-deletion.md
 ---
@@ -2117,7 +2117,7 @@ Branch `feat/account-deletion-web`, from master after #111–#113 merged. 048 to
 - Create: `packages/shared/src/constants/accountDeletion.ts`, `packages/shared/src/constants/accountDeletion.test.ts`
 - Modify: `packages/shared/src/index.ts`, `packages/shared/src/types/user.ts`
 
-- [ ] **Step 1: Write the failing test.** It imports from the package entry, so it also proves the export.
+- [x] **Step 1: Write the failing test.** It imports from the package entry, so it also proves the export.
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -2150,12 +2150,12 @@ describe('account deletion constants', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/constants/accountDeletion.test.ts`
 Expected: FAIL, because the constants aren't exported.
 
-- [ ] **Step 3: Write the constants** in `packages/shared/src/constants/accountDeletion.ts`.
+- [x] **Step 3: Write the constants** in `packages/shared/src/constants/accountDeletion.ts`.
 
 ```ts
 /**
@@ -2184,13 +2184,13 @@ export const PROFILE_NOT_FOUND = 'profile_not_found';
 export const UNAVAILABLE_ACCOUNT_NAME = 'Unavailable account';
 ```
 
-- [ ] **Step 4: Export them.** In `packages/shared/src/index.ts`, after `export * from './constants/search';`, add:
+- [x] **Step 4: Export them.** In `packages/shared/src/index.ts`, after `export * from './constants/search';`, add:
 
 ```ts
 export * from './constants/accountDeletion';
 ```
 
-- [ ] **Step 5: Add the field.** In `packages/shared/src/types/user.ts`, after `last_active_at: string;` in `User`:
+- [x] **Step 5: Add the field.** In `packages/shared/src/types/user.ts`, after `last_active_at: string;` in `User`:
 
 ```ts
 
@@ -2201,14 +2201,14 @@ export * from './constants/accountDeletion';
 
 In the same file, add `| 'deletion_scheduled_for'` to the end of `PublicUser`'s `Omit` list, after `| 'google_verified'`.
 
-- [ ] **Step 6: Run the test and type-check.**
+- [x] **Step 6: Run the test and type-check.**
 
 Run: `npm run test --workspace=packages/shared -- src/constants/accountDeletion.test.ts`
 Expected: PASS, 3 tests.
 Run: `npm run type-check --workspace=packages/shared`
 Expected: exit 0.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add packages/shared/src/constants/accountDeletion.ts packages/shared/src/constants/accountDeletion.test.ts packages/shared/src/index.ts packages/shared/src/types/user.ts
@@ -2222,7 +2222,7 @@ git commit -m "feat(shared): account deletion constants and the User field"
 - Create: `packages/shared/src/logic/accountDeletion.ts`, `packages/shared/src/logic/accountDeletion.test.ts`
 - Modify: `packages/shared/src/logic/index.ts`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -2324,12 +2324,12 @@ describe('deletion dates', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/logic/accountDeletion.test.ts`
 Expected: FAIL, because `./accountDeletion` doesn't exist.
 
-- [ ] **Step 3: Write the logic** in `packages/shared/src/logic/accountDeletion.ts`.
+- [x] **Step 3: Write the logic** in `packages/shared/src/logic/accountDeletion.ts`.
 
 ```ts
 /**
@@ -2405,14 +2405,14 @@ export function isDeletionDatePassed(iso: string, nowMs: number = Date.now()): b
 }
 ```
 
-- [ ] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/logic/index.ts`.
+- [x] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/logic/index.ts`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run: `npm run test --workspace=packages/shared -- src/logic/accountDeletion.test.ts`
 Expected: PASS, 11 tests.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add packages/shared/src/logic/accountDeletion.ts packages/shared/src/logic/accountDeletion.test.ts packages/shared/src/logic/index.ts
@@ -2426,7 +2426,7 @@ git commit -m "feat(shared): account deletion logic: recent sign-in, re-auth met
 - Create: `packages/shared/src/api/accountDeletion.ts`, `packages/shared/src/api/accountDeletion.test.ts`
 - Modify: `packages/shared/src/api/index.ts`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -2535,12 +2535,12 @@ describe('getAccountDeletionErrorCode', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/api/accountDeletion.test.ts`
 Expected: FAIL, because `./accountDeletion` doesn't exist.
 
-- [ ] **Step 3: Write the API** in `packages/shared/src/api/accountDeletion.ts`.
+- [x] **Step 3: Write the API** in `packages/shared/src/api/accountDeletion.ts`.
 
 ```ts
 /**
@@ -2624,21 +2624,21 @@ export async function cancelAccountDeletion(supabase: SupabaseClient): Promise<{
 }
 ```
 
-- [ ] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/api/index.ts`.
+- [x] **Step 4: Export it.** Add `export * from './accountDeletion';` to the end of `packages/shared/src/api/index.ts`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run: `npm run test --workspace=packages/shared -- src/api/accountDeletion.test.ts`
 Expected: PASS, 9 tests.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add packages/shared/src/api/accountDeletion.ts packages/shared/src/api/accountDeletion.test.ts packages/shared/src/api/index.ts
 git commit -m "feat(shared): request and cancel account deletion"
 ```
 
-- [ ] **Chunk 1 gate and review.** Run `npm run test --workspace=packages/shared`, `npm run type-check --workspace=packages/shared` and `npm run lint --workspace=packages/shared`, checking each exit code. Then a `code-reviewer` on the chunk's three commits. Fix CRITICAL and HIGH findings in one `fix: address chunk 1 review` commit; everything else goes to Follow-ups.
+- [x] **Chunk 1 gate and review.** Run `npm run test --workspace=packages/shared`, `npm run type-check --workspace=packages/shared` and `npm run lint --workspace=packages/shared`, checking each exit code. Then a `code-reviewer` on the chunk's three commits. Fix CRITICAL and HIGH findings in one `fix: address chunk 1 review` commit; everything else goes to Follow-ups.
 
 ### Chunk 2: shared chat, redirect and moderation data
 
@@ -2651,7 +2651,7 @@ git commit -m "feat(shared): request and cancel account deletion"
 
 After this task, `other_user_id` is nullable, and web and mobile won't type-check until Tasks 3.5 and 3.6. Run only the shared tests until then.
 
-- [ ] **Step 1: Write the failing tests.** Add to `packages/shared/src/utils/user.test.ts`. Import `UNAVAILABLE_ACCOUNT_NAME` from `'../constants/accountDeletion'` if the file doesn't already, and put the test inside the existing `describe('formatPublicName', …)`:
+- [x] **Step 1: Write the failing tests.** Add to `packages/shared/src/utils/user.test.ts`. Import `UNAVAILABLE_ACCOUNT_NAME` from `'../constants/accountDeletion'` if the file doesn't already, and put the test inside the existing `describe('formatPublicName', …)`:
 
 ```ts
 it('leaves the unavailable-account placeholder whole', () => {
@@ -2783,12 +2783,12 @@ describe('getConversations', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/utils/user.test.ts src/api/conversations.test.ts`
 Expected: FAIL. `formatPublicName` gives `'Unavailable A.'`, the results have no `other_user_available`, the purged conversation is dropped, and the lookup error is ignored.
 
-- [ ] **Step 3: Let the placeholder through `formatPublicName`.** In `packages/shared/src/utils/user.ts`, import the constant at the top:
+- [x] **Step 3: Let the placeholder through `formatPublicName`.** In `packages/shared/src/utils/user.ts`, import the constant at the top:
 
 ```ts
 import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
@@ -2802,7 +2802,7 @@ and add, as the second line of `formatPublicName`'s body, after the blank-name c
 if (fullName === UNAVAILABLE_ACCOUNT_NAME) return fullName;
 ```
 
-- [ ] **Step 4: Change the type.** In `packages/shared/src/types/chat.ts`, in `ConversationWithParticipant`, replace `other_user_id: string;` and `other_user_name: string;` with:
+- [x] **Step 4: Change the type.** In `packages/shared/src/types/chat.ts`, in `ConversationWithParticipant`, replace `other_user_id: string;` and `other_user_name: string;` with:
 
 ```ts
 /** Null when the partner's account was purged: their participant row is gone. */
@@ -2818,7 +2818,7 @@ and add after `other_user_trust_level?: number;`:
 other_user_available: boolean;
 ```
 
-- [ ] **Step 5: Change `getConversations`.** In `packages/shared/src/api/conversations.ts`:
+- [x] **Step 5: Change `getConversations`.** In `packages/shared/src/api/conversations.ts`:
 
 - Import the constant:
 
@@ -2855,12 +2855,12 @@ for (const conv of conversations || []) {
 }
 ```
 
-- [ ] **Step 6: Run the tests.**
+- [x] **Step 6: Run the tests.**
 
 Run: `npm run test --workspace=packages/shared -- src/utils/user.test.ts src/api/conversations.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add packages/shared/src/types/chat.ts packages/shared/src/utils/user.ts packages/shared/src/utils/user.test.ts packages/shared/src/api/conversations.ts packages/shared/src/api/conversations.test.ts
@@ -2876,11 +2876,11 @@ git commit -m "feat(shared): mark chat partners who are pending deletion or purg
 
 `MessageLog` and the thread page's `<title>` and composer label already read `formatPublicName(partner.other_user_name)`, which now yields the placeholder. They need no change.
 
-- [ ] **Step 1: Give every typed fixture the new field.** Add `other_user_available: true,` to:
+- [x] **Step 1: Give every typed fixture the new field.** Add `other_user_available: true,` to:
   - the `conversation()` builder in `ConversationRow.test.tsx`, `index.test.tsx`, `useConversations.test.ts` and `useMessageThread.test.ts`
   - `PARTNER` in `ThreadHeader.test.tsx`, `MessageLog.test.tsx` and `[id].test.tsx`
 
-- [ ] **Step 2: Write the failing tests.** In `ConversationRow.test.tsx` (import `UNAVAILABLE_ACCOUNT_NAME` from `@nepally/shared`):
+- [x] **Step 2: Write the failing tests.** In `ConversationRow.test.tsx` (import `UNAVAILABLE_ACCOUNT_NAME` from `@nepally/shared`):
 
 ```tsx
 it('shows an unavailable partner by the placeholder, with an avatar but no member menu', () => {
@@ -2936,12 +2936,12 @@ it('hides the composer when the partner was purged, and says why', () => {
 });
 ```
 
-- [ ] **Step 3: Run them and watch them fail.**
+- [x] **Step 3: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/messages src/pages/messages`
 Expected: the three new tests FAIL; the rest pass.
 
-- [ ] **Step 4: Render the fallback.** In `ConversationRow.tsx`, import `Avatar from '../Avatar'`, and replace the `<UserMenuTrigger … />` element with:
+- [x] **Step 4: Render the fallback.** In `ConversationRow.tsx`, import `Avatar from '../Avatar'`, and replace the `<UserMenuTrigger … />` element with:
 
 ```tsx
 {
@@ -2979,14 +2979,14 @@ Do the same in `ThreadHeader.tsx`, with `size="small"` on both branches. In `[id
 }
 ```
 
-- [ ] **Step 5: Run the web tests and type-check.**
+- [x] **Step 5: Run the web tests and type-check.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/messages src/pages/messages src/hooks/useConversations.test.ts src/hooks/useMessageThread.test.ts`
 Expected: PASS.
 Run: `npm run type-check --workspace=apps/web`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/web/src/components/messages apps/web/src/pages/messages apps/web/src/hooks/useConversations.test.ts apps/web/src/hooks/useMessageThread.test.ts
@@ -3001,7 +3001,7 @@ git commit -m "feat(web): show chat partners who are pending deletion or purged 
 
 PR 4 builds mobile's visible fallback. This task only keeps mobile correct now that `other_user_id` can be null. The name already shows as the placeholder, because `ConversationItem` and the thread both format it with `formatPublicName` (Task 3.4).
 
-- [ ] **Step 1: Write the failing test** in `MessageThreadScreen.test.tsx`, inside the `describe` that renders the thread, and in the file's style:
+- [x] **Step 1: Write the failing test** in `MessageThreadScreen.test.tsx`, inside the `describe` that renders the thread, and in the file's style:
 
 ```tsx
 it('offers no Block for a purged partner', async () => {
@@ -3022,12 +3022,12 @@ it('offers no Block for a purged partner', async () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run: `npm run test --workspace=apps/mobile -- src/screens/chat/MessageThreadScreen.test.tsx`
 Expected: FAIL, because the options button is there.
 
-- [ ] **Step 3: Guard.** In `types/navigation.ts`, change `MessageThread`'s `otherUserId: string;` to:
+- [x] **Step 3: Guard.** In `types/navigation.ts`, change `MessageThread`'s `otherUserId: string;` to:
 
 ```ts
 /** Null when the partner's account was purged. */
@@ -3036,14 +3036,14 @@ otherUserId: string | null;
 
 In `MessageThreadScreen.tsx`, change `handleBlock`'s guard to `if (!user?.id || !otherUserId) return;`. Then wrap the `menuButton` `TouchableOpacity`, the one labelled "Conversation options", in `{otherUserId ? ( … ) : null}`.
 
-- [ ] **Step 4: Run the test, the chat tests and type-check.**
+- [x] **Step 4: Run the test, the chat tests and type-check.**
 
 Run: `npm run test --workspace=apps/mobile -- src/screens/chat`
 Expected: PASS.
 Run: `npm run type-check --workspace=apps/mobile`
 Expected: exit 0.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/mobile/src/types/navigation.ts apps/mobile/src/screens/chat/MessageThreadScreen.tsx apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx
@@ -3057,7 +3057,7 @@ git commit -m "fix(mobile): no Block for a purged chat partner"
 - Create: `packages/shared/src/utils/redirect.ts`, `packages/shared/src/utils/redirect.test.ts`
 - Modify: `packages/shared/src/utils/index.ts`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -3102,12 +3102,12 @@ describe('safeRedirectPath', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/utils/redirect.test.ts`
 Expected: FAIL, because `./redirect` doesn't exist.
 
-- [ ] **Step 3: Write the helper** in `packages/shared/src/utils/redirect.ts`.
+- [x] **Step 3: Write the helper** in `packages/shared/src/utils/redirect.ts`.
 
 ```ts
 /** True for a space, a control character or a backslash, which browsers may read as a slash. */
@@ -3144,14 +3144,14 @@ export function safeRedirectPath(value: unknown, origin: string): string | null 
 }
 ```
 
-- [ ] **Step 4: Export it.** Add `export * from './redirect';` to the end of `packages/shared/src/utils/index.ts`.
+- [x] **Step 4: Export it.** Add `export * from './redirect';` to the end of `packages/shared/src/utils/index.ts`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run: `npm run test --workspace=packages/shared -- src/utils/redirect.test.ts`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add packages/shared/src/utils/redirect.ts packages/shared/src/utils/redirect.test.ts packages/shared/src/utils/index.ts
@@ -3166,7 +3166,7 @@ git commit -m "feat(shared): safeRedirectPath for returning after sign-in"
 
 A moderator sees pending accounts and their active listings (048). So only purged members come back missing, and listings that are purged or no longer active.
 
-- [ ] **Step 1: Write the failing tests** at the end of `moderation.test.ts`, adding `getExistingListingIds` and `getExistingUserIds` to its import from `./moderation`:
+- [x] **Step 1: Write the failing tests** at the end of `moderation.test.ts`, adding `getExistingListingIds` and `getExistingUserIds` to its import from `./moderation`:
 
 ```ts
 describe.each([
@@ -3210,12 +3210,12 @@ describe.each([
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `npm run test --workspace=packages/shared -- src/api/moderation.test.ts`
 Expected: FAIL, because the functions aren't exported.
 
-- [ ] **Step 3: Write them** in `moderation.ts`, after `getPostsByIds`:
+- [x] **Step 3: Write them** in `moderation.ts`, after `getPostsByIds`:
 
 ```ts
 /** The ids in `ids` that still have a row in `table`, in one query. */
@@ -3262,19 +3262,19 @@ export function getExistingListingIds(
 }
 ```
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run: `npm run test --workspace=packages/shared -- src/api/moderation.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add packages/shared/src/api/moderation.ts packages/shared/src/api/moderation.test.ts
 git commit -m "feat(shared): check which reported members and listings still exist"
 ```
 
-- [ ] **Chunk 2 gate and review.** Run each and check its exit code:
+- [x] **Chunk 2 gate and review.** Run each and check its exit code:
   - `npm run test --workspace=packages/shared`
   - from `C:\…`, `npm run test --workspace=apps/web`
   - `npm run test --workspace=apps/mobile`
@@ -3291,7 +3291,7 @@ git commit -m "feat(shared): check which reported members and listings still exi
 
 - Modify: `apps/web/src/lib/auth.ts`, `apps/web/src/lib/auth.test.ts`
 
-- [ ] **Step 1: Write the failing test** in `auth.test.ts`, inside `describe('signInWithGoogle', …)`:
+- [x] **Step 1: Write the failing test** in `auth.test.ts`, inside `describe('signInWithGoogle', …)`:
 
 ```ts
 it('passes a return address and asks for the account chooser when told to', async () => {
@@ -3315,12 +3315,12 @@ it('passes a return address and asks for the account chooser when told to', asyn
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/lib/auth.test.ts`
 Expected: FAIL, because `signInWithGoogle` takes no options.
 
-- [ ] **Step 3: Add the options.** In `lib/auth.ts`, replace `signInWithGoogle`'s signature and its `signInWithOAuth` call:
+- [x] **Step 3: Add the options.** In `lib/auth.ts`, replace `signInWithGoogle`'s signature and its `signInWithOAuth` call:
 
 ```ts
 export interface GoogleSignInOptions {
@@ -3343,12 +3343,12 @@ export async function signInWithGoogle(options: GoogleSignInOptions = {}): Promi
 
 The rest of the function is unchanged.
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/lib/auth.test.ts`
 Expected: PASS. The existing no-options test still sees exactly `{ redirectTo: '…/auth/callback' }`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/lib/auth.ts apps/web/src/lib/auth.test.ts
@@ -3361,7 +3361,7 @@ git commit -m "feat(web): Google sign-in takes a return address and the account 
 
 - Modify: `apps/web/src/hooks/useGoogleSignIn.ts` (+ `.test.ts`), `apps/web/src/pages/login.page.tsx`, `apps/web/src/pages/login.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** In `useGoogleSignIn.test.ts`:
+- [x] **Step 1: Write the failing tests.** In `useGoogleSignIn.test.ts`:
 
 ```ts
 it('carries a return path through the Google callback', async () => {
@@ -3448,12 +3448,12 @@ it('passes a safe ?redirect= to Google sign-in', async () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useGoogleSignIn.test.ts src/pages/login.test.tsx`
 Expected: the five new tests FAIL.
 
-- [ ] **Step 3: Carry the return path in the hook.** In `useGoogleSignIn.ts`, add the parameter and use it:
+- [x] **Step 3: Carry the return path in the hook.** In `useGoogleSignIn.ts`, add the parameter and use it:
 
 ```ts
 /**
@@ -3481,7 +3481,7 @@ export function useGoogleSignIn(
 
 The rest of `start` is unchanged.
 
-- [ ] **Step 4: Read `?redirect=` on the login page.** In `login.page.tsx`, add `safeRedirectPath` to the `@nepally/shared` import. After the `info` constant, add:
+- [x] **Step 4: Read `?redirect=` on the login page.** In `login.page.tsx`, add `safeRedirectPath` to the `@nepally/shared` import. After the `info` constant, add:
 
 ```ts
 // Where to go after logging in: a safe ?redirect= (/delete-account sends
@@ -3505,12 +3505,12 @@ if (redirecting || (user && !router.isReady)) return null;
 
 - In `handleSubmit`, `void router.push('/feed');` becomes `void router.push(destination);`
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useGoogleSignIn.test.ts src/pages/login.test.tsx`
 Expected: PASS, the old tests included.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/web/src/hooks/useGoogleSignIn.ts apps/web/src/hooks/useGoogleSignIn.test.ts apps/web/src/pages/login.page.tsx apps/web/src/pages/login.test.tsx
@@ -3523,7 +3523,7 @@ git commit -m "feat(web): login returns to a safe ?redirect="
 
 - Modify: `apps/web/src/pages/auth/callback.page.tsx`, `apps/web/src/pages/auth/callback.test.tsx`
 
-- [ ] **Step 1: Write the failing tests** at the end of `describe('AuthCallbackPage', …)`:
+- [x] **Step 1: Write the failing tests** at the end of `describe('AuthCallbackPage', …)`:
 
 ```tsx
 describe('with ?redirect=', () => {
@@ -3561,12 +3561,12 @@ describe('with ?redirect=', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/auth/callback.test.tsx`
 Expected: the first new test FAILS; it gets `/feed`.
 
-- [ ] **Step 3: Honour it.** In `callback.page.tsx`, import `safeRedirectPath` along with `logClientEvent` from `@nepally/shared`. Replace `void router.push(result.destination);` with:
+- [x] **Step 3: Honour it.** In `callback.page.tsx`, import `safeRedirectPath` along with `logClientEvent` from `@nepally/shared`. Replace `void router.push(result.destination);` with:
 
 ```ts
 // A safe ?redirect= (e.g. /delete-account) wins over the feed, never
@@ -3579,12 +3579,12 @@ const returnTo = safeRedirectPath(
 void router.push(result.destination === '/feed' && returnTo ? returnTo : result.destination);
 ```
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/auth/callback.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/pages/auth/callback.page.tsx apps/web/src/pages/auth/callback.test.tsx
@@ -3597,7 +3597,7 @@ git commit -m "feat(web): the Google callback honours a safe ?redirect="
 
 - Modify: `apps/web/src/contexts/AuthContext.tsx`, `apps/web/src/contexts/AuthContext.test.tsx`, `docs/product/features/sign-up-and-log-in.md`
 
-- [ ] **Step 1: Write the failing tests** in `AuthContext.test.tsx`, inside `describe('AuthProvider', …)`:
+- [x] **Step 1: Write the failing tests** in `AuthContext.test.tsx`, inside `describe('AuthProvider', …)`:
 
 ```tsx
 it('treats a failed revoke as signed out when this browser has no session left', async () => {
@@ -3664,12 +3664,12 @@ it('registers web push only once the profile shows no pending deletion', async (
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/contexts/AuthContext.test.tsx`
 Expected: the three new tests FAIL.
 
-- [ ] **Step 3: Change `AuthContext.tsx`.**
+- [x] **Step 3: Change `AuthContext.tsx`.**
 
 - Add above `interface AuthContextType`:
 
@@ -3738,21 +3738,21 @@ async function handleSignOut(options: SignOutOptions = {}): Promise<{ error?: st
 }
 ```
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/contexts/AuthContext.test.tsx`
 Expected: PASS, including "a failed signOut keeps the member", whose `renderSignedIn` leaves a session behind.
 
-- [ ] **Step 5: Update the feature doc.** In `docs/product/features/sign-up-and-log-in.md`, replace the last sentence of the "Log out" paragraph with: "If Supabase can't revoke the session but this browser is signed out anyway (supabase-js drops the local session either way), they land on `/` as usual. Only if the browser still holds the session do they stay signed in and see "Couldn't log you out. Please try again." Either failure is logged as `auth_sign_out_failed`."
+- [x] **Step 5: Update the feature doc.** In `docs/product/features/sign-up-and-log-in.md`, replace the last sentence of the "Log out" paragraph with: "If Supabase can't revoke the session but this browser is signed out anyway (supabase-js drops the local session either way), they land on `/` as usual. Only if the browser still holds the session do they stay signed in and see "Couldn't log you out. Please try again." Either failure is logged as `auth_sign_out_failed`."
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/web/src/contexts/AuthContext.tsx apps/web/src/contexts/AuthContext.test.tsx docs/product/features/sign-up-and-log-in.md
 git commit -m "feat(web): sign-out destination, the real sign-out state, push after the profile"
 ```
 
-- [ ] **Chunk 3 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`, checking each exit code. Then a `code-reviewer` and a `security-reviewer` on the chunk's commits: the redirect handling and sign-out are security-sensitive. Fix CRITICAL and HIGH in one `fix: address chunk 3 review` commit.
+- [x] **Chunk 3 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check`, `npm run lint`, `npm run docs:check` and `npm run lint:md`, checking each exit code. Then a `code-reviewer` and a `security-reviewer` on the chunk's commits: the redirect handling and sign-out are security-sensitive. Fix CRITICAL and HIGH in one `fix: address chunk 3 review` commit.
 
 ### Chunk 4: the web feature
 
@@ -3763,7 +3763,7 @@ git commit -m "feat(web): sign-out destination, the real sign-out state, push af
 - Create: `apps/web/src/components/ui/busyButtonProps.tsx` (+ `.test.tsx`), `apps/web/src/components/account/AccountRestoreScreen.tsx` (+ `.test.tsx`)
 - Modify: `apps/web/src/components/ui/index.ts`, `apps/web/src/pages/onboarding/zip.page.tsx`
 
-- [ ] **Step 1: Move `busyButtonProps` out of the ZIP page, test first.** Create `components/ui/busyButtonProps.test.tsx`:
+- [x] **Step 1: Move `busyButtonProps` out of the ZIP page, test first.** Create `components/ui/busyButtonProps.test.tsx`:
 
 ```tsx
 import React from 'react';
@@ -3812,7 +3812,7 @@ export function busyButtonProps(locked: boolean, running: boolean, icon?: ReactN
 
 Add `export { busyButtonProps } from './busyButtonProps';` to `components/ui/index.ts`. In `onboarding/zip.page.tsx`, delete the local function, import `busyButtonProps` from `'../../components/ui'`, and drop `Loader` from its Mantine import if nothing else there uses it. Run the new test and `src/pages/onboarding`; both PASS.
 
-- [ ] **Step 2: Write the restore screen's failing tests** in `components/account/AccountRestoreScreen.test.tsx`:
+- [x] **Step 2: Write the restore screen's failing tests** in `components/account/AccountRestoreScreen.test.tsx`:
 
 ```tsx
 import React from 'react';
@@ -3934,12 +3934,12 @@ describe('AccountRestoreScreen', () => {
 });
 ```
 
-- [ ] **Step 3: Run them and watch them fail.**
+- [x] **Step 3: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/AccountRestoreScreen.test.tsx`
 Expected: FAIL, because the module doesn't exist.
 
-- [ ] **Step 4: Write the screen** in `components/account/AccountRestoreScreen.tsx`:
+- [x] **Step 4: Write the screen** in `components/account/AccountRestoreScreen.tsx`:
 
 ```tsx
 import React, { useState } from 'react';
@@ -4061,12 +4061,12 @@ export function AccountRestoreScreen({ scheduledFor }: AccountRestoreScreenProps
 }
 ```
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account src/components/ui/busyButtonProps.test.tsx src/pages/onboarding`
 Expected: PASS.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/web/src/components/ui/busyButtonProps.tsx apps/web/src/components/ui/busyButtonProps.test.tsx apps/web/src/components/ui/index.ts apps/web/src/pages/onboarding/zip.page.tsx apps/web/src/components/account/AccountRestoreScreen.tsx apps/web/src/components/account/AccountRestoreScreen.test.tsx
@@ -4079,7 +4079,7 @@ git commit -m "feat(web): the account restore screen; share busyButtonProps"
 
 - Modify: `apps/web/src/components/Layout.tsx`, `apps/web/src/components/Layout.test.tsx`, `apps/web/src/components/layout/PublicShell.tsx`
 
-- [ ] **Step 1: Write the failing tests** in `Layout.test.tsx`. Mock the screen at the top, beside the other `vi.mock` calls:
+- [x] **Step 1: Write the failing tests** in `Layout.test.tsx`. Mock the screen at the top, beside the other `vi.mock` calls:
 
 ```tsx
 vi.mock('./account/AccountRestoreScreen', () => ({
@@ -4131,12 +4131,12 @@ it('gates /delete-account too, so a pending member cannot skip Restore', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/Layout.test.tsx`
 Expected: the three new tests FAIL.
 
-- [ ] **Step 3: Let `PublicShell` hide its auth links.** In `layout/PublicShell.tsx`, change the signature and wrap the `Group`:
+- [x] **Step 3: Let `PublicShell` hide its auth links.** In `layout/PublicShell.tsx`, change the signature and wrap the `Group`:
 
 ```tsx
 /** Shell for signed-out visitors: brand, Log in / Sign up, legal footer. */
@@ -4145,7 +4145,7 @@ export function PublicShell({ children, showAuthLinks = true }: { children: Reac
 
 and `{showAuthLinks ? ( <Group gap="xs"> … </Group> ) : null}` around the existing `Group`.
 
-- [ ] **Step 4: Add the gate** to `Layout.tsx`. Import the screen:
+- [x] **Step 4: Add the gate** to `Layout.tsx`. Import the screen:
 
 ```tsx
 import { AccountRestoreScreen } from './account/AccountRestoreScreen';
@@ -4177,12 +4177,12 @@ if (user.deletion_scheduled_for) {
 }
 ```
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/Layout.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/web/src/components/Layout.tsx apps/web/src/components/Layout.test.tsx apps/web/src/components/layout/PublicShell.tsx
@@ -4195,7 +4195,7 @@ git commit -m "feat(web): gate every page behind the restore screen for a member
 
 - Create: `apps/web/src/components/account/DeleteAccountFlow.tsx` (+ `.test.tsx`)
 
-- [ ] **Step 1: Write the failing tests** in `components/account/DeleteAccountFlow.test.tsx`:
+- [x] **Step 1: Write the failing tests** in `components/account/DeleteAccountFlow.test.tsx`:
 
 ```tsx
 import React from 'react';
@@ -4450,12 +4450,12 @@ describe('DeleteAccountFlow', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/DeleteAccountFlow.test.tsx`
 Expected: FAIL, because the module doesn't exist.
 
-- [ ] **Step 3: Write the flow** in `components/account/DeleteAccountFlow.tsx`:
+- [x] **Step 3: Write the flow** in `components/account/DeleteAccountFlow.tsx`:
 
 ```tsx
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -4757,12 +4757,12 @@ export function DeleteAccountFlow() {
 }
 ```
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/account/DeleteAccountFlow.test.tsx`
 Expected: PASS, 12 tests.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/components/account/DeleteAccountFlow.tsx apps/web/src/components/account/DeleteAccountFlow.test.tsx
@@ -4775,7 +4775,7 @@ git commit -m "feat(web): the delete account flow: explain, confirm it's you, de
 
 - Create: `apps/web/src/pages/delete-account.page.tsx`, `apps/web/src/pages/delete-account.test.tsx`
 
-- [ ] **Step 1: Write the failing tests** in `pages/delete-account.test.tsx`:
+- [x] **Step 1: Write the failing tests** in `pages/delete-account.test.tsx`:
 
 ```tsx
 import React from 'react';
@@ -4867,12 +4867,12 @@ describe('DeleteAccountPage', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/delete-account.test.tsx`
 Expected: FAIL, because the page doesn't exist.
 
-- [ ] **Step 3: Write the page** in `pages/delete-account.page.tsx`:
+- [x] **Step 3: Write the page** in `pages/delete-account.page.tsx`:
 
 ```tsx
 import React from 'react';
@@ -4954,12 +4954,12 @@ export default function DeleteAccountPage() {
 }
 ```
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/delete-account.test.tsx`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/pages/delete-account.page.tsx apps/web/src/pages/delete-account.test.tsx
@@ -4972,7 +4972,7 @@ git commit -m "feat(web): the public /delete-account page"
 
 - Modify: `apps/web/src/components/layout/navItems.ts`, `apps/web/src/components/layout/navItems.test.ts`
 
-- [ ] **Step 1: Write the failing test** in `navItems.test.ts`, inside `describe('navItems', …)`:
+- [x] **Step 1: Write the failing test** in `navItems.test.ts`, inside `describe('navItems', …)`:
 
 ```ts
 it('ends the Settings list with Delete account', () => {
@@ -4983,19 +4983,19 @@ it('ends the Settings list with Delete account', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/layout/navItems.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Add the link.** In `getSettingsLinks`, add `{ label: 'Delete account', href: '/delete-account' },` after the Terms of Service entry.
+- [x] **Step 3: Add the link.** In `getSettingsLinks`, add `{ label: 'Delete account', href: '/delete-account' },` after the Terms of Service entry.
 
-- [ ] **Step 4: Run the test** and `src/pages/profile.test.tsx`, which renders the list.
+- [x] **Step 4: Run the test** and `src/pages/profile.test.tsx`, which renders the list.
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/components/layout/navItems.test.ts src/pages/profile.test.tsx`
 Expected: PASS. If the profile test pins the list's exact labels, add "Delete account" there.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/components/layout/navItems.ts apps/web/src/components/layout/navItems.test.ts apps/web/src/pages/profile.test.tsx
@@ -5008,7 +5008,7 @@ git commit -m "feat(web): Delete account in Settings"
 
 - Modify: `apps/web/src/hooks/useModerationQueue.ts` (+ `.test.ts`), `apps/web/src/components/moderation/ReportCard.tsx` (+ `.test.tsx`), `apps/web/src/pages/moderation.page.tsx`, `apps/web/src/pages/moderation.test.tsx`
 
-- [ ] **Step 1: Write the failing hook tests.** In `useModerationQueue.test.ts`:
+- [x] **Step 1: Write the failing hook tests.** In `useModerationQueue.test.ts`:
   - Add `getExistingUserIds: vi.fn(),` and `getExistingListingIds: vi.fn(),` to the `vi.mock('@nepally/shared', …)` factory.
   - Add them to the import from `@nepally/shared`, with `const mockExistingUsers = getExistingUserIds as ReturnType<typeof vi.fn>;` and `const mockExistingListings = getExistingListingIds as ReturnType<typeof vi.fn>;`.
   - In `beforeEach`, add `mockExistingUsers.mockResolvedValue({ data: ['author-2'] });` and `mockExistingListings.mockResolvedValue({ data: [] });`.
@@ -5041,7 +5041,7 @@ it('fails the queue as a whole when a target check fails', async () => {
 });
 ```
 
-- [ ] **Step 2: Write the failing card tests** in `ReportCard.test.tsx`:
+- [x] **Step 2: Write the failing card tests** in `ReportCard.test.tsx`:
 
 ```tsx
 it('says a purged member is gone, with no link and no ban', () => {
@@ -5083,12 +5083,12 @@ it('shows a reported member who is gone as no longer available', () => {
 
 Match the file's own names for the hook mock and the page component if they differ from `mocks.useModerationQueue` and `ModerationPage`.
 
-- [ ] **Step 3: Run them and watch them fail.**
+- [x] **Step 3: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useModerationQueue.test.ts src/components/moderation/ReportCard.test.tsx src/pages/moderation.test.tsx`
 Expected: the new tests FAIL.
 
-- [ ] **Step 4: Fetch and expose the missing ids.** In `useModerationQueue.ts`:
+- [x] **Step 4: Fetch and expose the missing ids.** In `useModerationQueue.ts`:
   - Import `getExistingListingIds` and `getExistingUserIds` from `@nepally/shared`.
   - In `ModerationQueueState`, after `reportedPosts`, add:
 
@@ -5127,7 +5127,7 @@ return {
 - In the hook's final `return { … }`, add `missingTargetIds: queue.missingTargetIds,` after `reportedPosts: queue.reportedPosts,`.
 - Update the doc comment above `fetchQueue` to say "any of the requests".
 
-- [ ] **Step 5: Show it on the card.** In `ReportCard.tsx`:
+- [x] **Step 5: Show it on the card.** In `ReportCard.tsx`:
   - Add to `ReportCardProps`:
 
 ```ts
@@ -5139,19 +5139,19 @@ return {
 - In `ReportCard`, take `targetMissing = false`, pass it to `<ReportTarget … targetMissing={targetMissing} />`, and change the Ban user condition to `report.target_type === 'user' && !targetMissing`.
 - In `moderation.page.tsx`, pass `targetMissing={queue.missingTargetIds.has(report.target_id)}` to `ReportCard`.
 
-- [ ] **Step 6: Run the tests.**
+- [x] **Step 6: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/hooks/useModerationQueue.test.ts src/components/moderation src/pages/moderation.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add apps/web/src/hooks/useModerationQueue.ts apps/web/src/hooks/useModerationQueue.test.ts apps/web/src/components/moderation/ReportCard.tsx apps/web/src/components/moderation/ReportCard.test.tsx apps/web/src/pages/moderation.page.tsx apps/web/src/pages/moderation.test.tsx
 git commit -m "feat(web): moderation shows reported members and listings that are gone"
 ```
 
-- [ ] **Chunk 4 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check` and `npm run lint`, checking each exit code. Then a `code-reviewer` on the chunk's commits. Fix CRITICAL and HIGH in one `fix: address chunk 4 review` commit.
+- [x] **Chunk 4 gate and review.** From `C:\…`, run `npm run test --workspace=apps/web`, then `npm run type-check` and `npm run lint`, checking each exit code. Then a `code-reviewer` on the chunk's commits. Fix CRITICAL and HIGH in one `fix: address chunk 4 review` commit.
 
 ### Chunk 5: legal, docs, ship
 
@@ -5161,7 +5161,7 @@ git commit -m "feat(web): moderation shows reported members and listings that ar
 
 - Modify: `apps/web/src/pages/privacy.page.tsx`, `apps/web/src/pages/help.page.tsx`, `apps/web/src/pages/terms.page.tsx`, `apps/web/src/pages/legal.test.tsx`, `packages/shared/src/constants/appConfig.ts`
 
-- [ ] **Step 1: Write the failing tests** in `legal.test.tsx`. Add to the Privacy test `'links to the Terms and explains deletion'`:
+- [x] **Step 1: Write the failing tests** in `legal.test.tsx`. Add to the Privacy test `'links to the Terms and explains deletion'`:
 
 ```tsx
 expectMention(/29 days/);
@@ -5187,12 +5187,12 @@ it('points to in-app account deletion', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/legal.test.tsx`
 Expected: FAIL.
 
-- [ ] **Step 3: Write the copy.**
+- [x] **Step 3: Write the copy.**
 
 In `privacy.page.tsx`, replace the "How long we keep it" paragraph:
 
@@ -5237,12 +5237,12 @@ In `terms.page.tsx`, change "You can delete your account at any time (see the He
 
 In `packages/shared/src/constants/appConfig.ts`, set `LEGAL_LAST_UPDATED` to the day this lands.
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run, from `C:\…`: `npm run test --workspace=apps/web -- src/pages/legal.test.tsx`
 Expected: PASS. The text still needs counsel review, like the rest of the legal pages.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/web/src/pages/privacy.page.tsx apps/web/src/pages/help.page.tsx apps/web/src/pages/terms.page.tsx apps/web/src/pages/legal.test.tsx packages/shared/src/constants/appConfig.ts
@@ -5255,7 +5255,7 @@ git commit -m "docs(web): legal copy for in-app account deletion"
 
 - Modify: `docs/decisions/2026-09-18-long-lived-sessions.md`, `docs/plans/active/2026-09-18-production-launch.md`, `docs/plans/active/mobile-usability-security-hardening.md`, `docs/architecture/web-ui-system.md`, this plan
 
-- [ ] **Step 1: Amend the ADR.** In `2026-09-18-long-lived-sessions.md`, replace the "Sensitive actions ask the user to confirm who they are instead" bullet with:
+- [x] **Step 1: Amend the ADR.** In `2026-09-18-long-lived-sessions.md`, replace the "Sensitive actions ask the user to confirm who they are instead" bullet with:
 
 ```markdown
 - Sensitive actions ask the user to confirm who they are instead: deleting the account, and changing email or password. Email accounts re-enter the password; Google and Apple accounts redo their provider sign-in (Google with `prompt=select_account`). _Amended 2026-10-01: an emailed code (`supabase.auth.reauthenticate()`) was the first choice, but its code can only be checked by a password change, so it can't gate deletion. See [account deletion](../specs/2026-09-28-account-deletion.md), D5._
@@ -5263,14 +5263,14 @@ git commit -m "docs(web): legal copy for in-app account deletion"
 
 Use the date the PR lands.
 
-- [ ] **Step 2: Fix the same claim elsewhere.** In `production-launch.md`, line 33's "Google and Apple accounts confirm an emailed one-time code" becomes "Google and Apple accounts redo their provider sign-in". Line 221's "an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts" becomes "redoing their provider sign-in for Google and Apple accounts". In `mobile-usability-security-hardening.md`, line 142's "(password, or an emailed code for Google/Apple accounts)" becomes "(password, or redoing the provider sign-in for Google/Apple accounts)".
+- [x] **Step 2: Fix the same claim elsewhere.** In `production-launch.md`, line 33's "Google and Apple accounts confirm an emailed one-time code" becomes "Google and Apple accounts redo their provider sign-in". Line 221's "an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts" becomes "redoing their provider sign-in for Google and Apple accounts". In `mobile-usability-security-hardening.md`, line 142's "(password, or an emailed code for Google/Apple accounts)" becomes "(password, or redoing the provider sign-in for Google/Apple accounts)".
 
-- [ ] **Step 3: Record the new components** in `web-ui-system.md`:
+- [x] **Step 3: Record the new components** in `web-ui-system.md`:
   - Add `busyButtonProps` to the busy-controls paragraph, as the helper to use.
   - Add the delete flow, the restore screen and the Delete account page to that paragraph's list of controls that follow the rule.
   - Add rows for `AccountRestoreScreen` and `DeleteAccountFlow` (`components/account/`) to the component table nearest the auth components.
 
-- [ ] **Step 4: Check and commit.**
+- [x] **Step 4: Check and commit.**
 
 Run: `npm run docs:check` and `npm run lint:md`, after `npx prettier --write` on each changed file.
 Expected: exit 0 for both.
@@ -5282,7 +5282,7 @@ git commit -m "docs: re-auth by provider sign-in; the account deletion component
 
 ### Task 3.21: Gate, review, draft PR, staging check
 
-- [ ] **Step 1: Run the full gate** and check every exit code:
+- [x] **Step 1: Run the full gate** and check every exit code:
   - `npm run type-check`
   - `npm run lint`
   - `npm run lint:guards`
@@ -5294,9 +5294,9 @@ git commit -m "docs: re-auth by provider sign-in; the account deletion component
 
   Then `npm run ci:local`, since drafts run no CI.
 
-- [ ] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (redirects, re-auth, the gate) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 3 review` commit; the rest go to Follow-ups.
+- [x] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (redirects, re-auth, the gate) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 3 review` commit; the rest go to Follow-ups.
 - [ ] **Step 3: Check staging's redirect allow-list.** In the Supabase dashboard for `tlusiongalvszftnzpoq`, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google falls back to the Site URL. This needs the user.
-- [ ] **Step 4: Ship the draft.**
+- [x] **Step 4: Ship the draft.**
   - Push with `git push -u origin feat/account-deletion-web`.
   - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
   - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
@@ -5414,3 +5414,14 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - The wrong-account effect's `signOut(...).finally(...)` has no `.catch`, so a rejection goes unhandled (the redirect still runs).
   - If signing out fails after the delete and `refreshUser()` then returns null, the remounted flow shows Explain again under the toast.
   - Missing tests: the wrong-account path removing the stored key, a `getSession` failure in Continue, `sessionStorage` throwing in the Google start, the double-press guard, and `refreshUser` returning null on restore.
+- From the PR 3 whole-PR reviews (no CRITICAL or HIGH from the code, security or test-coverage reviews; the code review's one MEDIUM, `/guidelines` missing from the restore gate's open pages, was fixed in PR 3):
+  - The test-coverage review rated three earlier follow-ups as user-visible bugs worth fixing soon: `/login?redirect=/login` renders a blank page for a signed-in visitor, Continue can stay busy if `getSession()` rejects, and a restore whose profile reload fails gives no feedback.
+  - The restore gate is UX, not an authorization boundary. A pending member can still write to their own rows through PostgREST. Their posts, comments, likes and follows stay hidden by 048, but a message they send reaches the recipient (from "Unavailable account"). Add `NOT public.is_pending_deletion(sender_id)` to the `messages` INSERT policy if that matters.
+  - `is_pending_deletion(uuid)` is granted to `anon` (048, needed by the policies) and is SECURITY DEFINER, so anyone can ask whether a known user id is pending. User ids are already public, and a pending member's content visibly disappears; restructuring the policies to revoke it is optional.
+  - `toApiError` returns an `Error` unchanged, so an unexpected RPC failure can show a raw database message in the delete flow's or restore screen's alert. Show the fixed sentence for any code outside the three deletion codes, and log the raw error.
+  - A `REAUTH_USER_KEY` left by an abandoned Google re-auth lets a later `/delete-account?step=confirm` in the same tab open on the final step (the RPC's `reauth_required` still refuses). Store a timestamp with it and ignore stale ones.
+  - `?scheduled=` is shown as given, so a crafted link can show any date to a signed-out visitor (text only).
+  - The error sentences and "29 days" are repeated: `CONFIRM_AGAIN` and the delete fallback in `DeleteAccountFlow` copy `api/accountDeletion.ts`, and the Privacy and Help pages hardcode 29 days instead of `ACCOUNT_DELETION_GRACE_DAYS`. Export the sentences and interpolate the constant (or pin them together with a test).
+  - `docs/product/features/sign-up-and-log-in.md` doesn't describe `?redirect=` on `/login` and `/auth/callback`, or the restore screen. PR 5's `account-deletion.md` should cover the gate; the redirect belongs in sign-up-and-log-in.
+  - Tests worth adding: one integration test with the real `AuthProvider` and `Layout` for delete, then sign-out, then the scheduled card (and the sign-out-failure variant ending on the restore screen); `SIGNED_OUT` clearing the context, and the wrong-account path replacing the route only after its sign-out settles; `signInWithGoogle` failing and a non-credential password failure in the flow; `?step=confirm` with no stored key landing on Explain; `router.replace` rejecting inside `handleSignOut`; `isRecentSignIn` called with the session's access token; `conversations.test.ts` asserting table names and the `.in()` ids rather than relying on call order; the callback's unsafe-redirect test asserting a single push to `/feed`.
+  - Between PR 3 and PR 4, mobile still shows a composer for a purged partner (PR 4 Task 4.5).
