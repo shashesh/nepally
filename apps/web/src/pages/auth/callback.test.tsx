@@ -273,4 +273,38 @@ describe('AuthCallbackPage', () => {
     });
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  describe('with ?redirect=', () => {
+    afterEach(() => {
+      window.history.pushState({}, '', '/');
+    });
+
+    it('goes to a safe ?redirect= instead of the feed', async () => {
+      window.history.pushState({}, '', '/auth/callback?redirect=%2Fdelete-account');
+      render(<AuthCallbackPage />);
+
+      await fireAuthEvent('SIGNED_IN');
+
+      expect(mockPush).toHaveBeenCalledWith('/delete-account');
+    });
+
+    it('still sends a member with no metro to onboarding first', async () => {
+      window.history.pushState({}, '', '/auth/callback?redirect=%2Fdelete-account');
+      callbackMocks.finishSignInMock.mockResolvedValue({ destination: '/onboarding/zip' });
+      render(<AuthCallbackPage />);
+
+      await fireAuthEvent('SIGNED_IN');
+
+      expect(mockPush).toHaveBeenCalledWith('/onboarding/zip');
+    });
+
+    it('ignores an unsafe ?redirect=', async () => {
+      window.history.pushState({}, '', '/auth/callback?redirect=https%3A%2F%2Fevil.com');
+      render(<AuthCallbackPage />);
+
+      await fireAuthEvent('SIGNED_IN');
+
+      expect(mockPush).toHaveBeenCalledWith('/feed');
+    });
+  });
 });
