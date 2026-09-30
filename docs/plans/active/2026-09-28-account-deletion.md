@@ -1965,11 +1965,45 @@ Each step runs only when the user asks for it directly.
 
 **Progress 2026-09-28:** the function is deployed; the CLI bundled it server-side, with no Docker needed. A POST without a secret gets the handler's `500 Server misconfigured`, and GET gets 405, so `verify_jwt = false` is live and the function fails closed. 049 is applied and realigned to `049`. `cron.job` lists `purge-deleted-accounts | 0 9 * * * | active`, running as `postgres`, which can read `vault.decrypted_secrets`. Waiting on the user for the secrets (Step 2). Until then the 09:00 UTC run fails harmlessly.
 
+### Task 2.8: Timing and counter fixes from the spec review (050, 051)
+
+Review of #111 (2026-09-30) found four problems in the applied design:
+
+- A restore could land between the purge's last re-read and `deleteUser`, and the account would still be deleted.
+- The 30-day grace period plus a daily run broke the privacy policy's "within 30 days".
+- `post_comments` has no hard-delete trigger, so a purge left `posts.comments_count` too high for good.
+- A 30-vs-29-day check with a one-day tolerance couldn't tell the two apart.
+
+The user chose to close restore at the date, to use a 29-day grace period, and to add the trigger (spec §4.4, §4.5).
+
+**Files:**
+
+- Modify: `supabase/functions/purge-deleted-accounts/purge.ts`, `purge.test.ts`, `index.ts`
+- Create: `supabase/migrations/050_account_deletion_timing.sql`, `supabase/migrations/051_post_comments_delete_count.sql`
+- Modify: `scripts/security/account-deletion-smoke.ts`, `scripts/security/account-purge-smoke.ts`
+- Docs: `database-schema.md`, `supabase-setup.md` §5, `setup-and-testing.md`, this plan
+
+- [x] **Step 1: The cutoff, test first.** A test asserts that `purgeCutoff(now)` is one hour before `now`. It failed on the missing export, then passed once `PURGE_CLOCK_MARGIN_MS` and `purgeCutoff` were added to `purge.ts`. `index.ts` uses `purgeCutoff(new Date())` in both `listDueUserIds` and `isStillDue`.
+- [x] **Step 2: The live checks, first.**
+  - `account-deletion-smoke.ts` expects 29 days, within a 10-minute tolerance instead of a day. A new step 6 moves a pending date into the past with the service role and expects `cancel_account_deletion` to raise `deletion_in_progress` and keep the date.
+  - `account-purge-smoke.ts` has the due member comment on the waiting member's post. It expects `comments_count` to go from 1 back to 0 after the purge.
+  - The deletion check failed against staging as expected: "Deletion should be scheduled 29 days out, got …" (2026-09-30).
+- [x] **Step 3: Migration 050.**
+  - It replaces `request_account_deletion()` with 048's body and a 29-day `c_grace_period`. A diff against 048 shows only that line.
+  - It replaces `cancel_account_deletion()`: it locks the row and returns if nothing is pending, raises `deletion_in_progress` (`P0001`) once the date is `<= now()`, and otherwise clears the date.
+  - It restates both grants.
+  - It reschedules `purge-deleted-accounts` to `'0 * * * *'` with 049's job body, which is byte-identical.
+- [x] **Step 4: Migration 051.** `decrement_post_comments_count_on_delete()`, `AFTER DELETE ON post_comments FOR EACH ROW`. It decrements, clamped at zero, only when `OLD.is_deleted = false`. It is SECURITY DEFINER with `search_path = ''`, and EXECUTE is revoked from client roles, like 041's triggers. `function-execute-smoke.ts` doesn't list trigger functions, so it needs no change. Both files parse with libpg-query 17.
+- [x] **Step 5: Docs.** Update `database-schema.md` (050, 051 and the comment triggers), the §5 table row and check step in `supabase-setup.md`, and the two check rows in `setup-and-testing.md`.
+- [ ] **Step 6: Gate and review.** Run the gate from Task 2.6 Step 1, then a `code-reviewer` and a `security-reviewer` on this task's commits.
+- [ ] **Step 7: Apply on staging (needs the user).** Apply 050 (`account_deletion_timing`) and 051 (`post_comments_delete_count`) with `apply_migration`, and realign the tracker rows to `050` and `051`. Check that `cron.job` lists `purge-deleted-accounts | 0 * * * * | t`. Then `npm run test:security:account-deletion` and `npm run test:security:functions` must exit 0. After the user sets the secrets (Task 2.7 Step 2), `npm run test:security:account-purge` must too. The next migration number is 052.
+
 **Acceptance:**
 
 - `npm run functions:test` passes and is part of `npm run test`.
-- The live purge check passes on staging: a wrong secret gets 401, and a due account loses its auth user, profile and files, while a pending account whose date is still ahead is untouched.
-- `cron.job` lists `purge-deleted-accounts`.
+- The live purge check passes on staging: a wrong secret gets 401, and a due account loses its auth user, profile and files, while a pending account whose date is still ahead is untouched. The purged member's comment stops counting.
+- The live deletion check passes: 29 days, and a cancel after the date is refused.
+- `cron.job` lists `purge-deleted-accounts` hourly.
 
 ---
 

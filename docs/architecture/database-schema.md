@@ -74,7 +74,7 @@ CREATE TABLE users (
   is_moderator BOOLEAN NOT NULL DEFAULT false,
 
   -- Migration 048: NULL while the account is active; otherwise the purge
-  -- time, 30 days after the deletion request. See "Account deletion
+  -- time, 29 days after the deletion request (050). See "Account deletion
   -- (migration 048)".
   deletion_scheduled_for TIMESTAMPTZ,
 
@@ -987,7 +987,7 @@ CREATE POLICY "Authors can delete own comments"
   ON post_comments FOR DELETE USING (author_id = auth.uid());
 ```
 
-**Triggers:** Insert/delete on `post_comments` auto-increments/decrements `posts.comments_count`.
+**Triggers:** An insert on `post_comments` increments `posts.comments_count`, and a soft delete (`is_deleted` set to true) decrements it. Since migration 051, a hard delete of a comment that wasn't soft-deleted decrements it too. The account purge's cascade does that.
 
 ---
 
@@ -1402,13 +1402,15 @@ Use the shared wrappers in `packages/shared/src/api/search.ts` rather than calli
 
 ### Account deletion (migration 048)
 
-- `users.deletion_scheduled_for timestamptz` is NULL while the account is active. While deletion is pending it holds the purge time, 30 days after the request. No client role has a column grant on it; the owner reads it through `get_my_profile()`. The 034 guard treats it as privileged.
+- `users.deletion_scheduled_for timestamptz` is NULL while the account is active. While deletion is pending it holds the purge time, 29 days after the request (30 before migration 050). No client role has a column grant on it; the owner reads it through `get_my_profile()`. The 034 guard treats it as privileged.
 - `request_account_deletion()` (authenticated) needs a sign-in within the last 600 seconds, read from the JWT's `amr` claim by `amr_signed_in_within(amr, max_age)`. Otherwise it raises `reauth_required` (SQLSTATE `P0001`). It sets the purge time, deletes the caller's `device_tokens`, and returns the time. A repeated call returns the same time.
-- `cancel_account_deletion()` (authenticated) clears it.
+- `cancel_account_deletion()` (authenticated) clears it. Since migration 050 it clears it only while the time is still ahead. After that it raises `deletion_in_progress` (SQLSTATE `P0001`), so a restore can't race the purge.
+- Migration 050 also shortens the grace period to 29 days, so removal stays within the privacy policy's 30 days.
 - `is_pending_deletion(uid)` (anon, authenticated) is the RLS helper. The SELECT policies on `users`, `posts`, `post_comments`, `marketplace_listings`, `events`, `event_rsvps` and `post_likes` hide a pending member's rows from everyone but that member and moderators. `user_follows` hides an edge when either end is pending, except from moderators. Messages and conversations are unchanged.
 - `list_user_storage_objects(uid)` (service_role) lists every storage object a user owns, for the purge in migration 049.
 - Live checks: `npm run test:security:account-deletion` and `npm run test:security:functions`.
-- Migration 049 schedules the daily `purge-deleted-accounts` job (pg_cron + pg_net, secrets in Vault). See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs), Scheduled Jobs.
+- Migration 049 schedules the `purge-deleted-accounts` job (pg_cron + pg_net, secrets in Vault), daily at first and hourly since 050. It purges an account an hour after its date. See [supabase-setup.md](supabase-setup.md#5-scheduled-jobs), Scheduled Jobs.
+- Migration 051 adds the `post_comments` hard-delete trigger for `posts.comments_count`, which the purge's cascade needs. Live check: `npm run test:security:account-purge`.
 
 ---
 

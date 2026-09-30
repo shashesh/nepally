@@ -409,10 +409,10 @@ Expected behavior:
 
 Scheduled work runs in the database on `pg_cron` (enabled by `001_schema.sql`). Migrations create the jobs. Most run SQL directly, so they have no public endpoint to protect and need no setup. The one exception is `purge-deleted-accounts`. It calls an edge function, because deleting stored files needs the Storage API, and that call needs the secrets below to be set once in each environment.
 
-| Job                      | Schedule            | Runs                                                                                                                                                       | Migration |
-| ------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired                                                                   | `046`     |
-| `purge-deleted-accounts` | Daily, 09:00 UTC    | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts whose 30-day grace period has ended: their storage objects, then the auth user | `049`     |
+| Job                      | Schedule            | Runs                                                                                                                                                                     | Migration    |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| `expire-paid-promotions` | Hourly, at :05 past | `public.expire_paid_promotions()`: active paid promotions past `end_date` become expired                                                                                 | `046`        |
+| `purge-deleted-accounts` | Hourly, on the hour | POSTs to the `purge-deleted-accounts` edge function, which deletes accounts an hour past the end of their 29-day grace period: their storage objects, then the auth user | `049`, `050` |
 
 Check the jobs and their recent runs:
 
@@ -446,7 +446,7 @@ The purge job and its edge function share a secret. Until both halves below are 
    To rotate the secret, repeat step 2 and run `SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'account_purge_secret'), '<new secret>');`.
 
 4. On staging only, for the live check: add `ACCOUNT_PURGE_SECRET=<secret>` to `scripts/.env` (git-ignored) and export it with the other script credentials, for example `set -a; . scripts/.env; set +a`. The npm scripts don't load that file themselves. Then run `npm run test:security:account-purge`. Never run it against production: it purges every due account.
-5. After the next 09:00 UTC run, check it:
+5. After the next hourly run, check it:
 
    ```sql
    SELECT d.status, d.return_message, d.start_time
