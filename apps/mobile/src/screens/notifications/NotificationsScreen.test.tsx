@@ -18,11 +18,14 @@ const mockUseAuth = jest.fn();
 const mockNavigate = jest.fn();
 const mockParentNavigate = jest.fn();
 const mockSetOptions = jest.fn();
+const mockIsFocused = jest.fn();
 
 const mockGetNotifications = jest.fn();
 const mockMarkNotificationRead = jest.fn();
 const mockMarkAllNotificationsRead = jest.fn();
 const mockDeleteNotification = jest.fn();
+const mockGetConversations = jest.fn();
+const mockLogClientEvent = jest.fn();
 const realtimeSubscriptions: Array<{
   event: unknown;
   filter: unknown;
@@ -37,6 +40,7 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: mockNavigate,
     setOptions: mockSetOptions,
+    isFocused: () => mockIsFocused(),
     getParent: () => ({ navigate: mockParentNavigate }),
   }),
 }));
@@ -62,6 +66,8 @@ jest.mock('@nepally/shared', () => ({
   markNotificationRead: (...args: unknown[]) => mockMarkNotificationRead(...args),
   markAllNotificationsRead: (...args: unknown[]) => mockMarkAllNotificationsRead(...args),
   deleteNotification: (...args: unknown[]) => mockDeleteNotification(...args),
+  getConversations: (...args: unknown[]) => mockGetConversations(...args),
+  logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),
   resolveNotificationRouteTarget: jest.requireActual('@nepally/shared').resolveNotificationRouteTarget,
   uniqueChannelTopic: jest.requireActual('@nepally/shared').uniqueChannelTopic,
   groupNotifications: jest.requireActual('@nepally/shared').groupNotifications,
@@ -83,6 +89,30 @@ function baseNotification(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function conversation(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'conv-1',
+    last_message: 'Hi',
+    last_message_time: '2026-10-01T10:00:00Z',
+    created_at: '2026-10-01T09:00:00Z',
+    other_user_id: 'user-2',
+    other_user_name: 'Asha Gurung',
+    other_user_photo: 'https://example.com/asha.jpg',
+    other_user_trust_level: 2,
+    other_user_available: true,
+    unread_count: 1,
+    ...overrides,
+  };
+}
+
+function messageNotification() {
+  return baseNotification({
+    type: 'message',
+    title: 'New message',
+    data: { conversation_id: 'conv-1', sender_id: 'user-2', sender_name: 'Asha' },
+  });
+}
+
 async function renderAndSettle() {
   const utils = render(<NotificationsScreen />);
   await act(async () => {});
@@ -95,6 +125,8 @@ describe('NotificationsScreen', () => {
     jest.clearAllMocks();
     realtimeSubscriptions.length = 0;
     mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
+    mockIsFocused.mockReturnValue(true);
+    mockGetConversations.mockResolvedValue({ data: [] });
     mockGetNotifications.mockResolvedValue({ data: [] });
     mockMarkNotificationRead.mockResolvedValue({});
     mockMarkAllNotificationsRead.mockResolvedValue({});
@@ -114,31 +146,96 @@ describe('NotificationsScreen', () => {
     expect(new Set(topics).size).toBe(2);
   });
 
-  it('routes message notifications to MessageThread when sender metadata exists', async () => {
-    mockGetNotifications.mockResolvedValue({
+  it("opens a message notification's chat with the partner the conversation list has", async () => {
+    mockGetConversations.mockResolvedValue({ data: [conversation()] });
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+    const { getByText } = await renderAndSettle();
+    fireEvent.press(getByText('New message'));
+
+    await waitFor(() => {
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: {
+          conversationId: 'conv-1',
+          otherUserId: 'user-2',
+          otherUserName: 'Asha Gurung',
+          otherUserTrustLevel: 2,
+          otherUserPhotoUrl: 'https://example.com/asha.jpg',
+          otherUserAvailable: true,
+        },
+      });
+    });
+    expect(mockGetConversations).toHaveBeenCalledWith(expect.anything(), 'user-1');
+  });
+
+  it('opens the chat of a pending sender as an unavailable account', async () => {
+    mockGetConversations.mockResolvedValue({
       data: [
-        baseNotification({
-          type: 'message',
-          title: 'New message',
-          data: { conversation_id: 'conv-1', sender_id: 'user-2', sender_name: 'Asha' },
+        conversation({
+          other_user_name: 'Unavailable account',
+          other_user_photo: null,
+          other_user_trust_level: 0,
+          other_user_available: false,
         }),
       ],
     });
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
 
     const { getByText } = await renderAndSettle();
-
     fireEvent.press(getByText('New message'));
 
-    expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
-      screen: 'MessageThread',
-      params: {
-        conversationId: 'conv-1',
-        otherUserId: 'user-2',
-        otherUserName: 'Asha',
-        otherUserTrustLevel: 1,
-        otherUserPhotoUrl: null,
-      },
+    await waitFor(() => {
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: expect.objectContaining({
+          otherUserName: 'Unavailable account',
+          otherUserPhotoUrl: null,
+          otherUserAvailable: false,
+        }),
+      });
     });
+  });
+
+  it('opens the conversation list when the chat is not in it', async () => {
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+    const { getByText } = await renderAndSettle();
+    fireEvent.press(getByText('New message'));
+
+    await waitFor(() => {
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', { screen: 'ConversationList' });
+    });
+  });
+
+  it('opens the conversation list, and logs, when the lookup fails', async () => {
+    mockGetConversations.mockResolvedValue({ error: new Error('Failed to fetch conversations') });
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+    const { getByText } = await renderAndSettle();
+    fireEvent.press(getByText('New message'));
+
+    await waitFor(() => {
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', { screen: 'ConversationList' });
+    });
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'notification_conversation_lookup_failed' })
+    );
+  });
+
+  it('stays put when the member moved on during the lookup', async () => {
+    mockIsFocused.mockReturnValue(false);
+    mockGetConversations.mockResolvedValue({ data: [conversation()] });
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+    const { getByText } = await renderAndSettle();
+    fireEvent.press(getByText('New message'));
+
+    await waitFor(() => {
+      expect(mockGetConversations).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {});
+    expect(mockParentNavigate).not.toHaveBeenCalled();
   });
 
   it('routes event notifications to EventDetail in Events stack', async () => {

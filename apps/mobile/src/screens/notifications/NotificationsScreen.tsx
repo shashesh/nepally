@@ -23,11 +23,13 @@ import {
   uniqueChannelTopic,
   groupNotifications,
   formatDayLabel,
+  getConversations,
+  logClientEvent,
 } from '@nepally/shared';
-import type { Notification } from '@nepally/shared';
+import type { ConversationWithParticipant, Notification } from '@nepally/shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
-import type { HomeStackParamList } from '../../types/navigation';
+import type { ChatStackParamList, HomeStackParamList } from '../../types/navigation';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
@@ -60,6 +62,23 @@ interface SectionData {
 type ParentNavigator = {
   navigate: (...args: unknown[]) => void;
 };
+
+/** The member's conversation by id, with its partner as getConversations sees them, or null. */
+async function findConversation(
+  userId: string,
+  conversationId: string
+): Promise<ConversationWithParticipant | null> {
+  const { data, error } = await getConversations(supabase, userId);
+  if (error) {
+    logClientEvent({
+      event: 'notification_conversation_lookup_failed',
+      context: { platform: 'mobile' },
+      error,
+    });
+    return null;
+  }
+  return data?.find((conversation) => conversation.id === conversationId) ?? null;
+}
 
 export function NotificationsScreen() {
   const navigation = useNavigation<Nav>();
@@ -155,31 +174,31 @@ export function NotificationsScreen() {
     }
 
     if (target.kind === 'message') {
-      if (!target.senderId) {
-        const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+      const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+      // The payload's sender name and id can be out of date: the sender may
+      // be pending deletion or gone (spec §5.6). The conversation list knows,
+      // so open the thread with its partner, or the list when it isn't there.
+      const conversation = user ? await findConversation(user.id, target.conversationId) : null;
+      // Moved to another screen meanwhile: don't pull the member into a chat.
+      if (!navigation.isFocused()) return;
+      if (!conversation) {
         parentNavigation?.navigate('Chat', { screen: 'ConversationList' });
         return;
       }
-
-      const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
-      parentNavigation?.navigate('Chat', {
-        screen: 'MessageThread',
-        params: {
-          conversationId: target.conversationId,
-          otherUserId: target.senderId,
-          otherUserName: target.senderName ?? notif.title ?? 'Conversation',
-          // Trust level is not available in the notification payload; default
-          // to 1 (verified) so the thread renders. The thread screen should
-          // re-fetch the profile for an accurate badge if needed.
-          otherUserTrustLevel: 1,
-          otherUserPhotoUrl: null,
-        },
-      });
+      const params: ChatStackParamList['MessageThread'] = {
+        conversationId: conversation.id,
+        otherUserId: conversation.other_user_id,
+        otherUserName: conversation.other_user_name,
+        otherUserTrustLevel: conversation.other_user_trust_level ?? 0,
+        otherUserPhotoUrl: conversation.other_user_photo ?? null,
+        otherUserAvailable: conversation.other_user_available,
+      };
+      parentNavigation?.navigate('Chat', { screen: 'MessageThread', params });
       return;
     }
 
     navigation.navigate('Notifications');
-  }, [navigation]);
+  }, [navigation, user]);
 
   const handleDismiss = useCallback(async (notifId: string) => {
     const result = await deleteNotification(supabase, notifId);
