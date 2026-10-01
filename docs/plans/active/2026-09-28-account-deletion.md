@@ -5320,6 +5320,7 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx` (+ test) has the same three steps as web.
   - Password re-auth uses `pauseAuthListener` / `resumeAuthListener` around `signInWithPassword`, the way `ChangePasswordScreen.tsx:66-100` does.
   - Google re-auth calls `services/auth/googleAuth.ts` with `prompt: 'select_account'`, then compares the returned session's user id with the one from before. `googleAuth.ts` exchanges the code straight into the live session. So on a mismatch, sign that session out and send the member to sign in again, as on web.
+  - As on web (PR 3, after the Copilot review): the password step also offers Google when `hasGoogleIdentity(user)`, and gives `SUPPORT_EMAIL` for a forgotten password. Explain and the final step say "Signed in as _email_".
   - `profile_not_found` shows the `SUPPORT_EMAIL` fallback.
   - Mobile `AuthContext.signOut` ignores Supabase's `{ error }` (`AuthContext.tsx:210-219`), and that's fine. supabase-js removes the local session even when revoking it on the server fails (PR 3, "Found at the start of PR 3"), so it needs no local fallback.
   - Every async handler checks `navigation.isFocused()` before navigating or alerting, the same guard #109 added to chat starts.
@@ -5421,3 +5422,15 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - `docs/product/features/sign-up-and-log-in.md` doesn't describe `?redirect=` on `/login` and `/auth/callback`, or the restore screen. PR 5's `account-deletion.md` should cover the gate; the redirect belongs in sign-up-and-log-in.
   - Tests worth adding: one integration test with the real `AuthProvider` and `Layout` for delete, then sign-out, then the scheduled card (and the sign-out-failure variant ending on the restore screen); `SIGNED_OUT` clearing the context, and the wrong-account path replacing the route only after its sign-out settles; `signInWithGoogle` failing and a non-credential password failure in the flow; `?step=confirm` with no stored key landing on Explain; `router.replace` rejecting inside `handleSignOut`; `isRecentSignIn` called with the session's access token; `conversations.test.ts` asserting table names and the `.in()` ids rather than relying on call order; the callback's unsafe-redirect test asserting a single push to `/feed`.
   - Between PR 3 and PR 4, mobile still shows a composer for a purged partner (PR 4 Task 4.5).
+- From Copilot's review and a second whole-PR review (2026-10-01; no CRITICAL or HIGH):
+  - Fixed in PR 3, at the user's request:
+    - The restore screen reads the time from `useNow`, so one left open past the date closes Restore by itself (Copilot).
+    - Google re-auth doesn't start when the user id can't be stored in `sessionStorage`. Before, the return fell back to Explain, which never named the account, so a slip in Google's chooser could go on to delete the other account (Copilot).
+    - Explain and the final step say "Signed in as _email_".
+    - A member with both a password and Google only got the password field, with no way out if they'd forgotten it. The password step now offers Google when `hasGoogleIdentity(user)`, and gives `SUPPORT_EMAIL` for a forgotten password.
+  - The wrong-account effect ignores the `{ error }` that `supabase.auth.signOut` resolves with. If that sign-out fails, the page stays on "Signing that account out…" for good. Check the result, and say so.
+  - `AuthContext.fetchUserProfile` ignores `getMyProfile`'s `{ error }` and logs nothing. A pending member whose profile read fails skips the restore gate and sees the signed-out site. Log it, and consider a retry state in Layout when `supabaseUser` is set but `user` isn't.
+  - `getExistingListingIds` has no `status = 'active'` filter. A moderator who owns an inactive reported listing sees it as still available (the owner can read it, so the link opens). Add the filter so every moderator sees the same thing, or reword the doc comment (Copilot).
+  - The date on Explain and the final step is computed in the browser when the flow opens, so it can read a day early if the page stays open across midnight. Recompute it on entering the final step.
+  - Types and tidying: `ConversationWithParticipant` lets `other_user_id: null` sit with `other_user_available: true`. A discriminated union would drop the extra `&& other_user_id` checks in `ConversationRow` and `ThreadHeader`, whose avatar branches are also duplicated. In `getSignInReturnPath`, `pathname === '/auth/callback'` is covered by `startsWith('/auth/')`.
+  - Missing tests: an empty password, and `requestAccountDeletion` resolving with no date.
