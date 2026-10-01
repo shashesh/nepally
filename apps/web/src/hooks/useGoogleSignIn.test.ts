@@ -40,6 +40,19 @@ describe('useGoogleSignIn', () => {
     expect(mocks.logClientEvent).not.toHaveBeenCalled();
   });
 
+  it('carries a return path through the Google callback', async () => {
+    mocks.signInWithGoogle.mockResolvedValue({});
+    const { result } = renderHook(() => useGoogleSignIn(vi.fn(), '/delete-account'));
+
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(mocks.signInWithGoogle).toHaveBeenCalledWith({
+      redirectTo: `${window.location.origin}/auth/callback?redirect=%2Fdelete-account`,
+    });
+  });
+
   it('on failure clears the error first, then logs and sets the mapped sentence', async () => {
     const failure = new Error('popup blocked');
     mocks.signInWithGoogle.mockResolvedValue({ error: failure });

@@ -48,6 +48,10 @@ export interface User {
   created_at: string;
   updated_at: string;
   last_active_at: string;
+
+  // Account deletion (migration 048): the purge time while deletion is
+  // pending, null otherwise. Only get_my_profile() returns it.
+  deletion_scheduled_for?: string | null;
 }
 
 /**
@@ -69,6 +73,7 @@ export type PublicUser = Omit<
   | 'phone_verified'
   | 'facebook_verified'
   | 'google_verified'
+  | 'deletion_scheduled_for'
 >;
 
 /** Lightweight user for API results (e.g., post author) */
@@ -106,4 +111,3 @@ export interface GoogleAuthResult {
   user?: { id: string; email: string; full_name: string; avatar_url?: string };
   error?: Error;
 }
-

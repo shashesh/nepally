@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Alert, Button, Divider, Group, Loader, Paper, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Divider, Group, Paper, Stack, Text, TextInput } from '@mantine/core';
 import { IconMapPin } from '@tabler/icons-react';
 import {
   addSavedLocation,
@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useRedirectWhen } from '../../hooks/useRedirectWhen';
 import { detectLocationMetro } from '../../lib/location';
 import { AuthCard } from '../../components/auth/AuthCard';
+import { busyButtonProps } from '../../components/ui';
 import styles from './onboarding.module.css';
 
 const INVALID_ZIP = 'Please enter a valid 5-digit ZIP code.';
@@ -27,16 +28,6 @@ const DETECT_FAILED ="Couldn't detect your location. Please enter your ZIP code 
 const SAVE_FAILED = 'Failed to save location. Please try again.';
 
 type ZipBusy = 'lookup' | 'detect' | null;
-
-/** The busy-controls rule: focusable while locked, a Loader on the one that's running. */
-function busyButtonProps(locked: boolean, running: boolean, icon?: ReactNode) {
-  return {
-    'aria-disabled': locked || undefined,
-    'data-disabled': locked || undefined,
-    'aria-busy': running || undefined,
-    leftSection: running ? <Loader size={16} color="currentColor" aria-hidden="true" /> : icon,
-  };
-}
 
 function zipFieldError(zipCode: string, submitted: boolean, unknownZip: boolean): string | undefined {
   if (submitted && !isValidZipCode(zipCode)) return INVALID_ZIP;

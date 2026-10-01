@@ -27,3 +27,4 @@ export * from './follows';
 export * from './followSuggestions';
 export * from './helperScore';
 export * from './auth';
+export * from './accountDeletion';

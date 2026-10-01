@@ -3,7 +3,12 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Alert, Button, Divider, Loader, PasswordInput, Stack, TextInput } from '@mantine/core';
-import { getAuthErrorMessage, logClientEvent, validateEmail } from '@nepally/shared';
+import {
+  getAuthErrorMessage,
+  logClientEvent,
+  getSignInReturnPath,
+  validateEmail,
+} from '@nepally/shared';
 import { signInWithEmail } from '../lib/auth';
 import { useAuth } from '../hooks/useAuth';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
@@ -34,12 +39,19 @@ export default function LoginPage() {
     router.isReady && typeof router.query.email === 'string' ? router.query.email : '';
   const info =
     router.isReady && router.query.reason === 'existing-account' ? EXISTING_ACCOUNT_INFO : '';
+  // Where to go after logging in: a safe ?redirect= (/delete-account sends
+  // one), or the feed. The router is never ready on the server, so window
+  // is only read in the browser.
+  const returnTo = router.isReady
+    ? getSignInReturnPath(router.query.redirect, window.location.origin)
+    : null;
+  const destination = returnTo ?? '/feed';
   const [email, setEmail] = useState(queryEmail);
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
-  const google = useGoogleSignIn(setServerError);
+  const google = useGoogleSignIn(setServerError, returnTo);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -51,8 +63,8 @@ export default function LoginPage() {
     if (queryEmail) setEmail(queryEmail);
   }
 
-  const redirecting = useRedirectWhen(!!user, '/feed');
-  if (redirecting) return null;
+  const redirecting = useRedirectWhen(!!user && router.isReady, destination);
+  if (redirecting || (user && !router.isReady)) return null;
 
   // Nothing shows before the first submit; after it, errors follow every change.
   const errors = submitted ? validateLogin(email, password) : {};
@@ -77,12 +89,16 @@ export default function LoginPage() {
     const result = await signInWithEmail(email, password);
     if (result.error) {
       setSigningIn(false);
-      logClientEvent({ event: 'auth_log_in_failed', context: { platform: 'web' }, error: result.error });
+      logClientEvent({
+        event: 'auth_log_in_failed',
+        context: { platform: 'web' },
+        error: result.error,
+      });
       setServerError(getAuthErrorMessage(result.error, 'log-in'));
       return;
     }
     await refreshUser();
-    void router.push('/feed');
+    void router.push(destination);
   }
 
   return (

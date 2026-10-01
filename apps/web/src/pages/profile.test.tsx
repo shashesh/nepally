@@ -856,7 +856,7 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     const settings = await screen.findByRole('navigation', { name: 'Settings & more' });
     const hrefs = Array.from(settings.querySelectorAll('a')).map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(['/profile/locations', '/profile/notifications', '/guidelines', '/help', '/privacy', '/terms']);
+    expect(hrefs).toEqual(['/profile/locations', '/profile/notifications', '/guidelines', '/help', '/privacy', '/terms', '/delete-account']);
   });
 
   it('includes Moderation for moderators', async () => {

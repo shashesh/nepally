@@ -80,6 +80,7 @@ export function getSettingsLinks(user: Pick<User, 'is_moderator'>): Array<{ labe
     { label: 'Help Center', href: '/help' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Terms of Service', href: '/terms' },
+    { label: 'Delete account', href: '/delete-account' },
   ];
 }
 

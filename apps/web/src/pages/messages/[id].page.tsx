@@ -25,11 +25,18 @@ export default function MessageThreadPage() {
   if (!user) return null;
   // Before the router parses the URL there is no id, and the page must not
   // decide the conversation is missing on that basis.
-  const conversationId = router.isReady && typeof router.query.id === 'string' ? router.query.id : null;
+  const conversationId =
+    router.isReady && typeof router.query.id === 'string' ? router.query.id : null;
   return <ThreadView conversationId={conversationId} viewerId={user.id} />;
 }
 
-function ThreadView({ conversationId, viewerId }: { conversationId: string | null; viewerId: string }) {
+function ThreadView({
+  conversationId,
+  viewerId,
+}: {
+  conversationId: string | null;
+  viewerId: string;
+}) {
   const thread = useMessageThread(conversationId, viewerId);
   const { partner } = thread;
 
@@ -47,7 +54,13 @@ function ThreadView({ conversationId, viewerId }: { conversationId: string | nul
           ) : (
             <Text className={styles.firstMessage}>No messages yet. Say hello!</Text>
           )}
-          <MessageComposer partnerName={name} onSend={thread.send} />
+          {partner.other_user_id === null ? (
+            <Text className={styles.firstMessage}>
+              This account has been deleted, so it can&apos;t get new messages.
+            </Text>
+          ) : (
+            <MessageComposer partnerName={name} onSend={thread.send} />
+          )}
         </div>
       </>
     );

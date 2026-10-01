@@ -80,7 +80,7 @@ Confirming saves the ZIP and metro on the profile, adds the metro as the member'
 
 ## Logging out
 
-"Log out" is the one label, in the account menu, the profile menu and the profile's Settings list. While it runs, the whole screen is a loader, so no page stays mounted with its member half gone; then the member lands on `/`. If Supabase fails to sign them out, they stay signed in and see "Couldn't log you out. Please try again." (logged as `auth_sign_out_failed`).
+"Log out" is the one label, in the account menu, the profile menu and the profile's Settings list. While it runs, the whole screen is a loader, so no page stays mounted with its member half gone; then the member lands on `/`. If Supabase can't revoke the session but this browser is signed out anyway (supabase-js drops the local session either way), they land on `/` as usual. Only if the browser still holds the session do they stay signed in and see "Couldn't log you out. Please try again." Either failure is logged as `auth_sign_out_failed`.
 
 ## Where it's tested
 

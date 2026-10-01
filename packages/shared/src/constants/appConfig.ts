@@ -24,4 +24,4 @@ export const LEGAL_URLS = {
 } as const;
 
 /** ISO date shown as "Last updated" on every legal page. Bump when policy text changes. */
-export const LEGAL_LAST_UPDATED = '2026-09-04';
+export const LEGAL_LAST_UPDATED = '2026-09-30';

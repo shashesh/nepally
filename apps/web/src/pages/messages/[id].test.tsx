@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '../../test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UNAVAILABLE_ACCOUNT_NAME } from '@nepally/shared';
 import type { ChatMessage, ConversationWithParticipant } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
@@ -17,15 +18,15 @@ vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('../../hooks/useMessageThread', () => ({ useMessageThread: mocks.useMessageThread }));
 vi.mock('next/router', () => ({ useRouter: mocks.useRouter }));
 vi.mock('next/head', () => ({
-  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
 }));
 vi.mock('next/link', () => ({
-  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(function MockLink(
-    { href, children, ...rest },
-    ref
-  ) {
-    return React.createElement('a', { href, ref, ...rest }, children);
-  }),
+  default: React.forwardRef<HTMLAnchorElement, { href: string; children: React.ReactNode }>(
+    function MockLink({ href, children, ...rest }, ref) {
+      return React.createElement('a', { href, ref, ...rest }, children);
+    }
+  ),
 }));
 
 import MessageThreadPage from './[id].page';
@@ -39,6 +40,7 @@ const PARTNER: ConversationWithParticipant = {
   created_at: '2026-09-20T10:00:00Z',
   other_user_id: 'partner-1',
   other_user_name: 'Bikal Shrestha',
+  other_user_available: true,
   unread_count: 0,
 };
 
@@ -71,7 +73,11 @@ describe('MessageThreadPage', () => {
     vi.clearAllMocks();
     vi.stubGlobal('alert', mocks.alert);
     mocks.useAuth.mockReturnValue({ user: VIEWER });
-    mocks.useRouter.mockReturnValue({ replace: mocks.replace, query: { id: 'conv-1' }, isReady: true });
+    mocks.useRouter.mockReturnValue({
+      replace: mocks.replace,
+      query: { id: 'conv-1' },
+      isReady: true,
+    });
     mocks.useMessageThread.mockReturnValue(thread({ partner: PARTNER, messages: [MESSAGE] }));
   });
 
@@ -120,7 +126,9 @@ describe('MessageThreadPage', () => {
     render(<MessageThreadPage />);
 
     expect(screen.getByText('Conversation not found')).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Back to Messages' }).getAttribute('href')).toBe('/messages');
+    expect(screen.getByRole('link', { name: 'Back to Messages' }).getAttribute('href')).toBe(
+      '/messages'
+    );
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
@@ -157,7 +165,26 @@ describe('MessageThreadPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Options for Bikal S.' }));
 
-    expect((await screen.findByRole('menuitem', { name: 'View profile' })).getAttribute('href')).toBe('/users/partner-1');
+    expect(
+      (await screen.findByRole('menuitem', { name: 'View profile' })).getAttribute('href')
+    ).toBe('/users/partner-1');
     expect(mocks.alert).not.toHaveBeenCalled();
+  });
+
+  it('hides the composer when the partner was purged, and says why', () => {
+    const purged = {
+      ...PARTNER,
+      other_user_id: null,
+      other_user_name: UNAVAILABLE_ACCOUNT_NAME,
+      other_user_available: false,
+    };
+    mocks.useMessageThread.mockReturnValue(thread({ partner: purged, messages: [MESSAGE] }));
+
+    render(<MessageThreadPage />);
+
+    expect(
+      screen.getByText("This account has been deleted, so it can't get new messages.")
+    ).toBeDefined();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 });

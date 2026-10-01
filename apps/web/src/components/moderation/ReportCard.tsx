@@ -10,6 +10,8 @@ export interface ReportCardProps extends ModerationCardBusy {
   report: ReportWithUsers;
   /** The reported post, when the report is about a post that still exists. */
   post: Post | undefined;
+  /** A reported member or listing that no longer exists: no link and no ban. */
+  targetMissing?: boolean;
   now: Date;
   onDismiss: () => void;
   onRemovePost: () => void;
@@ -17,7 +19,15 @@ export interface ReportCardProps extends ModerationCardBusy {
   onBan: (targetUserId: string, name: string) => void;
 }
 
-function ReportTarget({ report, post }: { report: ReportWithUsers; post: Post | undefined }) {
+function ReportTarget({
+  report,
+  post,
+  targetMissing,
+}: {
+  report: ReportWithUsers;
+  post: Post | undefined;
+  targetMissing: boolean;
+}) {
   if (report.target_type === 'post') {
     return (
       <>
@@ -29,6 +39,7 @@ function ReportTarget({ report, post }: { report: ReportWithUsers; post: Post | 
     );
   }
   if (report.target_type === 'user') {
+    if (targetMissing) return <Text className={styles.target}>Member no longer available</Text>;
     return (
       <Anchor component={Link} href={`/users/${report.target_id}`} className={styles.targetLink}>
         View member
@@ -36,6 +47,7 @@ function ReportTarget({ report, post }: { report: ReportWithUsers; post: Post | 
     );
   }
   if (report.target_type === 'listing') {
+    if (targetMissing) return <Text className={styles.target}>Listing no longer available</Text>;
     return (
       <Anchor component={Link} href={`/marketplace/listing/${report.target_id}`} className={styles.targetLink}>
         View listing
@@ -48,7 +60,7 @@ function ReportTarget({ report, post }: { report: ReportWithUsers; post: Post | 
 }
 
 /** An open report, headed by its reason, with the actions its target allows. */
-export function ReportCard({ report, post, now, busyAction, locked, onDismiss, onRemovePost, onBan }: ReportCardProps) {
+export function ReportCard({ report, post, targetMissing = false, now, busyAction, locked, onDismiss, onRemovePost, onBan }: ReportCardProps) {
   const headingId = useId();
   const reporter = report.reported_by_user?.full_name ? formatPublicName(report.reported_by_user.full_name) : 'a member';
   const busy = { busyAction, locked };
@@ -62,7 +74,7 @@ export function ReportCard({ report, post, now, busyAction, locked, onDismiss, o
         {report.reason}
       </Title>
       {report.description ? <Text className={styles.body}>{report.description}</Text> : null}
-      <ReportTarget report={report} post={post} />
+      <ReportTarget report={report} post={post} targetMissing={targetMissing} />
       <Text className={styles.meta}>{`Reported by ${reporter} · ${formatRelativeTime(new Date(report.created_at), now)}`}</Text>
       <div className={styles.actions}>
         <ModerationActionButton action="dismiss" onPress={onDismiss} variant="default" {...busy}>
@@ -78,7 +90,7 @@ export function ReportCard({ report, post, now, busyAction, locked, onDismiss, o
             Ban author
           </ModerationActionButton>
         ) : null}
-        {report.target_type === 'user' ? (
+        {report.target_type === 'user' && !targetMissing ? (
           <ModerationActionButton action="ban" onPress={() => onBan(report.target_id, 'this member')} color="red" {...busy}>
             Ban user
           </ModerationActionButton>

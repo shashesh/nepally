@@ -30,7 +30,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
 6. **Long-lived sign-in, like Facebook and Reddit.**
    - People stay signed in on a device until they sign out. There is no inactivity timeout and no maximum session age.
    - Access tokens stay short-lived (1 hour) and refresh silently. Refresh tokens rotate on every use.
-   - Sensitive actions ask you to confirm who you are again: deleting the account, or changing email or password. Email accounts re-enter the password; Google and Apple accounts confirm an emailed one-time code.
+   - Sensitive actions ask you to confirm who you are again: deleting the account, or changing email or password. Email accounts re-enter the password; Google and Apple accounts redo their provider sign-in.
    - This replaces the March mobile plan's 30-minute inactivity timeout and 30-day maximum age. The mobile app enforces those today (`apps/mobile/src/contexts/AuthContext.tsx`). Removing them ships in its own PR, before W1.
    - The web app already behaves this way.
 
@@ -218,7 +218,7 @@ See [Monitoring](#monitoring) for the full spec.
   - OAuth callback state and origin validation
   - media URL validation (block unsafe schemes and private hosts)
 - [ ] **Code:** Account security, Facebook/Reddit style (Decision 6), on web and mobile:
-  - Confirm identity again before deleting the account or changing email or password: the password for email accounts, an emailed code through `supabase.auth.reauthenticate()` for Google and Apple accounts.
+  - Confirm identity again before deleting the account or changing email or password: the password for email accounts, redoing their provider sign-in for Google and Apple accounts.
   - After a password change, sign out every other device (`signOut({ scope: 'others' })`).
   - A **Sign out of all devices** option in Settings (`signOut({ scope: 'global' })`) for a lost or stolen phone.
 - [x] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:

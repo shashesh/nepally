@@ -139,7 +139,7 @@ Acceptance Criteria (Decision-Aligned)
 
 - ~~Session inactivity timeout is enforced at 30 minutes.~~ Superseded by the [long-lived sessions ADR](../../decisions/2026-09-18-long-lived-sessions.md).
 - ~~Absolute session max age is enforced at 30 days from sign-in.~~ Superseded by the same ADR.
-- Sensitive actions require re-authentication (password, or an emailed code for Google/Apple accounts) — per the ADR.
+- Sensitive actions require re-authentication (password, or redoing the provider sign-in for Google/Apple accounts) — per the ADR.
 - ~~Silent refresh is blocked once absolute max age is exceeded.~~ Superseded by the same ADR.
 - Media URL policy Stage A is implemented: block unsafe schemes and local/private hosts, warn and fallback on unknown hosts, emit telemetry for blocked and warned URLs.
 

@@ -3,6 +3,7 @@
  */
 
 import { TrustLevel } from '../constants/trustLevels';
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
 import { isNepalDistrict } from '../constants/nepalDistricts';
 import { isLanguageCode } from '../constants/languages';
 import type { User } from '../types/user';
@@ -30,6 +31,9 @@ export function getTrustLabel(level: number): string {
  */
 export function formatPublicName(fullName: string): string {
   if (!fullName || !fullName.trim()) return '';
+  // A label, not a name: getConversations uses it for a partner who is
+  // pending deletion or purged, and it must read the same everywhere.
+  if (fullName === UNAVAILABLE_ACCOUNT_NAME) return fullName;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
   const firstName = parts[0];

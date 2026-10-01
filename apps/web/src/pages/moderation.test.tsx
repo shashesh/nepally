@@ -72,6 +72,7 @@ function queue(overrides: Record<string, unknown> = {}) {
     pendingPosts: [post('p-1', 'Flood help needed'), post('p-2', 'Shelter open')],
     reports: [POST_REPORT, USER_REPORT],
     reportedPosts: { 'p-9': REPORTED },
+    missingTargetIds: new Set<string>(),
     loading: false,
     error: null,
     reload: vi.fn(),
@@ -91,6 +92,15 @@ describe('ModerationPage', () => {
     mocks.useAuth.mockReturnValue({ user: MODERATOR, loading: false });
     mocks.useModerationQueue.mockReturnValue(queue());
     mocks.confirm.mockResolvedValue(true);
+  });
+
+  it('shows a reported member who is gone as no longer available', () => {
+    mocks.useModerationQueue.mockReturnValue(
+      queue({ missingTargetIds: new Set([USER_REPORT.target_id]) })
+    );
+    render(<ModerationPage />);
+
+    expect(screen.getByText('Member no longer available')).toBeDefined();
   });
 
   it('sends a signed-out visitor to log in', async () => {

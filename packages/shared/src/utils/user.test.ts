@@ -8,6 +8,7 @@ import {
   getTrustLabel,
 } from './user';
 import { TrustLevel } from '../constants/trustLevels';
+import { UNAVAILABLE_ACCOUNT_NAME } from '../constants/accountDeletion';
 
 describe('formatPublicName', () => {
   it('returns "Firstname L." for a two-part name', () => {
@@ -32,6 +33,10 @@ describe('formatPublicName', () => {
 
   it('uppercases the last initial', () => {
     expect(formatPublicName('anjali sharma')).toBe('anjali S.');
+  });
+
+  it('leaves the unavailable-account placeholder whole', () => {
+    expect(formatPublicName(UNAVAILABLE_ACCOUNT_NAME)).toBe('Unavailable account');
   });
 });
 
@@ -113,26 +118,45 @@ describe('getAvatarToneIndex', () => {
   });
 
   it('spreads different names across tones', () => {
-    const tones = new Set(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'].map((name) => getAvatarToneIndex(name, 8)));
+    const tones = new Set(
+      ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'].map((name) => getAvatarToneIndex(name, 8))
+    );
     expect(tones.size).toBeGreaterThan(1);
   });
 });
 
 describe('getAboutYouFormValues', () => {
   it('keeps a known district', () => {
-    expect(getAboutYouFormValues({ hometown_district: 'Kathmandu', college: null, years_in_us: null, languages: [] }))
-      .toMatchObject({ hometown_district: 'Kathmandu' });
+    expect(
+      getAboutYouFormValues({
+        hometown_district: 'Kathmandu',
+        college: null,
+        years_in_us: null,
+        languages: [],
+      })
+    ).toMatchObject({ hometown_district: 'Kathmandu' });
   });
 
   it('drops an unknown district to null', () => {
     expect(
-      getAboutYouFormValues({ hometown_district: 'Nawalparasi', college: null, years_in_us: null, languages: [] })
+      getAboutYouFormValues({
+        hometown_district: 'Nawalparasi',
+        college: null,
+        years_in_us: null,
+        languages: [],
+      })
     ).toMatchObject({ hometown_district: null });
   });
 
   it('treats a missing district the same as null', () => {
-    expect(getAboutYouFormValues({ hometown_district: undefined, college: null, years_in_us: null, languages: [] }))
-      .toMatchObject({ hometown_district: null });
+    expect(
+      getAboutYouFormValues({
+        hometown_district: undefined,
+        college: null,
+        years_in_us: null,
+        languages: [],
+      })
+    ).toMatchObject({ hometown_district: null });
   });
 
   it('drops unknown languages and keeps known ones in their stored order', () => {
@@ -147,8 +171,14 @@ describe('getAboutYouFormValues', () => {
   });
 
   it('treats a missing languages array as empty', () => {
-    expect(getAboutYouFormValues({ hometown_district: null, college: null, years_in_us: null, languages: undefined }))
-      .toMatchObject({ languages: [] });
+    expect(
+      getAboutYouFormValues({
+        hometown_district: null,
+        college: null,
+        years_in_us: null,
+        languages: undefined,
+      })
+    ).toMatchObject({ languages: [] });
   });
 
   it('passes college and years_in_us through unchanged', () => {
@@ -164,7 +194,12 @@ describe('getAboutYouFormValues', () => {
 
   it('maps missing college and years_in_us to null', () => {
     expect(
-      getAboutYouFormValues({ hometown_district: null, college: undefined, years_in_us: undefined, languages: [] })
+      getAboutYouFormValues({
+        hometown_district: null,
+        college: undefined,
+        years_in_us: undefined,
+        languages: [],
+      })
     ).toMatchObject({ college: null, years_in_us: null });
   });
 });

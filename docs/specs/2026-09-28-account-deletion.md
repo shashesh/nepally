@@ -31,15 +31,15 @@ chat previews, and deletes the auth user, which cascades to all of their data.
 
 ## 2. Decisions
 
-| #   | Decision                                                                                                         | Why                                                                                                                                                                                                                                                                                                                                           |
-| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | 29-day grace period, then a hard delete                                                                          | Accidental deletions can be undone. The privacy policy promises removal "within 30 days". 29 days plus an hourly purge keeps that promise (§4.4). Restoring is possible until the date, not after it.                                                                                                                                         |
-| D2  | During the grace period the account is hidden: profile, posts, comments, listings, events, likes, RSVPs, follows | A "deleted" person's posts shouldn't stay up for a month. Chats keep their history and show the person as an unavailable account. Photos stay at their public URLs until the purge (§6). At the purge, copies of their words in other members' notifications and chat previews are scrubbed (§4.6).                                           |
-| D3  | Signing in during the grace period asks: restore, or keep the deletion and sign out                              | A stray sign-in, or someone else with the password, can't silently undo the request.                                                                                                                                                                                                                                                          |
-| D4  | Before a request, the user must have signed in within the last 10 minutes. The database checks this.             | The long-lived sessions ADR makes deletion a sensitive action. The check reads the JWT `amr` claim, so a stolen, still-open session can't delete the account.                                                                                                                                                                                 |
-| D5  | Email accounts re-enter their password. Google-only accounts redo Google sign-in.                                | `supabase.auth.reauthenticate()` sends a code, but the code can only be checked by a password change (`updateUser`), so it can't gate deletion. Emailed sign-in codes would need custom SMTP, which isn't set up yet. This amends the ADR (see §9).                                                                                           |
-| D6  | Request and cancel are Postgres functions. The purge is an edge function run hourly by pg_cron.                  | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                                                                                                                 |
-| D7  | Stripe is the payment record. Our promotion rows go at the purge.                                                | No Stripe customer is stored and there are no subscriptions. `listing_promotions` holds each promotion's cost and its Stripe checkout session and payment intent ids. They stay during the grace period and the purge's cascade deletes them. Stripe keeps the payment records, which covers the privacy policy's "may keep payment records". |
+| #   | Decision                                                                                                                          | Why                                                                                                                                                                                                                                                                                                                                           |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | 29-day grace period, then a hard delete                                                                                           | Accidental deletions can be undone. The privacy policy promises removal "within 30 days". 29 days plus an hourly purge keeps that promise (§4.4). Restoring is possible until the date, not after it.                                                                                                                                         |
+| D2  | During the grace period the account is hidden: profile, posts, comments, listings, events, likes, RSVPs, follows                  | A "deleted" person's posts shouldn't stay up for a month. Chats keep their history and show the person as an unavailable account. Photos stay at their public URLs until the purge (§6). At the purge, copies of their words in other members' notifications and chat previews are scrubbed (§4.6).                                           |
+| D3  | Signing in during the grace period asks: restore, or keep the deletion and sign out                                               | A stray sign-in, or someone else with the password, can't silently undo the request.                                                                                                                                                                                                                                                          |
+| D4  | Before a request, the user must have signed in within the last 10 minutes. The database checks this.                              | The long-lived sessions ADR makes deletion a sensitive action. The check reads the JWT `amr` claim, so a stolen, still-open session can't delete the account.                                                                                                                                                                                 |
+| D5  | Email accounts re-enter their password, or redo Google sign-in if Google is linked too. Google-only accounts redo Google sign-in. | `supabase.auth.reauthenticate()` sends a code, but the code can only be checked by a password change (`updateUser`), so it can't gate deletion. Emailed sign-in codes would need custom SMTP, which isn't set up yet. This amends the ADR (see §9).                                                                                           |
+| D6  | Request and cancel are Postgres functions. The purge is an edge function run hourly by pg_cron.                                   | Request and cancel need no service role and no deploy. Only the purge needs the Storage API, because files can't be deleted from SQL without leaving the stored blobs behind.                                                                                                                                                                 |
+| D7  | Stripe is the payment record. Our promotion rows go at the purge.                                                                 | No Stripe customer is stored and there are no subscriptions. `listing_promotions` holds each promotion's cost and its Stripe checkout session and payment intent ids. They stay during the grace period and the purge's cascade deletes them. Stripe keeps the payment records, which covers the privacy policy's "may keep payment records". |
 
 ## 3. What exists today
 
@@ -238,8 +238,10 @@ copies too.
   `PublicUser`.
 - **Chat:** `getConversations` returns `other_user_available`, and keeps
   conversations whose partner is gone (§5.6).
-- **Login return path:** `safeRedirectPath(value)` returns a same-origin path or
-  null (§5.3).
+- **Login return path:** `safeRedirectPath(value, origin)` returns a same-origin
+  path or null (§5.3). Callers pass `window.location.origin`.
+  `getSignInReturnPath(value, origin)` also refuses `/login` and `/auth/*`, which
+  only lead back into signing in; login and the callback use it.
 - **API** (`src/api/accountDeletion.ts`), taking a `SupabaseClient` and returning
   the usual `{ data, error }`:
   - `requestAccountDeletion(supabase)` returns the scheduled date. It maps
@@ -252,6 +254,8 @@ copies too.
     just signed in. The server check is the one that counts.
   - `getReauthMethod(user)` returns `'password'` when `app_metadata.providers`
     includes `email`, otherwise `'google'`.
+  - `hasGoogleIdentity(user)` is true when `app_metadata.providers` includes
+    `google`, so the password step can offer Google too.
   - `formatDeletionDate(iso)`.
 
 ### 5.2 The delete flow (web and mobile)
@@ -259,20 +263,24 @@ copies too.
 1. **Explain.** What is deleted: profile, posts, comments, the messages you sent,
    listings, events, photos. Messages other members sent you stay in their chats.
    Active promotions end with the listings. The account is hidden now and deleted
-   on _date_. Signing in before then lets you restore it.
+   on _date_. Signing in before then lets you restore it. The step names the
+   account: "Signed in as _email_".
 2. **Confirm it's you.**
    - Password: a password field, then `signInWithPassword` with the user's email.
-     A wrong password shows "That password is incorrect."
+     A wrong password shows "That password is incorrect." When Google is linked
+     too (`hasGoogleIdentity`), the step also offers "Continue with Google". It
+     gives the email fallback (`SUPPORT_EMAIL`) for a forgotten password.
    - Google: "Continue with Google", with `prompt=select_account` so Google always
      shows its account chooser. Before starting, store the current user id. After
      returning, compare it with the new session's user id, not the profile's: the
      other Google account may have no Nepally profile. If they differ, sign that
      session out, show "You signed in as a different account. Sign in again as
-     yourself.", and delete nothing.
-3. **Final confirm.** "Delete my account" calls `requestAccountDeletion`, then
-   `signOut({ scope: 'global' })`, then clears local data. It ends on a signed-out
-   screen: "Your account will be deleted on _date_. Sign in before then to restore
-   it."
+     yourself.", and delete nothing. If the id can't be stored (the browser blocks
+     site storage), Google doesn't start and the step says why.
+3. **Final confirm.** It names the account again. "Delete my account" calls
+   `requestAccountDeletion`, then `signOut({ scope: 'global' })`, then clears local
+   data. It ends on a signed-out screen: "Your account will be deleted on _date_.
+   Sign in before then to restore it."
 
 **Errors.**
 
@@ -280,9 +288,10 @@ copies too.
 - `profile_not_found` means the account never got a profile row. The flow can't
   delete it, so it shows the email fallback (`SUPPORT_EMAIL`).
 - Network or server errors show a retry message. Nothing has changed.
-- If the global sign-out fails after a successful request, sign out locally anyway.
-  Other devices land on the restore screen. Neither platform's `signOut` does that
-  today (§5.3, §5.4).
+- If the global sign-out fails after a successful request, this device is signed
+  out anyway: supabase-js removes the local session even when revoking it on the
+  server fails. Other devices land on the restore screen. Web's `signOut` still
+  reports an error in that case, which this work fixes (§5.3).
 
 ### 5.3 Web
 
@@ -306,8 +315,9 @@ copies too.
   profile has `deletion_scheduled_for`. That includes `/delete-account`, so a
   pending member can't skip Restore through it. Public legal pages stay reachable.
   Web push registration waits until the profile has loaded and isn't pending.
-- **Sign-out:** `AuthContext.signOut` gets an optional destination, and falls back
-  to a local sign-out when the global one fails.
+- **Sign-out:** `AuthContext.signOut` gets an optional destination. When the server
+  call fails but this browser's session is gone, it carries on as signed out
+  instead of reporting an error.
 
 ### 5.4 Mobile
 
@@ -318,8 +328,8 @@ copies too.
     `ChangePasswordScreen`.
   - Google reuses `services/auth/googleAuth.ts`. It exchanges the code straight into
     the live session, so a wrong account must be signed out before the flow stops.
-- **Sign-out:** `AuthContext.signOut` ignores Supabase's error today. It must fall
-  back to a local sign-out.
+- **Sign-out:** `AuthContext.signOut` ignores Supabase's error. That's fine: the
+  local session is removed either way.
 - **Restore gate:** `RootNavigator` gains a branch. When the user's profile has
   `deletion_scheduled_for`, it shows `AccountRestoreScreen` in place of onboarding
   or the main tabs. Mobile `AuthContext` copies a fixed list of profile fields, so
@@ -350,7 +360,8 @@ pending, and it is gone after the purge, which today drops the whole conversatio
 - It returns `other_user_available: false` for both, and sets `other_user_name` to
   `UNAVAILABLE_ACCOUNT_NAME`. Every reader then shows it: the list row, thread
   header, message log labels and initials, the page title, the composer's label,
-  and mobile's route params.
+  and mobile's route params. `formatPublicName` returns that name unchanged, so it
+  isn't shortened to "Unavailable A.".
 - An error from its `users` lookup fails the call. It is not read as "every
   partner is unavailable".
 

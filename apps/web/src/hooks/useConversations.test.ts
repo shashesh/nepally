@@ -20,6 +20,7 @@ function conversation(id: string): ConversationWithParticipant {
     created_at: '2026-09-20T10:00:00Z',
     other_user_id: `other-${id}`,
     other_user_name: 'Bikal Shrestha',
+    other_user_available: true,
     unread_count: 0,
   };
 }
@@ -50,7 +51,9 @@ describe('useConversations', () => {
   });
 
   it('reports a failed load instead of an empty inbox', async () => {
-    mocks.getConversations.mockResolvedValue({ error: new Error('permission denied for table conversations') });
+    mocks.getConversations.mockResolvedValue({
+      error: new Error('permission denied for table conversations'),
+    });
     const { result } = renderHook(() => useConversations('user-1'));
 
     await waitFor(() => expect(result.current.loading).toBe(false));

@@ -229,6 +229,69 @@ describe('AuthProvider', () => {
     );
   });
 
+  it('treats a failed revoke as signed out when this browser has no session left', async () => {
+    const snapshots = await renderSignedIn();
+    authMocks.signOutMock.mockResolvedValue({ error: new Error('network down') });
+    // supabase-js drops the local session even when revoking it fails.
+    authMocks.getSessionMock.mockResolvedValue({ data: { session: null } });
+
+    let result: { error?: string } = { error: 'not called' };
+    await act(async () => {
+      result = await snapshots[snapshots.length - 1].signOut();
+    });
+
+    expect(result).toEqual({});
+    expect(authMocks.replaceMock).toHaveBeenCalledWith('/');
+    expect(snapshots[snapshots.length - 1].user).toBeNull();
+    expect(authMocks.logClientEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'auth_sign_out_failed' })
+    );
+  });
+
+  it('lands on the given page after signing out', async () => {
+    const snapshots = await renderSignedIn();
+
+    await act(async () => {
+      await snapshots[snapshots.length - 1].signOut({ redirectTo: '/delete-account?scheduled=x' });
+    });
+
+    expect(authMocks.replaceMock).toHaveBeenCalledWith('/delete-account?scheduled=x');
+  });
+
+  it('registers web push only once the profile shows no pending deletion', async () => {
+    const snapshots: Array<React.ContextType<typeof AuthContext>> = [];
+    authMocks.getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user-3' } } } });
+    authMocks.getUserMock.mockResolvedValue({ data: { user: { id: 'user-3' } } });
+    authMocks.getMyProfileMock.mockResolvedValue({
+      data: { id: 'user-3', deletion_scheduled_for: '2999-01-01T00:00:00Z' },
+    });
+
+    render(
+      <AuthProvider>
+        <ContextProbe onSnapshot={(v) => snapshots.push(v)} />
+      </AuthProvider>
+    );
+    await waitFor(() => {
+      expect(snapshots[snapshots.length - 1].user?.id).toBe('user-3');
+    });
+    expect(authMocks.requestWebPushPermissionMock).not.toHaveBeenCalled();
+
+    // A restore clears the date, and the next profile read registers push.
+    authMocks.getMyProfileMock.mockResolvedValue({
+      data: { id: 'user-3', deletion_scheduled_for: null },
+    });
+    await act(async () => {
+      await snapshots[snapshots.length - 1].refreshUser();
+    });
+
+    await waitFor(() => {
+      expect(authMocks.requestWebPushPermissionMock).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user-3'
+      );
+    });
+  });
+
   it('refreshUser resolves with the profile it loaded, or null when it loaded none', async () => {
     const snapshots: Array<React.ContextType<typeof AuthContext>> = [];
     render(

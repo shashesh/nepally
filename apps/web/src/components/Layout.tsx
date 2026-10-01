@@ -5,8 +5,9 @@ import type { Notification } from '@nepally/shared';
 import { useAuth } from '../hooks/useAuth';
 import { useNotificationsFeed } from '../hooks/useNotificationsFeed';
 import { useUnreadMessageCount } from '../hooks/useUnreadMessageCount';
+import { AccountRestoreScreen } from './account/AccountRestoreScreen';
 import { BottomTabBar } from './layout/BottomTabBar';
-import { isTaskRoute } from './layout/navItems';
+import { FOOTER_LINKS, isTaskRoute } from './layout/navItems';
 import { PublicShell } from './layout/PublicShell';
 import { SearchEntry } from './layout/SearchEntry';
 import { SideRail } from './layout/SideRail';
@@ -18,6 +19,12 @@ import styles from './Layout.module.css';
 interface LayoutProps {
   children: ReactNode;
 }
+
+/**
+ * Pages a member pending deletion can still read: the footer's legal pages, so
+ * every footer link works (spec §5.3). Every other page shows the restore screen.
+ */
+const OPEN_WHILE_PENDING_DELETION = new Set(FOOTER_LINKS.map((link) => link.href));
 
 export default function Layout({ children }: LayoutProps) {
   const { user, loading, signingOut, signOut } = useAuth();
@@ -38,6 +45,21 @@ export default function Layout({ children }: LayoutProps) {
 
   if (!user) {
     return <PublicShell>{children}</PublicShell>;
+  }
+
+  // A member pending deletion restores or signs out before anything else
+  // (spec §5.3). /delete-account is gated too, or its sign-in link would
+  // skip Restore.
+  if (user.deletion_scheduled_for) {
+    return (
+      <PublicShell showAuthLinks={false}>
+        {OPEN_WHILE_PENDING_DELETION.has(router.pathname) ? (
+          children
+        ) : (
+          <AccountRestoreScreen scheduledFor={user.deletion_scheduled_for} />
+        )}
+      </PublicShell>
+    );
   }
 
   const handleOpenNotification = async (notification: Notification) => {

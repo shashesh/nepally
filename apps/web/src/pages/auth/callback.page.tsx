@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { Button, Group, Loader, Text } from '@mantine/core';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { logClientEvent } from '@nepally/shared';
+import { getSignInReturnPath, logClientEvent } from '@nepally/shared';
 import { FINISH_SIGN_IN_FAILED, finishSignIn } from '../../lib/authCallback';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthCard } from '../../components/auth/AuthCard';
@@ -99,7 +99,14 @@ export default function AuthCallbackPage() {
         setState({ kind: 'failed', message: FINISH_SIGN_IN_FAILED });
         return;
       }
-      void router.push(result.destination);
+      // A safe ?redirect= (e.g. /delete-account) wins over the feed, never
+      // over onboarding. Read from window.location: this page is statically
+      // optimised, so the first render's router query is empty.
+      const returnTo = getSignInReturnPath(
+        new URLSearchParams(window.location.search).get('redirect'),
+        window.location.origin
+      );
+      void router.push(result.destination === '/feed' && returnTo ? returnTo : result.destination);
     }
 
     // The email link's token arrives as an auth event.

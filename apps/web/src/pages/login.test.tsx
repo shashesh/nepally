@@ -32,12 +32,20 @@ vi.mock('@nepally/shared', async () => {
 });
 
 vi.mock('next/head', () => ({
-  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+  default: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
 }));
 
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) =>
-    React.createElement('a', { href, className }, children),
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => React.createElement('a', { href, className }, children),
 }));
 
 import LoginPage from './login.page';
@@ -118,6 +126,92 @@ describe('LoginPage', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
+  it('goes to a safe ?redirect= after logging in', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: '/delete-account' },
+      isReady: true,
+    });
+    loginMocks.signInWithEmailMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'test@example.com' },
+    });
+    render(<LoginPage />);
+
+    await submitWith('test@example.com', 'correctpassword');
+
+    expect(mockPush).toHaveBeenCalledWith('/delete-account');
+  });
+
+  it('ignores an unsafe ?redirect= and goes to the feed', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: 'https://evil.com' },
+      isReady: true,
+    });
+    loginMocks.signInWithEmailMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'test@example.com' },
+    });
+    render(<LoginPage />);
+
+    await submitWith('test@example.com', 'correctpassword');
+
+    expect(mockPush).toHaveBeenCalledWith('/feed');
+  });
+
+  it('sends a signed-in visitor to a safe ?redirect=', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: '/delete-account' },
+      isReady: true,
+    });
+    loginMocks.useAuthMock.mockReturnValue({
+      user: { id: 'user-1' },
+      refreshUser: mockRefreshUser,
+    });
+    render(<LoginPage />);
+    await act(async () => {});
+
+    expect(mockReplace).toHaveBeenCalledWith('/delete-account');
+  });
+
+  it('sends a signed-in visitor to the feed when ?redirect= is /login itself', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: '/login' },
+      isReady: true,
+    });
+    loginMocks.useAuthMock.mockReturnValue({
+      user: { id: 'user-1' },
+      refreshUser: mockRefreshUser,
+    });
+    render(<LoginPage />);
+    await act(async () => {});
+
+    expect(mockReplace).toHaveBeenCalledWith('/feed');
+  });
+
+  it('passes a safe ?redirect= to Google sign-in', async () => {
+    loginMocks.useRouterMock.mockReturnValue({
+      push: mockPush,
+      replace: mockReplace,
+      query: { redirect: '/delete-account' },
+      isReady: true,
+    });
+    render(<LoginPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Continue with Google/ }));
+    });
+
+    expect(loginMocks.signInWithGoogleMock).toHaveBeenCalledWith({
+      redirectTo: `${window.location.origin}/auth/callback?redirect=%2Fdelete-account`,
+    });
+  });
+
   it('shows no field errors before the first submit', () => {
     render(<LoginPage />);
     expect(emailField().getAttribute('aria-invalid')).not.toBe('true');
@@ -173,7 +267,9 @@ describe('LoginPage', () => {
     loginMocks.signInWithEmailMock.mockResolvedValue({ error: new Error('boom') });
     render(<LoginPage />);
     await submitWith('test@example.com', 'password');
-    expect(screen.getByRole('alert').textContent).toContain("Couldn't log you in. Please try again.");
+    expect(screen.getByRole('alert').textContent).toContain(
+      "Couldn't log you in. Please try again."
+    );
   });
 
   it('refreshes the user and goes to /feed on success', async () => {
@@ -183,7 +279,10 @@ describe('LoginPage', () => {
     mockRefreshUser.mockResolvedValue(undefined);
     render(<LoginPage />);
     await submitWith('test@example.com', 'correctpassword');
-    expect(loginMocks.signInWithEmailMock).toHaveBeenCalledWith('test@example.com', 'correctpassword');
+    expect(loginMocks.signInWithEmailMock).toHaveBeenCalledWith(
+      'test@example.com',
+      'correctpassword'
+    );
     expect(mockRefreshUser).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/feed');
   });

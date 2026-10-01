@@ -12,11 +12,17 @@ const PARTNER: ConversationWithParticipant = {
   created_at: '2026-09-20T10:00:00Z',
   other_user_id: 'partner-1',
   other_user_name: 'Bikal Shrestha',
+  other_user_available: true,
   other_user_photo: null,
   unread_count: 0,
 };
 
-function message(id: string, senderId: string, at: Date, overrides: Partial<ChatMessage> = {}): ChatMessage {
+function message(
+  id: string,
+  senderId: string,
+  at: Date,
+  overrides: Partial<ChatMessage> = {}
+): ChatMessage {
   return {
     id,
     conversation_id: 'conv-1',
@@ -33,10 +39,21 @@ function message(id: string, senderId: string, at: Date, overrides: Partial<Chat
 const YESTERDAY = new Date(2026, 8, 22, 18);
 const TODAY = new Date(2026, 8, 23, 9);
 
-function setScroll({ scrollY, innerHeight, scrollHeight }: { scrollY: number; innerHeight: number; scrollHeight: number }) {
+function setScroll({
+  scrollY,
+  innerHeight,
+  scrollHeight,
+}: {
+  scrollY: number;
+  innerHeight: number;
+  scrollHeight: number;
+}) {
   Object.defineProperty(window, 'scrollY', { configurable: true, value: scrollY });
   Object.defineProperty(window, 'innerHeight', { configurable: true, value: innerHeight });
-  Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, value: scrollHeight });
+  Object.defineProperty(document.documentElement, 'scrollHeight', {
+    configurable: true,
+    value: scrollHeight,
+  });
   window.dispatchEvent(new Event('scroll'));
 }
 
@@ -88,7 +105,9 @@ describe('MessageLog', () => {
   it('heads each day with its label', () => {
     renderLog([message('m1', 'partner-1', YESTERDAY), message('m2', VIEWER, TODAY)]);
 
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+    const headings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
     expect(headings).toEqual(['Yesterday', 'Today']);
   });
 
@@ -100,7 +119,8 @@ describe('MessageLog', () => {
     ]);
 
     const log = screen.getByRole('log');
-    const bubble = (text: string) => within(log).getByText(text).closest('[data-message]') as HTMLElement;
+    const bubble = (text: string) =>
+      within(log).getByText(text).closest('[data-message]') as HTMLElement;
     expect(bubble('text m1').textContent).not.toMatch(/Read|Sent/);
     expect(bubble('text m2').textContent).toContain('Read');
     expect(bubble('text m3').textContent).toContain('Sent');
@@ -127,13 +147,22 @@ describe('MessageLog', () => {
       setScroll({ scrollY: 0, innerHeight: 600, scrollHeight: 3000 });
       scrollTo.mockClear();
 
-      rerender(<MessageLog messages={[...first, message('m2', VIEWER, TODAY)]} viewerId={VIEWER} partner={PARTNER} />);
+      rerender(
+        <MessageLog
+          messages={[...first, message('m2', VIEWER, TODAY)]}
+          viewerId={VIEWER}
+          partner={PARTNER}
+        />
+      );
 
       expect(scrollTo).toHaveBeenCalledTimes(1);
     });
 
     it('scrolls to the very end of the page, below the composer too', () => {
-      Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, value: 4200 });
+      Object.defineProperty(document.documentElement, 'scrollHeight', {
+        configurable: true,
+        value: 4200,
+      });
       renderLog([message('m1', 'partner-1', TODAY)]);
 
       expect(scrollTo).toHaveBeenCalledWith({ top: 4200 });
@@ -147,7 +176,11 @@ describe('MessageLog', () => {
       scrollTo.mockClear();
 
       rerender(
-        <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
+        <MessageLog
+          messages={[...first, message('m2', 'partner-1', TODAY)]}
+          viewerId={VIEWER}
+          partner={PARTNER}
+        />
       );
 
       expect(scrollTo).toHaveBeenCalledTimes(1);
@@ -158,7 +191,9 @@ describe('MessageLog', () => {
       const { rerender } = renderLog(first);
       scrollTo.mockClear();
 
-      rerender(<MessageLog messages={[{ ...first[0], read: true }]} viewerId={VIEWER} partner={PARTNER} />);
+      rerender(
+        <MessageLog messages={[{ ...first[0], read: true }]} viewerId={VIEWER} partner={PARTNER} />
+      );
 
       expect(scrollTo).not.toHaveBeenCalled();
     });
@@ -171,7 +206,11 @@ describe('MessageLog', () => {
       scrollTo.mockClear();
 
       rerender(
-        <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
+        <MessageLog
+          messages={[...first, message('m2', 'partner-1', TODAY)]}
+          viewerId={VIEWER}
+          partner={PARTNER}
+        />
       );
 
       expect(scrollTo).toHaveBeenCalledTimes(1);
@@ -184,7 +223,11 @@ describe('MessageLog', () => {
       scrollTo.mockClear();
 
       rerender(
-        <MessageLog messages={[...first, message('m2', 'partner-1', TODAY)]} viewerId={VIEWER} partner={PARTNER} />
+        <MessageLog
+          messages={[...first, message('m2', 'partner-1', TODAY)]}
+          viewerId={VIEWER}
+          partner={PARTNER}
+        />
       );
 
       expect(scrollTo).not.toHaveBeenCalled();
