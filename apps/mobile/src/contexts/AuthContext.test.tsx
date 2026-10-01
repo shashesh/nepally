@@ -325,6 +325,27 @@ describe('AuthContext', () => {
     expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledWith(supabase, 'user-1');
   });
 
+  it('registers again after a restore on a device that registered before the deletion', async () => {
+    // Device B registered; then device A deleted the account (removing every
+    // token) and B, still running, loaded the pending profile.
+    signedInAs(profile(null));
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+
+    mockGetMyProfile.mockResolvedValue({ data: profile(SCHEDULED_FOR) });
+    await act(async () => {
+      await result.current.refreshUser();
+    });
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+
+    mockGetMyProfile.mockResolvedValue({ data: profile(null) });
+    await act(async () => {
+      await result.current.refreshUser();
+    });
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(2);
+  });
+
   it('refreshUser resolves with null when nobody is signed in', async () => {
     mockAuth.getUser.mockResolvedValue({
       data: { user: null },

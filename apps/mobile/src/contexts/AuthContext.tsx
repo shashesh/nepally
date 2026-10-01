@@ -136,7 +136,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await saveUserData(userProfile);
       // Push waits for the profile: an account pending deletion gets no
       // token until it is restored (spec §6, "Push while pending").
-      if (!userProfile.deletion_scheduled_for) {
+      if (userProfile.deletion_scheduled_for) {
+        // The request deleted every device's token, including one this device
+        // registered before it, so a restore here must register again.
+        pushRegistrationAttemptedUserIdRef.current = null;
+      } else {
         void registerPushTokenForUser(userProfile.id);
       }
       return userProfile;
