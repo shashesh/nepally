@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '../../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, SUPPORT_EMAIL } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
@@ -56,6 +56,11 @@ const GOOGLE_MEMBER = {
   email: 'member@example.com',
   app_metadata: { providers: ['google'] },
 };
+const EMAIL_AND_GOOGLE_MEMBER = {
+  id: 'user-1',
+  email: 'member@example.com',
+  app_metadata: { providers: ['email', 'google'] },
+};
 
 async function press(name: string | RegExp) {
   await act(async () => {
@@ -83,6 +88,10 @@ describe('DeleteAccountFlow', () => {
     mocks.signOut.mockResolvedValue({});
     mocks.supabaseSignOut.mockResolvedValue({ error: null });
     mocks.replace.mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('explains what goes and when, then asks for the password after an old sign-in', async () => {
@@ -143,6 +152,74 @@ describe('DeleteAccountFlow', () => {
     await submitPassword('right');
 
     expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+  });
+
+  it('names the signed-in account on Explain and on the final step', async () => {
+    mocks.isRecentSignIn.mockReturnValue(true);
+    render(<DeleteAccountFlow />);
+    expect(screen.getByText('Signed in as member@example.com')).toBeDefined();
+
+    await press('Continue');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Delete your account?' })).toBeDefined();
+    expect(screen.getByText('Signed in as member@example.com')).toBeDefined();
+  });
+
+  it('gives an email-only account the support email for a forgotten password', async () => {
+    render(<DeleteAccountFlow />);
+
+    await press('Continue');
+
+    expect(screen.getByText(/Forgot your password\?/)).toBeDefined();
+    expect(screen.getByRole('link', { name: SUPPORT_EMAIL })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Continue with Google/ })).toBeNull();
+  });
+
+  it('offers Google next to the password when the account has Google too', async () => {
+    mocks.useAuth.mockReturnValue({
+      supabaseUser: EMAIL_AND_GOOGLE_MEMBER,
+      signOut: mocks.signOut,
+      refreshUser: mocks.refreshUser,
+    });
+    mocks.signInWithGoogle.mockResolvedValue({});
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+    expect(screen.getByLabelText('Password')).toBeDefined();
+
+    await press(/Continue with Google/);
+
+    expect(window.sessionStorage.getItem(REAUTH_USER_KEY)).toBe('user-1');
+    expect(mocks.signInWithGoogle).toHaveBeenCalledWith({
+      redirectTo: `${window.location.origin}/delete-account?step=confirm`,
+      selectAccount: true,
+    });
+  });
+
+  it("doesn't start Google when it can't remember who asked", async () => {
+    const storageError = new DOMException('blocked', 'SecurityError');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw storageError;
+    });
+    mocks.useAuth.mockReturnValue({
+      supabaseUser: GOOGLE_MEMBER,
+      signOut: mocks.signOut,
+      refreshUser: mocks.refreshUser,
+    });
+    render(<DeleteAccountFlow />);
+    await press('Continue');
+
+    await press(/Continue with Google/);
+
+    expect(mocks.signInWithGoogle).not.toHaveBeenCalled();
+    expect(screen.getByText(/blocking site storage/)).toBeDefined();
+    expect(mocks.logClientEvent).toHaveBeenCalledWith({
+      event: 'account_delete_reauth_failed',
+      context: { platform: 'web', method: 'google' },
+      error: storageError,
+    });
+    expect(
+      screen.getByRole('button', { name: /Continue with Google/ }).getAttribute('aria-busy')
+    ).toBeNull();
   });
 
   it('starts Google with its account chooser, remembering who asked', async () => {

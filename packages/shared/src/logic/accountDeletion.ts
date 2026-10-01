@@ -45,10 +45,21 @@ export function isRecentSignIn(accessToken: string, nowMs: number = Date.now()):
   return signedInAt !== null && nowMs / 1000 - signedInAt <= REAUTH_MAX_AGE_SECONDS;
 }
 
-/** 'password' when the account has an email identity, otherwise 'google'. */
-export function getReauthMethod(user: { app_metadata?: { providers?: unknown } }): ReauthMethod {
+type WithProviders = { app_metadata?: { providers?: unknown } };
+
+function hasProvider(user: WithProviders, provider: string): boolean {
   const providers = user.app_metadata?.providers;
-  return Array.isArray(providers) && providers.includes('email') ? 'password' : 'google';
+  return Array.isArray(providers) && providers.includes(provider);
+}
+
+/** 'password' when the account has an email identity, otherwise 'google'. */
+export function getReauthMethod(user: WithProviders): ReauthMethod {
+  return hasProvider(user, 'email') ? 'password' : 'google';
+}
+
+/** True when Google is linked, so it can stand in for a forgotten password. */
+export function hasGoogleIdentity(user: WithProviders): boolean {
+  return hasProvider(user, 'google');
 }
 
 /** "October 30, 2026" for an ISO timestamp. */

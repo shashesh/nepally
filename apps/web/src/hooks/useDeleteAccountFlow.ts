@@ -23,6 +23,8 @@ export const REAUTH_USER_KEY = 'nepally.deleteAccount.userId';
 
 const WRONG_PASSWORD = 'That password is incorrect.';
 const CONFIRM_AGAIN = "Please confirm it's you again.";
+const STORAGE_BLOCKED =
+  "This browser is blocking site storage, so we can't confirm it's you with Google. Allow site data for Nepally, or try another browser.";
 
 export type DeleteAccountStep = 'explain' | 'confirm' | 'final' | 'wrong-account';
 
@@ -154,13 +156,21 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
 
   async function handleGoogle() {
     if (busy) return;
-    setBusy(true);
     setError('');
     try {
       window.sessionStorage.setItem(REAUTH_USER_KEY, userId);
-    } catch {
-      // Without storage, the return from Google starts over at Explain.
+    } catch (storageError) {
+      // Without the stored id, the return couldn't tell a different Google
+      // account from this one, so the round trip doesn't start.
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { platform: 'web', method: 'google' },
+        error: storageError,
+      });
+      setError(STORAGE_BLOCKED);
+      return;
     }
+    setBusy(true);
     const result = await signInWithGoogle({
       redirectTo: `${window.location.origin}/delete-account?step=confirm`,
       selectAccount: true,

@@ -1,6 +1,6 @@
 import React from 'react';
 import Head from 'next/head';
-import { getReauthMethod } from '@nepally/shared';
+import { getReauthMethod, hasGoogleIdentity } from '@nepally/shared';
 import { useDeleteAccountFlow } from '../../hooks/useDeleteAccountFlow';
 import {
   ExplainStep,
@@ -21,6 +21,7 @@ export { REAUTH_USER_KEY } from '../../hooks/useDeleteAccountFlow';
 export function DeleteAccountFlow() {
   const flow = useDeleteAccountFlow();
   const { step, scheduledDate, notice, error, busy, supabaseUser } = flow;
+  const email = supabaseUser?.email;
 
   let content: React.ReactNode;
   if (step === 'wrong-account') {
@@ -28,6 +29,7 @@ export function DeleteAccountFlow() {
   } else if (step === 'explain') {
     content = (
       <ExplainStep
+        email={email}
         scheduledDate={scheduledDate}
         busy={busy}
         onContinue={() => void flow.handleContinue()}
@@ -42,6 +44,7 @@ export function DeleteAccountFlow() {
         busy={busy}
         onPasswordChange={flow.setPassword}
         onSubmit={(event) => void flow.handlePassword(event)}
+        onGoogle={hasGoogleIdentity(supabaseUser) ? () => void flow.handleGoogle() : undefined}
       />
     );
   } else if (step === 'confirm') {
@@ -56,6 +59,7 @@ export function DeleteAccountFlow() {
   } else {
     content = (
       <FinalStep
+        email={email}
         scheduledDate={scheduledDate}
         error={error}
         busy={busy}

@@ -1,7 +1,7 @@
 import React, { type FormEvent } from 'react';
 import Link from 'next/link';
-import { Alert, Button, List, PasswordInput, Stack, Text } from '@mantine/core';
-import { formatDeletionDate } from '@nepally/shared';
+import { Alert, Button, Divider, List, PasswordInput, Stack, Text } from '@mantine/core';
+import { SUPPORT_EMAIL, formatDeletionDate } from '@nepally/shared';
 import { AuthCard } from '../auth/AuthCard';
 import { GoogleButton } from '../auth/GoogleButton';
 import { busyButtonProps } from '../ui';
@@ -15,6 +15,12 @@ function ErrorAlert({ message }: { message: string }) {
   );
 }
 
+/** Says which account is about to go, so a Google chooser slip can't go unnoticed. */
+function SignedInAs({ email }: { email?: string }) {
+  if (!email) return null;
+  return <Text fw={500}>{`Signed in as ${email}`}</Text>;
+}
+
 export function WrongAccountStep() {
   return (
     <AuthCard title="You signed in as a different account" description="Signing that account out…">
@@ -24,18 +30,20 @@ export function WrongAccountStep() {
 }
 
 interface ExplainStepProps {
+  email?: string;
   scheduledDate: string;
   busy: boolean;
   onContinue: () => void;
 }
 
-export function ExplainStep({ scheduledDate, busy, onContinue }: ExplainStepProps) {
+export function ExplainStep({ email, scheduledDate, busy, onContinue }: ExplainStepProps) {
   return (
     <AuthCard
       title="Delete your account"
       description="Read this first. After the grace period it can't be undone."
     >
       <Stack gap="sm">
+        <SignedInAs email={email} />
         <Text>Deleting your account removes:</Text>
         <List>
           <List.Item>your profile and photos</List.Item>
@@ -67,6 +75,8 @@ interface PasswordConfirmStepProps {
   busy: boolean;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent) => void;
+  /** Set when the account has Google too, which can stand in for a forgotten password. */
+  onGoogle?: () => void;
 }
 
 export function PasswordConfirmStep({
@@ -76,6 +86,7 @@ export function PasswordConfirmStep({
   busy,
   onPasswordChange,
   onSubmit,
+  onGoogle,
 }: PasswordConfirmStepProps) {
   return (
     <AuthCard title="Confirm it's you" description={notice || 'Enter your password to continue.'}>
@@ -94,6 +105,16 @@ export function PasswordConfirmStep({
           </Button>
         </Stack>
       </form>
+      {onGoogle ? (
+        <>
+          <Divider label="or" labelPosition="center" />
+          <GoogleButton onClick={onGoogle} busy={busy} />
+        </>
+      ) : null}
+      <Text size="sm">
+        Forgot your password? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from
+        your account&apos;s email address and we&apos;ll delete it for you.
+      </Text>
     </AuthCard>
   );
 }
@@ -118,19 +139,21 @@ export function GoogleConfirmStep({ notice, error, busy, onGoogle }: GoogleConfi
 }
 
 interface FinalStepProps {
+  email?: string;
   scheduledDate: string;
   error: string;
   busy: boolean;
   onDelete: () => void;
 }
 
-export function FinalStep({ scheduledDate, error, busy, onDelete }: FinalStepProps) {
+export function FinalStep({ email, scheduledDate, error, busy, onDelete }: FinalStepProps) {
   return (
     <AuthCard
       title="Delete your account?"
       description={`Your account will be hidden now and deleted on ${formatDeletionDate(scheduledDate)}.`}
     >
       <Stack gap="sm">
+        <SignedInAs email={email} />
         <ErrorAlert message={error} />
         <Button color="red" onClick={onDelete} {...busyButtonProps(busy, busy)}>
           Delete my account

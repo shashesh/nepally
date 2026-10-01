@@ -4,6 +4,7 @@ import {
   getLastSignInAt,
   getReauthMethod,
   getScheduledDeletionDate,
+  hasGoogleIdentity,
   isDeletionDatePassed,
   isRecentSignIn,
 } from './accountDeletion';
@@ -77,6 +78,19 @@ describe('getReauthMethod', () => {
   it('uses Google otherwise', () => {
     expect(getReauthMethod({ app_metadata: { providers: ['google'] } })).toBe('google');
     expect(getReauthMethod({})).toBe('google');
+  });
+});
+
+describe('hasGoogleIdentity', () => {
+  it('is true when Google is among the providers', () => {
+    expect(hasGoogleIdentity({ app_metadata: { providers: ['email', 'google'] } })).toBe(true);
+    expect(hasGoogleIdentity({ app_metadata: { providers: ['google'] } })).toBe(true);
+  });
+
+  it('is false for an email-only account or unreadable metadata', () => {
+    expect(hasGoogleIdentity({ app_metadata: { providers: ['email'] } })).toBe(false);
+    expect(hasGoogleIdentity({ app_metadata: { providers: 'google' } })).toBe(false);
+    expect(hasGoogleIdentity({})).toBe(false);
   });
 });
 
