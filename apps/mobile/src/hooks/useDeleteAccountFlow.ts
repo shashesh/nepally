@@ -103,7 +103,7 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
     // Paused as ChangePasswordScreen does, so the fresh sign-in doesn't
     // reload the auth state under this screen.
     pauseAuthListener();
-    let signInError: unknown = null;
+    let signInError: unknown;
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
       signInError = authError;
