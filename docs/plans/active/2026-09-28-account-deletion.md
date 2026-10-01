@@ -7973,7 +7973,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
   Then `npm run ci:local`, since drafts run no CI.
 
 - [x] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (re-auth, the wrong-account sign-out, the gate, push while pending) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 4 review` commit; the rest go to Follow-ups.
-- [ ] **Step 3: Ship the draft.**
+- [x] **Step 3: Ship the draft.** Draft #115, opened 2026-10-01, with Copilot's review requested.
   - Push with `git push -u origin feat/account-deletion-mobile`.
   - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
   - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
