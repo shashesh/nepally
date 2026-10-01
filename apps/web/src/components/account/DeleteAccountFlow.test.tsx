@@ -214,7 +214,7 @@ describe('DeleteAccountFlow', () => {
     expect(screen.getByText(/blocking site storage/)).toBeDefined();
     expect(mocks.logClientEvent).toHaveBeenCalledWith({
       event: 'account_delete_reauth_failed',
-      context: { platform: 'web', method: 'google' },
+      context: { platform: 'web', method: 'google', reason: 'storage_blocked' },
       error: storageError,
     });
     expect(
@@ -231,6 +231,8 @@ describe('DeleteAccountFlow', () => {
     mocks.signInWithGoogle.mockResolvedValue({});
     render(<DeleteAccountFlow />);
     await press('Continue');
+    expect(screen.queryByLabelText('Password')).toBeNull();
+    expect(screen.queryByText(/Forgot your password\?/)).toBeNull();
 
     await press(/Continue with Google/);
 

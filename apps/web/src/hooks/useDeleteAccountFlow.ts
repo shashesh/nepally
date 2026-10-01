@@ -164,7 +164,7 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
       // account from this one, so the round trip doesn't start.
       logClientEvent({
         event: 'account_delete_reauth_failed',
-        context: { platform: 'web', method: 'google' },
+        context: { platform: 'web', method: 'google', reason: 'storage_blocked' },
         error: storageError,
       });
       setError(STORAGE_BLOCKED);
