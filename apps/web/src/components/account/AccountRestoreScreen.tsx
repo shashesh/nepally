@@ -11,6 +11,7 @@ import {
 } from '@nepally/shared';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
 import { AuthCard } from '../auth/AuthCard';
 import { busyButtonProps, notify } from '../ui';
 
@@ -37,9 +38,9 @@ export function AccountRestoreScreen({ scheduledFor }: AccountRestoreScreenProps
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState('');
   const [refused, setRefused] = useState(false);
-  // Read the clock once, not on every render.
-  const [passedAtOpen] = useState(() => isDeletionDatePassed(scheduledFor));
-  const beingDeleted = refused || passedAtOpen;
+  // useNow ticks, so a screen left open past the date closes Restore by itself.
+  const now = useNow();
+  const beingDeleted = refused || isDeletionDatePassed(scheduledFor, now.getTime());
 
   async function handleRestore() {
     if (busy) return;

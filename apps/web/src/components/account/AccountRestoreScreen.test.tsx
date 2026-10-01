@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '../../test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@nepally/shared';
 
 const mocks = vi.hoisted(() => ({
@@ -43,6 +43,10 @@ describe('AccountRestoreScreen', () => {
     mocks.refreshUser.mockResolvedValue({ id: 'user-1', deletion_scheduled_for: null });
     mocks.signOut.mockResolvedValue({});
     mocks.cancelAccountDeletion.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('gives the date and offers both choices', () => {
@@ -131,6 +135,22 @@ describe('AccountRestoreScreen', () => {
       screen.getByRole('heading', { level: 1, name: 'Your account is being deleted' })
     ).toBeDefined();
     expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Sign out']);
+  });
+
+  it('closes Restore when the date passes with the screen open', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-30T11:59:30.000Z'));
+    render(<AccountRestoreScreen scheduledFor="2026-10-30T12:00:00.000Z" />);
+    expect(screen.getByRole('button', { name: 'Restore my account' })).toBeDefined();
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your account is being deleted' })
+    ).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Restore my account' })).toBeNull();
   });
 
   it('signs out, and toasts the sentence when that fails', async () => {
