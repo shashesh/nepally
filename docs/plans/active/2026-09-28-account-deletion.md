@@ -7960,7 +7960,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
 
 ### Task 4.11: Gate, review, draft PR, device check
 
-- [ ] **Step 1: Run the full gate** and check every exit code (`npm run <step> >/dev/null 2>&1; echo <step>=$?`):
+- [x] **Step 1: Run the full gate** and check every exit code (`npm run <step> >/dev/null 2>&1; echo <step>=$?`):
   - `npm run type-check`
   - `npm run lint`
   - `npm run lint:guards`
@@ -7972,7 +7972,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
 
   Then `npm run ci:local`, since drafts run no CI.
 
-- [ ] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (re-auth, the wrong-account sign-out, the gate, push while pending) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 4 review` commit; the rest go to Follow-ups.
+- [x] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (re-auth, the wrong-account sign-out, the gate, push while pending) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 4 review` commit; the rest go to Follow-ups.
 - [ ] **Step 3: Ship the draft.**
   - Push with `git push -u origin feat/account-deletion-mobile`.
   - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
@@ -8081,7 +8081,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
 - From the PR 4 chunk 1 review (no CRITICAL or HIGH):
   - Fixed in PR 4: a second device that registered before the deletion now registers again when the member restores there. The request deletes every device's token, and that device's "already registered" mark used to survive the pending profile.
   - A failed profile load now registers no push token until the next `refreshUser` (an auth event or a screen that refreshes). Before, registration ran from the session, before the profile. An offline cold start can stay without a token for the session. Retrying on the next `AppState` `active` would close it.
-  - A `refreshUser` still in flight when `signOut` finishes can set the old profile, and now also register push, for a signed-out device. The `setUser` half predates PR 4. Re-check the session before `setUser`, or use a generation counter.
+  - A `refreshUser` still in flight when `signOut` finishes can set the old profile, and now also register push, for a signed-out device. The `setUser` half predates PR 4. Re-check the session before `setUser`, or use a generation counter. The whole-PR security review added two effects. The late `saveUserData` writes the profile back to AsyncStorage after `clearAllData`. And the failed registration (no session, so RLS refuses it) leaves the dedupe mark set, so that device registers no token for that user until the app restarts.
   - Missing tests: "registers push only once the profile has loaded" asserts only the negative case (the restore test has the positive one); the `onAuthStateChange` `SIGNED_IN` path with a pending profile; the restore screen's unmount guard; a restore-screen sign-out that fails and leaves the screen usable.
 - From the PR 4 chunk 2 code and security reviews (no CRITICAL or HIGH; neither found a path that deletes another account):
   - Fixed in PR 4: the delete re-checks the session's user id right before the RPC (defence in depth: the RPC deletes whoever the JWT names); the password field no longer turns non-editable while busy, which dismissed the keyboard after a wrong password; and tests now cover Google from the password step (including a wrong account) and a thrown password sign-in resuming the listener.
@@ -8091,3 +8091,19 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
   - The handlers' `busy` guard reads render state, and `pauseAuthListener` is a boolean. Two presses inside one frame could start two flows, and the first flow's resume would unpause the second's window. The RPC is idempotent and the id checks still run. A `busyRef` and a pause counter would close it.
   - Accessibility: `ErrorText` needs `accessibilityLiveRegion="polite"` for Android to announce a new error. `PrimaryButton` and `SecondaryButton` set no `accessibilityRole` or `accessibilityState`, and lose their name while `loading` (the text becomes a spinner). That's a shared-component change. The password field could add `textContentType="password"`.
   - Missing tests: Cancel on the final step; the flow's unmount guard; the buttons disabled while busy; the Profile menu closing after Delete Account. The `View.prototype.measure` stub's `jest.restoreAllMocks()` resets the file's `jest.fn()` mocks for any `describe` added after it.
+- From the PR 4 whole-PR code, security and test reviews (no CRITICAL or HIGH):
+  - Fixed in PR 4:
+    - The Maestro flow restores the shared E2E account first when an earlier run left it pending. Its comment had claimed a re-run would recover, but the login helper waits for "Feed", which a pending account never reaches, so every flow that signs in would have failed.
+    - New tests pin three things: a deletion with an unreadable or missing session (signed out, nothing deleted), a purged sender opened from a notification (`otherUserId: null`, never the payload's `sender_id`), and the conversation list passing an unavailable partner on.
+  - `EmailSignupScreen.handleLogin` and `SignupMethodScreen`'s Google handler keep running after `refreshUser` loads a pending profile and the gate swaps onboarding out. They query `users` (hidden for a pending member) and navigate on the unmounted onboarding stack. Nothing visible happens, only a dev warning. Use the profile `refreshUser` now returns: stop when it has `deletion_scheduled_for`, and route on its `metro_area_id` instead of a second query.
+  - A message notification tap runs a full `getConversations` with no busy state, so two taps run two lookups and navigate twice. Add an in-flight ref, or a single-conversation fetch in shared.
+  - The five chat starts from content (`PublicProfileScreen`, `ListingDetailScreen`, `EventDetailScreen`, `HomeScreen`, `PostDetailScreen`) leave `otherUserAvailable` out, which means available. A screen left open while its author requests deletion can therefore open a live-looking thread, showing only what was already on screen. Making the param required would make every caller state it.
+  - Nothing on the server stops a pending account inserting a `device_tokens` row (048 deletes them only at request time), and the push function doesn't skip pending accounts. The client never registers while pending. A policy or trigger would back spec §6's "no token until restored". This is the same item as the PR 3 chunk 3 push follow-up.
+  - Tests:
+    - "registers push only once the profile has loaded" settles with three fixed `act` flushes before asserting a negative. Wait for `getMyProfile` first.
+    - The thread tests don't pin that an unavailable partner's photo and verified badge are dropped, because the fixtures already pass none. Pass a photo and trust level 2 with `otherUserAvailable: false`.
+    - The delete screen's mock re-implements `isGoogleSignInCancelled`.
+    - `signOut({ scope: 'local' })` isn't checked to clear `user`.
+    - `refreshUser`'s catch path returning null is untested.
+    - A double press on Delete isn't tested, and would expose the render-state `busy` guard above.
+  - A purged thread with no messages shows an empty body above the composer notice. Acceptable.
