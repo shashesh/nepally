@@ -197,6 +197,35 @@ describe('NotificationsScreen', () => {
     });
   });
 
+  it('opens the chat of a purged sender with no partner id', async () => {
+    mockGetConversations.mockResolvedValue({
+      data: [
+        conversation({
+          other_user_id: null,
+          other_user_name: 'Unavailable account',
+          other_user_photo: null,
+          other_user_trust_level: 0,
+          other_user_available: false,
+        }),
+      ],
+    });
+    mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+    const { getByText } = await renderAndSettle();
+    fireEvent.press(getByText('New message'));
+
+    await waitFor(() => {
+      expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+        screen: 'MessageThread',
+        params: expect.objectContaining({
+          otherUserId: null,
+          otherUserAvailable: false,
+          otherUserName: 'Unavailable account',
+        }),
+      });
+    });
+  });
+
   it('opens the conversation list when the chat is not in it', async () => {
     mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
 

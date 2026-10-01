@@ -74,4 +74,38 @@ describe('ConversationListScreen', () => {
       otherUserAvailable: true,
     });
   });
+
+  it('passes an unavailable partner on to the thread', async () => {
+    mockGetConversations.mockResolvedValue({
+      data: [
+        {
+          id: 'conv-2',
+          other_user_id: null,
+          other_user_name: 'Unavailable account',
+          other_user_photo: null,
+          other_user_trust_level: 0,
+          other_user_available: false,
+          last_message: 'Bye',
+          last_message_time: '2026-03-01T10:00:00Z',
+          unread_count: 0,
+          created_at: '2026-03-01T10:00:00Z',
+        },
+      ],
+    });
+    const screen = render(<ConversationListScreen />);
+    await act(async () => {});
+
+    fireEvent.press(screen.getByText('Unavailable account'));
+    expect(mockNavigate).toHaveBeenCalledWith('MessageThread', {
+      conversationId: 'conv-2',
+      otherUserId: null,
+      otherUserName: 'Unavailable account',
+      otherUserTrustLevel: 0,
+      otherUserPhotoUrl: null,
+      otherUserAvailable: false,
+    });
+
+    fireEvent.press(screen.getByText('UA'), { nativeEvent: { pageX: 120, pageY: 180 } });
+    expect(screen.queryByText('View Profile')).toBeNull();
+  });
 });

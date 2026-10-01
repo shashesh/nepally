@@ -397,6 +397,30 @@ describe('DeleteAccountScreen final step', () => {
     expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
   });
 
+  it("deletes nothing when the session can't be read at the final tap", async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    mockGetSession.mockRejectedValue(new Error('storage unavailable'));
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+    expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
+  });
+
+  it('deletes nothing when there is no session at the final tap', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+    expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
+  });
+
   it('keeps the member on the final step to retry after a network error', async () => {
     mockRequestAccountDeletion.mockResolvedValue({ error: new Error('Network request failed') });
     const screen = render(<DeleteAccountScreen />);
