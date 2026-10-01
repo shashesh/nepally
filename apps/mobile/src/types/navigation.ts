@@ -131,6 +131,8 @@ export type RootStackParamList = {
   Onboarding: NavigatorScreenParams<OnboardingStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
   Chat: NavigatorScreenParams<ChatStackParamList>;
+  /** A member pending deletion sees only this (RootNavigator's gate). */
+  AccountRestore: undefined;
 };
 
 /* eslint-disable @typescript-eslint/no-namespace */

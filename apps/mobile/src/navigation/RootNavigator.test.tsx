@@ -23,6 +23,12 @@ jest.mock('./MainTabNavigator', () => {
   return { MainTabNavigator: () => ReactLocal.createElement(Text, null, 'main tabs') };
 });
 
+jest.mock('../screens/profile/AccountRestoreScreen', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return { AccountRestoreScreen: () => ReactLocal.createElement(Text, null, 'restore screen') };
+});
+
 jest.mock('./ChatNavigator', () => {
   const ReactLocal = jest.requireActual('react');
   const { Text } = jest.requireActual('react-native');
@@ -61,7 +67,7 @@ function setLoadState({
 }: {
   authLoading: boolean;
   onboardingLoading: boolean;
-  user?: { id: string; metro_area_id?: string } | null;
+  user?: { id: string; metro_area_id?: string; deletion_scheduled_for?: string | null } | null;
 }) {
   mockUseAuth.mockReturnValue({ user, loading: authLoading });
   mockUseOnboarding.mockReturnValue({ loading: onboardingLoading });
@@ -70,6 +76,7 @@ function setLoadState({
 function expectNoNavigator() {
   expect(screen.queryByText('onboarding flow')).toBeNull();
   expect(screen.queryByText('main tabs')).toBeNull();
+  expect(screen.queryByText('restore screen')).toBeNull();
 }
 
 describe('RootNavigator', () => {
@@ -84,7 +91,11 @@ describe('RootNavigator', () => {
   });
 
   it('waits while onboarding state is still loading', () => {
-    setLoadState({ authLoading: false, onboardingLoading: true, user: { id: 'user-1', metro_area_id: '19100' } });
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: true,
+      user: { id: 'user-1', metro_area_id: '19100' },
+    });
     renderNavigator();
     expectNoNavigator();
   });
@@ -102,17 +113,77 @@ describe('RootNavigator', () => {
   });
 
   it('shows the main tabs once both have loaded for a user with a metro area', () => {
-    setLoadState({ authLoading: false, onboardingLoading: false, user: { id: 'user-1', metro_area_id: '19100' } });
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: { id: 'user-1', metro_area_id: '19100' },
+    });
     renderNavigator();
     expect(screen.getByText('main tabs')).toBeTruthy();
   });
 
   it('switches from waiting to the app when loading finishes', () => {
-    setLoadState({ authLoading: true, onboardingLoading: true, user: { id: 'user-1', metro_area_id: '19100' } });
+    setLoadState({
+      authLoading: true,
+      onboardingLoading: true,
+      user: { id: 'user-1', metro_area_id: '19100' },
+    });
     renderNavigator();
     expectNoNavigator();
 
-    setLoadState({ authLoading: false, onboardingLoading: false, user: { id: 'user-1', metro_area_id: '19100' } });
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: { id: 'user-1', metro_area_id: '19100' },
+    });
+    screen.rerender(navigatorTree());
+    expect(screen.getByText('main tabs')).toBeTruthy();
+  });
+
+  it('shows only the restore screen to a member pending deletion', () => {
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: {
+        id: 'user-1',
+        metro_area_id: '19100',
+        deletion_scheduled_for: '2026-10-30T12:00:00.000Z',
+      },
+    });
+    renderNavigator();
+    expect(screen.getByText('restore screen')).toBeTruthy();
+    expect(screen.queryByText('main tabs')).toBeNull();
+  });
+
+  it('shows the restore screen before onboarding', () => {
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: { id: 'user-1', deletion_scheduled_for: '2026-10-30T12:00:00.000Z' },
+    });
+    renderNavigator();
+    expect(screen.getByText('restore screen')).toBeTruthy();
+    expect(screen.queryByText('onboarding flow')).toBeNull();
+  });
+
+  it('opens the app once the account is restored', () => {
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: {
+        id: 'user-1',
+        metro_area_id: '19100',
+        deletion_scheduled_for: '2026-10-30T12:00:00.000Z',
+      },
+    });
+    renderNavigator();
+    expect(screen.getByText('restore screen')).toBeTruthy();
+
+    setLoadState({
+      authLoading: false,
+      onboardingLoading: false,
+      user: { id: 'user-1', metro_area_id: '19100', deletion_scheduled_for: null },
+    });
     screen.rerender(navigatorTree());
     expect(screen.getByText('main tabs')).toBeTruthy();
   });
