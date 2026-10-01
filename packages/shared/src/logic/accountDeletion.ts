@@ -4,6 +4,7 @@
  * (request_account_deletion); these only decide what the apps show.
  */
 import { ACCOUNT_DELETION_GRACE_DAYS, REAUTH_MAX_AGE_SECONDS } from '../constants/accountDeletion';
+import { getAuthErrorMessage } from './authErrors';
 
 export type ReauthMethod = 'password' | 'google';
 
@@ -79,4 +80,16 @@ export function getScheduledDeletionDate(nowMs: number = Date.now()): string {
 /** True once the date has passed, when restoring is closed (050). */
 export function isDeletionDatePassed(iso: string, nowMs: number = Date.now()): boolean {
   return new Date(iso).getTime() <= nowMs;
+}
+
+/** What a wrong password says on the delete flow's confirm step. */
+export const WRONG_PASSWORD_MESSAGE = 'That password is incorrect.';
+
+/** What a failed password re-auth tells the member: a wrong password by name, anything else as log-in says it. */
+export function getReauthPasswordErrorMessage(error: unknown): string {
+  const code =
+    typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+  return code === 'invalid_credentials'
+    ? WRONG_PASSWORD_MESSAGE
+    : getAuthErrorMessage(error, 'log-in');
 }

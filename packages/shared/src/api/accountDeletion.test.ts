@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ApiError } from '../utils/apiError';
+import { SUPPORT_EMAIL } from '../constants/appConfig';
+import { PROFILE_NOT_FOUND } from '../constants/accountDeletion';
 import {
   cancelAccountDeletion,
+  DELETE_ACCOUNT_FAILED,
   getAccountDeletionErrorCode,
+  getDeleteAccountFailureMessage,
   requestAccountDeletion,
+  RESTORE_ACCOUNT_FAILED,
 } from './accountDeletion';
 
 function clientReturning(result: { data: unknown; error: unknown }) {
@@ -100,5 +105,34 @@ describe('getAccountDeletionErrorCode', () => {
     expect(getAccountDeletionErrorCode(new ApiError('x', { code: 'reauth_required' }))).toBe(
       'reauth_required'
     );
+  });
+});
+
+describe('getDeleteAccountFailureMessage', () => {
+  it('sends a member with no profile row to support', () => {
+    const message = getDeleteAccountFailureMessage(
+      new ApiError("We couldn't find your profile.", { code: PROFILE_NOT_FOUND })
+    );
+    expect(message).toBe(
+      `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`
+    );
+  });
+
+  it('never shows a raw error message', () => {
+    expect(getDeleteAccountFailureMessage(new Error('relation "users" does not exist'))).toBe(
+      DELETE_ACCOUNT_FAILED
+    );
+    expect(getDeleteAccountFailureMessage(undefined)).toBe(DELETE_ACCOUNT_FAILED);
+  });
+});
+
+describe('failure sentences', () => {
+  it('are the fallbacks the RPC wrappers use', async () => {
+    const failing = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { code: 'XX000', message: 'boom' } }),
+    } as unknown as SupabaseClient;
+
+    expect((await requestAccountDeletion(failing)).error?.message).toBe(DELETE_ACCOUNT_FAILED);
+    expect((await cancelAccountDeletion(failing)).error?.message).toBe(RESTORE_ACCOUNT_FAILED);
   });
 });
