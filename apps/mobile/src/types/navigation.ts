@@ -48,6 +48,7 @@ export type ProfileStackParamList = {
   ProfileView: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
+  DeleteAccount: undefined;
 };
 
 /**

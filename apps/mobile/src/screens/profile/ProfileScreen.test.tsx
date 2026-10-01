@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, View, type AlertButton } from 'react-native';
 import { act, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react-native';
 import { ProfileScreen } from './ProfileScreen';
 
@@ -9,6 +9,7 @@ const mockGetPostsByAuthorId = jest.fn();
 const mockGetSavedPostsByUserId = jest.fn();
 const mockGetListingsByOwner = jest.fn();
 const mockUnsavePost = jest.fn();
+const mockNavigate = jest.fn();
 
 const mockSupabaseSingle = jest.fn();
 const mockSupabaseEq = jest.fn(() => ({ single: mockSupabaseSingle }));
@@ -24,7 +25,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: jest.fn(), getParent: jest.fn() }),
+  useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn() }),
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
@@ -257,5 +258,44 @@ describe('ProfileScreen listings tab', () => {
     await waitFor(() => {
       expect(screen.getByText('$75')).toBeTruthy();
     });
+  });
+});
+
+type MeasureCallback = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  pageX: number,
+  pageY: number
+) => void;
+
+describe('ProfileScreen menu', () => {
+  beforeEach(() => {
+    // The menu opens from measure's callback, and the mocked View's measure
+    // never calls back (checked 2026-10-01). Answer as a layout pass would.
+    jest
+      .spyOn(
+        View.prototype as unknown as { measure: (callback: MeasureCallback) => void },
+        'measure'
+      )
+      .mockImplementation((callback) => callback(0, 0, 40, 40, 330, 50));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('opens Delete Account from the menu', async () => {
+    const screen = render(<ProfileScreen />);
+    await waitFor(() => {
+      expect(mockGetPostsByAuthorId).toHaveBeenCalled();
+    });
+
+    fireEvent.press(screen.getByLabelText('Open menu'));
+    expect(screen.getByText('Change Password')).toBeTruthy();
+    fireEvent.press(screen.getByText('Delete Account'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('DeleteAccount');
   });
 });

@@ -1,7 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types/navigation';
-import { ProfileScreen, EditProfileScreen, ChangePasswordScreen } from '../screens/profile';
+import {
+  ProfileScreen,
+  EditProfileScreen,
+  ChangePasswordScreen,
+  DeleteAccountScreen,
+} from '../screens/profile';
 import { colors } from '../styles/colors';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -29,6 +34,11 @@ export function ProfileNavigator() {
         name="ChangePassword"
         component={ChangePasswordScreen}
         options={{ title: 'Change Password' }}
+      />
+      <Stack.Screen
+        name="DeleteAccount"
+        component={DeleteAccountScreen}
+        options={{ title: 'Delete Account' }}
       />
     </Stack.Navigator>
   );
