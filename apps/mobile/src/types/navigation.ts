@@ -84,6 +84,8 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;
+    /** False when the partner is pending deletion or purged (getConversations). Absent means available. */
+    otherUserAvailable?: boolean;
     /** Text the message box starts with, e.g. which listing a buyer is asking about. Not sent until the member taps Send. */
     initialDraft?: string;
   };

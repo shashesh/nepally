@@ -269,3 +269,70 @@ describe('MessageThreadScreen avatar menu', () => {
     });
   });
 });
+
+describe('MessageThreadScreen with an unavailable partner', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSubscribeToMessages.mockReturnValue({ unsubscribe: jest.fn() });
+    mockGetMessages.mockResolvedValue({
+      data: [
+        {
+          id: 'msg-1',
+          conversation_id: 'conv-1',
+          sender_id: 'other-user',
+          text: 'See you then',
+          type: 'text',
+          read: true,
+          read_at: null,
+          timestamp: '2026-03-01T10:00:00Z',
+        },
+      ],
+    });
+  });
+
+  it('shows a pending partner with no profile menu or Block, and keeps the composer', async () => {
+    mockUseRoute.mockReturnValue({
+      params: {
+        conversationId: 'conv-1',
+        otherUserId: 'other-user',
+        otherUserName: 'Unavailable account',
+        otherUserTrustLevel: 0,
+        otherUserPhotoUrl: null,
+        otherUserAvailable: false,
+      },
+    });
+    const screen = render(<MessageThreadScreen />);
+    await act(async () => {});
+
+    expect(screen.getByText('Unavailable account')).toBeTruthy();
+    expect(screen.queryByLabelText('Conversation options')).toBeNull();
+    for (const initials of screen.getAllByText('UA')) {
+      fireEvent.press(initials, { nativeEvent: { pageX: 120, pageY: 160 } });
+    }
+    await act(async () => {});
+    expect(screen.queryByText('View Profile')).toBeNull();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeTruthy();
+  });
+
+  it('replaces the composer for a purged partner, with no hello line', async () => {
+    mockGetMessages.mockResolvedValue({ data: [] });
+    mockUseRoute.mockReturnValue({
+      params: {
+        conversationId: 'conv-1',
+        otherUserId: null,
+        otherUserName: 'Unavailable account',
+        otherUserTrustLevel: 0,
+        otherUserPhotoUrl: null,
+        otherUserAvailable: false,
+      },
+    });
+    const screen = render(<MessageThreadScreen />);
+    await act(async () => {});
+
+    expect(screen.queryByPlaceholderText('Type a message...')).toBeNull();
+    expect(
+      screen.getByText("This account has been deleted, so it can't get new messages.")
+    ).toBeTruthy();
+    expect(screen.queryByText('No messages yet. Say hello!')).toBeNull();
+  });
+});

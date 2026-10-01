@@ -61,6 +61,7 @@ export default function ConversationListScreen() {
       otherUserName: conv.other_user_name,
       otherUserTrustLevel: conv.other_user_trust_level ?? 0,
       otherUserPhotoUrl: conv.other_user_photo,
+      otherUserAvailable: conv.other_user_available,
     });
   }, [navigation]);
 
@@ -78,6 +79,7 @@ export default function ConversationListScreen() {
     ({ item }: { item: ConversationWithParticipant }) => (
       <ConversationItem
         otherUserName={item.other_user_name}
+        otherUserAvailable={item.other_user_available}
         otherUserPhoto={item.other_user_photo}
         otherUserTrustLevel={item.other_user_trust_level}
         lastMessage={item.last_message}

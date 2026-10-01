@@ -47,6 +47,7 @@ describe('ConversationListScreen', () => {
           other_user_name: 'Other User',
           other_user_photo: null,
           other_user_trust_level: 1,
+          other_user_available: true,
           last_message: 'Hello',
           last_message_time: '2026-03-01T10:00:00Z',
           unread_count: 2,
@@ -70,6 +71,7 @@ describe('ConversationListScreen', () => {
       otherUserName: 'Other User',
       otherUserTrustLevel: 1,
       otherUserPhotoUrl: null,
+      otherUserAvailable: true,
     });
   });
 });
