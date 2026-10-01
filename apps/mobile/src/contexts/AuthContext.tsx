@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useRef, useCallback, ReactNo
 import { AppState } from 'react-native';
 import { supabase } from '../config/supabase';
 import { getMyProfile } from '@nepally/shared';
+import type { User } from '@nepally/shared';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { saveUserData, clearAllData } from '../utils/storage';
 import { registerForPushNotificationsAsync, isExpoGo } from '../services/notifications';
@@ -10,26 +11,32 @@ import { registerForPushNotificationsAsync, isExpoGo } from '../services/notific
 // on a device until they sign out. There is no inactivity timeout and no
 // maximum session age (docs/decisions/2026-09-18-long-lived-sessions.md).
 
-export interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone?: string | null;
-  profile_photo?: string;
-  bio?: string | null;
-  zip_code?: string;
-  metro_area_id?: string;
-  trust_level: number;
-  is_premium: boolean;
-  hometown_district?: string | null;
-  college?: string | null;
-  years_in_us?: number | null;
-  languages?: string[];
-  follower_count?: number;
-  following_count?: number;
-  /** Set while the account is pending deletion (048); RootNavigator then shows only the restore screen. */
-  deletion_scheduled_for?: string | null;
-}
+/**
+ * The signed-in member's profile fields the app keeps, from get_my_profile().
+ * Derived from the shared User so the two can't drift. `deletion_scheduled_for`
+ * is set while the account is pending deletion (048); RootNavigator then shows
+ * only the restore screen.
+ */
+export type AuthUser = Pick<
+  User,
+  | 'id'
+  | 'email'
+  | 'full_name'
+  | 'phone'
+  | 'profile_photo'
+  | 'bio'
+  | 'zip_code'
+  | 'metro_area_id'
+  | 'trust_level'
+  | 'is_premium'
+  | 'hometown_district'
+  | 'college'
+  | 'years_in_us'
+  | 'languages'
+  | 'follower_count'
+  | 'following_count'
+  | 'deletion_scheduled_for'
+>;
 
 export interface SignOutOptions {
   /** 'local' signs out this device only. The default, 'global', ends every session. */
@@ -37,12 +44,12 @@ export interface SignOutOptions {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   supabaseUser: SupabaseUser | null;
   loading: boolean;
   signOut: (options?: SignOutOptions) => Promise<void>;
   /** Reloads the profile. Resolves with it, or null when it couldn't be loaded. */
-  refreshUser: () => Promise<User | null>;
+  refreshUser: () => Promise<AuthUser | null>;
   pauseAuthListener: () => void;
   resumeAuthListener: () => void;
 }
@@ -62,7 +69,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const authPausedRef = useRef(false);
@@ -89,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const refreshUser = useCallback(async (): Promise<User | null> => {
+  const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
     try {
       const {
         data: { user: supabaseUser },
@@ -112,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
       }
 
-      const userProfile: User = {
+      const userProfile: AuthUser = {
         id: userData.id,
         email: userData.email,
         full_name: userData.full_name,
