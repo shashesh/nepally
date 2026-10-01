@@ -5344,7 +5344,7 @@ Branch `feat/account-deletion-mobile`, from master after #114 (PR 3) merged on 2
 - Modify: `apps/web/src/hooks/useDeleteAccountFlow.ts`
 - Test: `packages/shared/src/api/accountDeletion.test.ts`, `packages/shared/src/logic/accountDeletion.test.ts`
 
-- [ ] **Step 1: Write the failing tests.** In `packages/shared/src/logic/accountDeletion.test.ts`, add `getReauthPasswordErrorMessage` and `WRONG_PASSWORD_MESSAGE` to the import from `./accountDeletion`, add `import { CONNECTION_ERROR_MESSAGE } from './authErrors';`, and append:
+- [x] **Step 1: Write the failing tests.** In `packages/shared/src/logic/accountDeletion.test.ts`, add `getReauthPasswordErrorMessage` and `WRONG_PASSWORD_MESSAGE` to the import from `./accountDeletion`, add `import { CONNECTION_ERROR_MESSAGE } from './authErrors';`, and append:
 
 ```ts
 describe('getReauthPasswordErrorMessage', () => {
@@ -5402,12 +5402,12 @@ describe('failure sentences', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd packages/shared && npx vitest run src/logic/accountDeletion.test.ts src/api/accountDeletion.test.ts`
 Expected: FAIL. The new exports don't exist.
 
-- [ ] **Step 3: Add the password sentence** to `packages/shared/src/logic/accountDeletion.ts`. Add `import { getAuthErrorMessage } from './authErrors';` below the existing import, and append:
+- [x] **Step 3: Add the password sentence** to `packages/shared/src/logic/accountDeletion.ts`. Add `import { getAuthErrorMessage } from './authErrors';` below the existing import, and append:
 
 ```ts
 /** What a wrong password says on the delete flow's confirm step. */
@@ -5423,7 +5423,7 @@ export function getReauthPasswordErrorMessage(error: unknown): string {
 }
 ```
 
-- [ ] **Step 4: Add the delete sentences** to `packages/shared/src/api/accountDeletion.ts`. Add `import { SUPPORT_EMAIL } from '../constants/appConfig';` to the imports. Below `SENTENCES`, add:
+- [x] **Step 4: Add the delete sentences** to `packages/shared/src/api/accountDeletion.ts`. Add `import { SUPPORT_EMAIL } from '../constants/appConfig';` to the imports. Below `SENTENCES`, add:
 
 ```ts
 /** Shown when a deletion request fails in a way the member can only retry. */
@@ -5448,23 +5448,23 @@ export function getDeleteAccountFailureMessage(error: unknown): string {
 }
 ```
 
-- [ ] **Step 5: Run the shared tests.**
+- [x] **Step 5: Run the shared tests.**
 
 Run: `cd packages/shared && npx vitest run src/logic/accountDeletion.test.ts src/api/accountDeletion.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Web uses them.** In `apps/web/src/hooks/useDeleteAccountFlow.ts`:
+- [x] **Step 6: Web uses them.** In `apps/web/src/hooks/useDeleteAccountFlow.ts`:
   - Delete `WRONG_PASSWORD`, `passwordErrorMessage` and `deleteFailureMessage`.
   - In `handlePassword`, `setError(passwordErrorMessage(result.error))` becomes `setError(getReauthPasswordErrorMessage(result.error));`.
   - In `handleDelete`, `setError(deleteFailureMessage(code, result.error))` becomes `setError(getDeleteAccountFailureMessage(result.error));`.
   - In the `@nepally/shared` import, drop `PROFILE_NOT_FOUND` and `SUPPORT_EMAIL` and add `getDeleteAccountFailureMessage` and `getReauthPasswordErrorMessage`. Keep `getAuthErrorMessage`: `handleGoogle` still uses it.
 
-- [ ] **Step 7: Run the web flow's tests.** The sentences are unchanged, so they pass as they are.
+- [x] **Step 7: Run the web flow's tests.** The sentences are unchanged, so they pass as they are.
 
 Run (from an uppercase `C:\…` path): `cd apps/web && npx vitest run src/components/account/DeleteAccountFlow.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add packages/shared/src/api/accountDeletion.ts packages/shared/src/api/accountDeletion.test.ts packages/shared/src/logic/accountDeletion.ts packages/shared/src/logic/accountDeletion.test.ts apps/web/src/hooks/useDeleteAccountFlow.ts
@@ -5478,7 +5478,7 @@ git commit -m "refactor(shared): the delete flow's failure sentences, for both a
 - Modify: `apps/mobile/src/services/auth/googleAuth.ts`, `apps/mobile/src/screens/onboarding/SignupMethodScreen.tsx`
 - Test: `apps/mobile/src/services/auth/googleAuth.test.ts`
 
-- [ ] **Step 1: Write the failing tests.** In `googleAuth.test.ts`, import `isGoogleSignInCancelled` along with the other two, and add inside the `describe`:
+- [x] **Step 1: Write the failing tests.** In `googleAuth.test.ts`, import `isGoogleSignInCancelled` along with the other two, and add inside the `describe`:
 
 ```ts
 it('asks Google for its account chooser when selectAccount is set', async () => {
@@ -5515,12 +5515,12 @@ it('tells a cancelled sign-in apart from a failed one', async () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd apps/mobile && npx jest src/services/auth/googleAuth.test.ts`
 Expected: FAIL. `isGoogleSignInCancelled` is not exported, and the options carry no `queryParams`.
 
-- [ ] **Step 3: Add the option.** In `googleAuth.ts`, above `signInWithGoogle`:
+- [x] **Step 3: Add the option.** In `googleAuth.ts`, above `signInWithGoogle`:
 
 ```ts
 /** What signInWithGoogle returns when the member closes Google's sign-in. */
@@ -5547,14 +5547,14 @@ export function isGoogleSignInCancelled(error: Error | undefined): boolean {
 }
 ```
 
-- [ ] **Step 4: Use it in sign-up.** In `SignupMethodScreen.tsx`, import `isGoogleSignInCancelled` with `signInWithGoogle`, and replace `if (result.error.message === 'Google sign-in was cancelled') return;` with `if (isGoogleSignInCancelled(result.error)) return;`.
+- [x] **Step 4: Use it in sign-up.** In `SignupMethodScreen.tsx`, import `isGoogleSignInCancelled` with `signInWithGoogle`, and replace `if (result.error.message === 'Google sign-in was cancelled') return;` with `if (isGoogleSignInCancelled(result.error)) return;`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run: `cd apps/mobile && npx jest src/services/auth/googleAuth.test.ts src/screens/onboarding`
 Expected: PASS.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/mobile/src/services/auth/googleAuth.ts apps/mobile/src/services/auth/googleAuth.test.ts apps/mobile/src/screens/onboarding/SignupMethodScreen.tsx
@@ -5568,7 +5568,7 @@ git commit -m "feat(mobile): Google sign-in can ask for the account chooser"
 - Modify: `apps/mobile/src/contexts/AuthContext.tsx`
 - Test: `apps/mobile/src/contexts/AuthContext.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** Append inside the `describe('AuthContext', …)` block of `AuthContext.test.tsx`:
+- [x] **Step 1: Write the failing tests.** Append inside the `describe('AuthContext', …)` block of `AuthContext.test.tsx`:
 
 ```tsx
 const SCHEDULED_FOR = '2026-10-30T12:00:00.000Z';
@@ -5672,12 +5672,12 @@ it('signs out every device by default, and only this one when asked', async () =
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd apps/mobile && npx jest src/contexts/AuthContext.test.tsx`
 Expected: FAIL. Push registers before the profile, the date is dropped, `refreshUser` resolves with `undefined`, and `signOut` passes no scope.
 
-- [ ] **Step 3: Change `AuthContext.tsx`.**
+- [x] **Step 3: Change `AuthContext.tsx`.**
   - Export the interface (`export interface User {`), and add after `following_count?: number;`:
 
     ```ts
@@ -5783,17 +5783,17 @@ Expected: FAIL. Push registers before the profile, the date is dropped, `refresh
 
     supabase-js removes this device's session even when the server call fails, and fires `SIGNED_OUT`, so a failure still ends signed out (PR 3, "Found at the start of PR 3").
 
-- [ ] **Step 4: Run the tests.** The existing tests still pass: a profile loads in "loads user profile when session exists", so push registers once.
+- [x] **Step 4: Run the tests.** The existing tests still pass: a profile loads in "loads user profile when session exists", so push registers once.
 
 Run: `cd apps/mobile && npx jest src/contexts/AuthContext.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Type-check the callers.** `refreshUser`'s new return type is a widening (callers `await` it and ignore the value), and `signOut`'s parameter is optional.
+- [x] **Step 5: Type-check the callers.** `refreshUser`'s new return type is a widening (callers `await` it and ignore the value), and `signOut`'s parameter is optional.
 
 Run: `npm run type-check --workspace=apps/mobile`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/mobile/src/contexts/AuthContext.tsx apps/mobile/src/contexts/AuthContext.test.tsx
@@ -5807,7 +5807,7 @@ git commit -m "feat(mobile): AuthContext keeps the deletion date and registers p
 - Create: `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx`
 - Test: `apps/mobile/src/screens/profile/AccountRestoreScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing test** in `AccountRestoreScreen.test.tsx`:
+- [x] **Step 1: Write the failing test** in `AccountRestoreScreen.test.tsx`:
 
 ```tsx
 import React from 'react';
@@ -5978,12 +5978,12 @@ describe('AccountRestoreScreen', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile/AccountRestoreScreen.test.tsx`
 Expected: FAIL. `./AccountRestoreScreen` doesn't exist.
 
-- [ ] **Step 3: Write the screen** in `AccountRestoreScreen.tsx`:
+- [x] **Step 3: Write the screen** in `AccountRestoreScreen.tsx`:
 
 ```tsx
 import React, { useEffect, useRef, useState } from 'react';
@@ -6152,12 +6152,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 4: Run the test.**
+- [x] **Step 4: Run the test.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile/AccountRestoreScreen.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/mobile/src/screens/profile/AccountRestoreScreen.tsx apps/mobile/src/screens/profile/AccountRestoreScreen.test.tsx
@@ -6171,7 +6171,7 @@ git commit -m "feat(mobile): the restore screen for an account pending deletion"
 - Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/navigation/RootNavigator.tsx`
 - Test: `apps/mobile/src/navigation/RootNavigator.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** In `RootNavigator.test.tsx`, next to the other stand-ins, add:
+- [x] **Step 1: Write the failing tests.** In `RootNavigator.test.tsx`, next to the other stand-ins, add:
 
 ```tsx
 jest.mock('../screens/profile/AccountRestoreScreen', () => {
@@ -6233,19 +6233,19 @@ it('opens the app once the account is restored', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd apps/mobile && npx jest src/navigation/RootNavigator.test.tsx`
 Expected: FAIL. The pending member gets the main tabs or onboarding.
 
-- [ ] **Step 3: Add the route.** In `types/navigation.ts`, add to `RootStackParamList`:
+- [x] **Step 3: Add the route.** In `types/navigation.ts`, add to `RootStackParamList`:
 
 ```ts
 /** A member pending deletion sees only this (RootNavigator's gate). */
 AccountRestore: undefined;
 ```
 
-- [ ] **Step 4: Add the gate.** In `RootNavigator.tsx`, import the screen from its own file, not the `screens/profile` barrel (which would load every profile screen):
+- [x] **Step 4: Add the gate.** In `RootNavigator.tsx`, import the screen from its own file, not the `screens/profile` barrel (which would load every profile screen):
 
 ```tsx
 import { AccountRestoreScreen } from '../screens/profile/AccountRestoreScreen';
@@ -6277,12 +6277,12 @@ return <Stack.Navigator screenOptions={{ headerShown: false }}>{screens}</Stack.
 
 Keep the existing comment above `showOnboarding`.
 
-- [ ] **Step 5: Run the tests.**
+- [x] **Step 5: Run the tests.**
 
 Run: `cd apps/mobile && npx jest src/navigation`
 Expected: PASS, including `navigationIntegration.test.tsx`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add apps/mobile/src/types/navigation.ts apps/mobile/src/navigation/RootNavigator.tsx apps/mobile/src/navigation/RootNavigator.test.tsx
@@ -6302,7 +6302,7 @@ git commit -m "feat(mobile): RootNavigator shows only the restore screen to a pe
 - Create: `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx` (picks the step)
 - Test: `apps/mobile/src/screens/profile/DeleteAccountScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing test** in `DeleteAccountScreen.test.tsx`. It drives the real hook and steps through the screen, with Supabase, Google and the RPC mocked. There are no timers and no fetch on mount, so it uses `render` + `waitFor` only (rule 6).
+- [x] **Step 1: Write the failing test** in `DeleteAccountScreen.test.tsx`. It drives the real hook and steps through the screen, with Supabase, Google and the RPC mocked. There are no timers and no fetch on mount, so it uses `render` + `waitFor` only (rule 6).
 
 ```tsx
 import React from 'react';
@@ -6660,12 +6660,12 @@ describe('DeleteAccountScreen final step', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile/DeleteAccountScreen.test.tsx`
 Expected: FAIL. `./DeleteAccountScreen` doesn't exist.
 
-- [ ] **Step 3: Write the hook** in `apps/mobile/src/hooks/useDeleteAccountFlow.ts`:
+- [x] **Step 3: Write the hook** in `apps/mobile/src/hooks/useDeleteAccountFlow.ts`:
 
 ```ts
 import { useEffect, useRef, useState } from 'react';
@@ -6897,7 +6897,7 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
 }
 ```
 
-- [ ] **Step 4: Write the steps** in `apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx`:
+- [x] **Step 4: Write the steps** in `apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx`:
 
 ```tsx
 import React, { useState } from 'react';
@@ -7213,7 +7213,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 5: Write the screen** in `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx`:
+- [x] **Step 5: Write the screen** in `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx`:
 
 ```tsx
 import React from 'react';
@@ -7303,12 +7303,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 6: Run the test.**
+- [x] **Step 6: Run the test.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile/DeleteAccountScreen.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add apps/mobile/src/hooks/useDeleteAccountFlow.ts apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx apps/mobile/src/screens/profile/DeleteAccountScreen.tsx apps/mobile/src/screens/profile/DeleteAccountScreen.test.tsx
@@ -7322,7 +7322,7 @@ git commit -m "feat(mobile): the delete account flow, with password and Google r
 - Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/navigation/ProfileNavigator.tsx`, `apps/mobile/src/screens/profile/index.ts`, `apps/mobile/src/screens/profile/ProfileScreen.tsx`
 - Test: `apps/mobile/src/screens/profile/ProfileScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing test.** In `ProfileScreen.test.tsx`, add `View` to the `react-native` import, add `const mockNavigate = jest.fn();` with the other mocks, and make the navigation mock use it: `useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn() }),`. Append:
+- [x] **Step 1: Write the failing test.** In `ProfileScreen.test.tsx`, add `View` to the `react-native` import, add `const mockNavigate = jest.fn();` with the other mocks, and make the navigation mock use it: `useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn() }),`. Append:
 
 ```tsx
 type MeasureCallback = (
@@ -7365,19 +7365,19 @@ describe('ProfileScreen menu', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail.**
+- [x] **Step 2: Run it and watch it fail.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile/ProfileScreen.test.tsx`
 Expected: FAIL. No element is labelled "Open menu".
 
-- [ ] **Step 3: Add the route and export the screens.** In `types/navigation.ts`, add `DeleteAccount: undefined;` to `ProfileStackParamList` after `ChangePassword`. In `screens/profile/index.ts`, add:
+- [x] **Step 3: Add the route and export the screens.** In `types/navigation.ts`, add `DeleteAccount: undefined;` to `ProfileStackParamList` after `ChangePassword`. In `screens/profile/index.ts`, add:
 
 ```ts
 export { DeleteAccountScreen } from './DeleteAccountScreen';
 export { AccountRestoreScreen } from './AccountRestoreScreen';
 ```
 
-- [ ] **Step 4: Register the screen.** In `ProfileNavigator.tsx`, import `DeleteAccountScreen` from `'../screens/profile'` with the others, and add after the `ChangePassword` screen:
+- [x] **Step 4: Register the screen.** In `ProfileNavigator.tsx`, import `DeleteAccountScreen` from `'../screens/profile'` with the others, and add after the `ChangePassword` screen:
 
 ```tsx
 <Stack.Screen
@@ -7387,7 +7387,7 @@ export { AccountRestoreScreen } from './AccountRestoreScreen';
 />
 ```
 
-- [ ] **Step 5: Add the menu entry.** In `ProfileScreen.tsx`:
+- [x] **Step 5: Add the menu entry.** In `ProfileScreen.tsx`:
   - Give the menu button a label: add `accessibilityRole="button"` and `accessibilityLabel="Open menu"` to the `TouchableOpacity` with `ref={menuButtonRef}`.
   - After `handleOpenChangePassword`, add:
 
@@ -7411,12 +7411,12 @@ export { AccountRestoreScreen } from './AccountRestoreScreen';
     </TouchableOpacity>
     ```
 
-- [ ] **Step 6: Run the tests.**
+- [x] **Step 6: Run the tests.**
 
 Run: `cd apps/mobile && npx jest src/screens/profile src/navigation`
 Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add apps/mobile/src/types/navigation.ts apps/mobile/src/navigation/ProfileNavigator.tsx apps/mobile/src/screens/profile/index.ts apps/mobile/src/screens/profile/ProfileScreen.tsx apps/mobile/src/screens/profile/ProfileScreen.test.tsx
@@ -7434,7 +7434,7 @@ git commit -m "feat(mobile): Delete Account in the Profile menu"
 - Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/components/chat/ConversationItem.tsx`, `apps/mobile/src/screens/chat/ConversationListScreen.tsx`, `apps/mobile/src/screens/chat/MessageThreadScreen.tsx`
 - Test: `apps/mobile/src/components/chat/ConversationItem.test.tsx`, `apps/mobile/src/screens/chat/ConversationListScreen.test.tsx`, `apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - In `ConversationItem.test.tsx`, add `otherUserAvailable` to both existing renders (`otherUserAvailable`, meaning true), import `UNAVAILABLE_ACCOUNT_NAME` from `@nepally/shared`, and append inside the `describe`:
 
     ```tsx
@@ -7533,19 +7533,19 @@ git commit -m "feat(mobile): Delete Account in the Profile menu"
     });
     ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd apps/mobile && npx jest src/components/chat src/screens/chat`
 Expected: FAIL. The props and params don't exist yet, the avatar menu opens, and the composer shows.
 
-- [ ] **Step 3: Add the route param.** In `types/navigation.ts`, in `MessageThread`, after `otherUserPhotoUrl`:
+- [x] **Step 3: Add the route param.** In `types/navigation.ts`, in `MessageThread`, after `otherUserPhotoUrl`:
 
 ```ts
     /** False when the partner is pending deletion or purged (getConversations). Absent means available. */
     otherUserAvailable?: boolean;
 ```
 
-- [ ] **Step 4: The list row.** In `ConversationItem.tsx`, add `otherUserAvailable: boolean;` to the props after `otherUserTrustLevel`, destructure it, and replace the avatar's `TouchableOpacity` (inside `styles.avatarContainer`) with:
+- [x] **Step 4: The list row.** In `ConversationItem.tsx`, add `otherUserAvailable: boolean;` to the props after `otherUserTrustLevel`, destructure it, and replace the avatar's `TouchableOpacity` (inside `styles.avatarContainer`) with:
 
 ```tsx
 {
@@ -7573,7 +7573,7 @@ Expected: FAIL. The props and params don't exist yet, the avatar menu opens, and
 
 In `ConversationListScreen.tsx`, pass `otherUserAvailable={item.other_user_available}` to `ConversationItem`, and add `otherUserAvailable: conv.other_user_available,` to the `MessageThread` params in `handleConversationPress`.
 
-- [ ] **Step 5: The thread.** In `MessageThreadScreen.tsx`:
+- [x] **Step 5: The thread.** In `MessageThreadScreen.tsx`:
   - Destructure `otherUserAvailable = true,` from `route.params`, after `otherUserPhotoUrl`.
   - Below `publicName`, add:
 
@@ -7669,12 +7669,12 @@ In `ConversationListScreen.tsx`, pass `otherUserAvailable={item.other_user_avail
       },
     ```
 
-- [ ] **Step 6: Run the tests.**
+- [x] **Step 6: Run the tests.**
 
 Run: `cd apps/mobile && npx jest src/components/chat src/screens/chat`
 Expected: PASS.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add apps/mobile/src/types/navigation.ts apps/mobile/src/components/chat/ConversationItem.tsx apps/mobile/src/components/chat/ConversationItem.test.tsx apps/mobile/src/screens/chat/ConversationListScreen.tsx apps/mobile/src/screens/chat/ConversationListScreen.test.tsx apps/mobile/src/screens/chat/MessageThreadScreen.tsx apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx
@@ -7688,7 +7688,7 @@ git commit -m "feat(mobile): chats show an unavailable partner, and a purged one
 - Modify: `apps/mobile/src/screens/notifications/NotificationsScreen.tsx`
 - Test: `apps/mobile/src/screens/notifications/NotificationsScreen.test.tsx`
 
-- [ ] **Step 1: Write the failing tests.** In `NotificationsScreen.test.tsx`:
+- [x] **Step 1: Write the failing tests.** In `NotificationsScreen.test.tsx`:
   - Add `const mockGetConversations = jest.fn();`, `const mockLogClientEvent = jest.fn();` and `const mockIsFocused = jest.fn();` with the other mocks.
   - Add `isFocused: () => mockIsFocused(),` to the `useNavigation` mock.
   - Add to the `@nepally/shared` mock: `getConversations: (...args: unknown[]) => mockGetConversations(...args),` and `logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),`.
@@ -7817,12 +7817,12 @@ git commit -m "feat(mobile): chats show an unavailable partner, and a purged one
     });
     ```
 
-- [ ] **Step 2: Run them and watch them fail.**
+- [x] **Step 2: Run them and watch them fail.**
 
 Run: `cd apps/mobile && npx jest src/screens/notifications/NotificationsScreen.test.tsx`
 Expected: FAIL. The handler navigates from the notification's payload, never calling `getConversations`.
 
-- [ ] **Step 3: Resolve the partner.** In `NotificationsScreen.tsx`:
+- [x] **Step 3: Resolve the partner.** In `NotificationsScreen.tsx`:
   - Add `getConversations` and `logClientEvent` to the `@nepally/shared` import, `ConversationWithParticipant` to the type import, and `ChatStackParamList` to the `../../types/navigation` type import.
   - Above `export function NotificationsScreen`, add:
 
@@ -7875,12 +7875,12 @@ Expected: FAIL. The handler navigates from the notification's payload, never cal
 
   - Add `user` to `handleNotifPress`'s dependency list: `[navigation, user]`.
 
-- [ ] **Step 4: Run the tests.**
+- [x] **Step 4: Run the tests.**
 
 Run: `cd apps/mobile && npx jest src/screens/notifications/NotificationsScreen.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add apps/mobile/src/screens/notifications/NotificationsScreen.tsx apps/mobile/src/screens/notifications/NotificationsScreen.test.tsx
@@ -7894,15 +7894,15 @@ git commit -m "fix(mobile): message notifications open the chat with its partner
 - Modify: `docs/product/features/in-app-chat.md`, `docs/product/features/notifications.md`, this plan
 - Create: `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`
 
-- [ ] **Step 1: The chat doc.** In `in-app-chat.md`, after the "**Mobile (2026-09-24, PR 10c).**" paragraph, add:
+- [x] **Step 1: The chat doc.** In `in-app-chat.md`, after the "**Mobile (2026-09-24, PR 10c).**" paragraph, add:
 
 ```markdown
 **Unavailable accounts (both apps, 2026-10-01).** A partner who is pending deletion or purged shows as "Unavailable account", with an initials avatar and no profile menu or Block. While they are pending, the conversation still takes messages, and they see them if they restore. After the purge the thread keeps the messages sent to them, and says "This account has been deleted, so it can't get new messages." in place of the composer. On mobile, a message notification opens its chat with the partner as the conversation list has them, so a pending sender shows as unavailable there too.
 ```
 
-- [ ] **Step 2: The notifications doc.** In `notifications.md`, at the end of the "Rows." bullet, add: "On mobile, a message notification looks its chat up in the conversation list first and opens it with the partner as the list has them, or opens the list when the chat isn't there."
+- [x] **Step 2: The notifications doc.** In `notifications.md`, at the end of the "Rows." bullet, add: "On mobile, a message notification looks its chat up in the conversation list first and opens it with the partner as the list has them, or opens the list when the chat isn't there."
 
-- [ ] **Step 3: The Maestro flow.** Create `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`:
+- [x] **Step 3: The Maestro flow.** Create `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`:
 
 ```yaml
 appId: us.nepally.app
@@ -7946,9 +7946,9 @@ appId: us.nepally.app
     id: 'create-post-fab'
 ```
 
-- [ ] **Step 4: Tick this plan.** Tick PR 4's finished steps.
+- [x] **Step 4: Tick this plan.** Tick PR 4's finished steps.
 
-- [ ] **Step 5: Check and commit.**
+- [x] **Step 5: Check and commit.**
 
 Run: `npx prettier --write docs/product/features/in-app-chat.md docs/product/features/notifications.md docs/plans/active/2026-09-28-account-deletion.md`, then `npm run docs:check` and `npm run lint:md`.
 Expected: exit 0 for both.

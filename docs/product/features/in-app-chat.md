@@ -23,6 +23,8 @@ The rest of this document is the original draft spec. What web does now:
 
 **Mobile (2026-09-24, PR 10c).** The conversation list, the thread header and the block confirmation show public names too ("Bikal S."). A thread's day headings use the same labels as web, including the year for a message from another year. Each thread subscribes on its own realtime channel topic and removes the channel when it closes.
 
+**Unavailable accounts (both apps, 2026-10-01).** A partner who is pending deletion or purged shows as "Unavailable account", with an initials avatar and no profile menu or Block. While they are pending, the conversation still takes messages, and they see them if they restore. After the purge the thread keeps the messages sent to them, and says "This account has been deleted, so it can't get new messages." in place of the composer. On mobile, a message notification opens its chat with the partner as the conversation list has them, so a pending sender shows as unavailable there too.
+
 ## Problem Statement
 
 Users who find relevant housing, job, travel, or emergency posts need a private, secure way to contact the post author. Without in-app messaging, users would need to share personal contact info publicly, creating privacy and safety risks. Chat completes the core utility loop: **discover user → tap avatar → chat**.
