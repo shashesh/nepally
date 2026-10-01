@@ -5,11 +5,21 @@ import type { GoogleAuthResult } from '@nepally/shared';
 
 WebBrowser.maybeCompleteAuthSession();
 
+/** What signInWithGoogle returns when the member closes Google's sign-in. */
+const GOOGLE_SIGN_IN_CANCELLED = 'Google sign-in was cancelled';
+
+export interface GoogleSignInOptions {
+  /** Make Google show its account chooser even with one account signed in, as re-auth needs. */
+  selectAccount?: boolean;
+}
+
 /**
  * Sign up/in with Google OAuth
  * Uses Expo's WebBrowser + Supabase PKCE flow for native OAuth
  */
-export async function signInWithGoogle(): Promise<GoogleAuthResult> {
+export async function signInWithGoogle(
+  options: GoogleSignInOptions = {}
+): Promise<GoogleAuthResult> {
   try {
     const redirectUrl = AuthSession.makeRedirectUri({
       scheme: 'nepally',
@@ -22,6 +32,7 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
       options: {
         redirectTo: redirectUrl,
         skipBrowserRedirect: true,
+        ...(options.selectAccount ? { queryParams: { prompt: 'select_account' } } : {}),
       },
     });
 
@@ -32,7 +43,7 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
     if (result.type !== 'success') {
-      return { error: new Error('Google sign-in was cancelled') };
+      return { error: new Error(GOOGLE_SIGN_IN_CANCELLED) };
     }
 
     // Extract session params from the callback URL
@@ -42,6 +53,11 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
       error: error instanceof Error ? error : new Error('Google sign-in failed'),
     };
   }
+}
+
+/** True when the member closed Google's sign-in without finishing it. */
+export function isGoogleSignInCancelled(error: Error | undefined): boolean {
+  return error?.message === GOOGLE_SIGN_IN_CANCELLED;
 }
 
 /**

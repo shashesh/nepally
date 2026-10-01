@@ -6,6 +6,7 @@ const mockSignInWithGoogle = jest.fn();
 
 jest.mock('../../services/auth/googleAuth', () => ({
   signInWithGoogle: (...args: Parameters<typeof mockSignInWithGoogle>) => mockSignInWithGoogle(...args),
+  isGoogleSignInCancelled: (error?: Error) => error?.message === 'Google sign-in was cancelled',
 }));
 
 const mockCreateUserProfile = jest.fn();
