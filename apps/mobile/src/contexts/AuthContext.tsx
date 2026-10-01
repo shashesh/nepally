@@ -10,7 +10,7 @@ import { registerForPushNotificationsAsync, isExpoGo } from '../services/notific
 // on a device until they sign out. There is no inactivity timeout and no
 // maximum session age (docs/decisions/2026-09-18-long-lived-sessions.md).
 
-interface User {
+export interface User {
   id: string;
   email: string;
   full_name: string;
@@ -27,14 +27,22 @@ interface User {
   languages?: string[];
   follower_count?: number;
   following_count?: number;
+  /** Set while the account is pending deletion (048); RootNavigator then shows only the restore screen. */
+  deletion_scheduled_for?: string | null;
+}
+
+export interface SignOutOptions {
+  /** 'local' signs out this device only. The default, 'global', ends every session. */
+  scope?: 'global' | 'local';
 }
 
 interface AuthContextType {
   user: User | null;
   supabaseUser: SupabaseUser | null;
   loading: boolean;
-  signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  signOut: (options?: SignOutOptions) => Promise<void>;
+  /** Reloads the profile. Resolves with it, or null when it couldn't be loaded. */
+  refreshUser: () => Promise<User | null>;
   pauseAuthListener: () => void;
   resumeAuthListener: () => void;
 }
@@ -44,7 +52,7 @@ export const AuthContext = createContext<AuthContextType>({
   supabaseUser: null,
   loading: true,
   signOut: async () => {},
-  refreshUser: async () => {},
+  refreshUser: async () => null,
   pauseAuthListener: () => {},
   resumeAuthListener: () => {},
 });
@@ -81,14 +89,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const refreshUser = useCallback(async () => {
+  const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser();
 
       if (!supabaseUser) {
         // Don't clear user here — transient auth operations (e.g. signInWithPassword
         // during password change) can briefly return null. Only signOut should clear user.
-        return;
+        return null;
       }
 
       // Fetch own profile through the get_my_profile RPC — email, phone,
@@ -99,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) throw error;
       if (!userData) {
         setUser(null);
-        return;
+        return null;
       }
 
       const userProfile: User = {
@@ -119,21 +129,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         languages: userData.languages ?? [],
         follower_count: userData.follower_count ?? 0,
         following_count: userData.following_count ?? 0,
+        deletion_scheduled_for: userData.deletion_scheduled_for ?? null,
       };
 
       setUser(userProfile);
       await saveUserData(userProfile);
+      // Push waits for the profile: an account pending deletion gets no
+      // token until it is restored (spec §6, "Push while pending").
+      if (!userProfile.deletion_scheduled_for) {
+        void registerPushTokenForUser(userProfile.id);
+      }
+      return userProfile;
     } catch (error) {
       console.error('Failed to refresh user:', error);
+      return null;
     }
-  }, []);
+  }, [registerPushTokenForUser]);
 
   // Load user data from storage on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const sessionUser = session?.user ?? null;
         if (!sessionUser) {
           // No valid Supabase session: keep auth state signed out.
@@ -145,7 +165,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
         if (!cancelled) setSupabaseUser(sessionUser);
-        void registerPushTokenForUser(sessionUser.id);
         await refreshUser();
       } catch (error) {
         console.error('Failed to load user:', error);
@@ -156,7 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, [refreshUser, registerPushTokenForUser]);
+  }, [refreshUser]);
 
   // supabase-js starts its token-refresh timer when the client initialises
   // (autoRefreshToken). React Native freezes timers in the background, so pause
@@ -177,27 +196,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Skip auth state changes while paused (e.g. during password change)
-        if (authPausedRef.current) return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip auth state changes while paused (e.g. during password change)
+      if (authPausedRef.current) return;
 
-        if (event === 'SIGNED_OUT') {
-          setSupabaseUser(null);
-          setUser(null);
-          pushRegistrationAttemptedUserIdRef.current = null;
-        } else if (session?.user) {
-          setSupabaseUser(session.user);
-          void registerPushTokenForUser(session.user.id);
-          await refreshUser();
-        }
+      if (event === 'SIGNED_OUT') {
+        setSupabaseUser(null);
+        setUser(null);
+        pushRegistrationAttemptedUserIdRef.current = null;
+      } else if (session?.user) {
+        setSupabaseUser(session.user);
+        await refreshUser();
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshUser, registerPushTokenForUser]);
+  }, [refreshUser]);
 
   const pauseAuthListener = () => {
     authPausedRef.current = true;
@@ -207,9 +225,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authPausedRef.current = false;
   };
 
-  const signOut = async () => {
+  const signOut = async (options: SignOutOptions = {}) => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: options.scope ?? 'global' });
       await clearAllData();
       setUser(null);
       setSupabaseUser(null);

@@ -98,13 +98,15 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockGetMyProfile.mockResolvedValue({ data: {
-          id: 'user-1',
-          email: 'test@nusa.com',
-          full_name: 'Test User',
-          trust_level: 1,
-          is_premium: false,
-        } });
+    mockGetMyProfile.mockResolvedValue({
+      data: {
+        id: 'user-1',
+        email: 'test@nusa.com',
+        full_name: 'Test User',
+        trust_level: 1,
+        is_premium: false,
+      },
+    });
 
     const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
     // Flush all pending microtasks (getSession → getUser → profile fetch chain).
@@ -130,8 +132,7 @@ describe('AuthContext', () => {
 
   it('avoids duplicate push registration for same user across auth transitions', async () => {
     let authStateChangeCallback:
-      | ((event: string, session: { user?: { id: string } } | null) => Promise<void>)
-      | null = null;
+      ((event: string, session: { user?: { id: string } } | null) => Promise<void>) | null = null;
     mockAuth.onAuthStateChange.mockImplementation((callback) => {
       authStateChangeCallback = callback as typeof authStateChangeCallback;
       return {
@@ -151,13 +152,15 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockGetMyProfile.mockResolvedValue({ data: {
-          id: 'user-1',
-          email: 'test@nusa.com',
-          full_name: 'Test User',
-          trust_level: 1,
-          is_premium: false,
-        } });
+    mockGetMyProfile.mockResolvedValue({
+      data: {
+        id: 'user-1',
+        email: 'test@nusa.com',
+        full_name: 'Test User',
+        trust_level: 1,
+        is_premium: false,
+      },
+    });
 
     renderHook(() => React.useContext(AuthContext), { wrapper });
     await act(async () => {});
@@ -184,7 +187,15 @@ describe('AuthContext', () => {
       data: { user: { id: 'user-1' } },
       error: null,
     } as GetUserResult);
-    mockGetMyProfile.mockResolvedValue({ data: { id: 'user-1', email: 'test@nusa.com', full_name: 'Test User', trust_level: 1, is_premium: false } });
+    mockGetMyProfile.mockResolvedValue({
+      data: {
+        id: 'user-1',
+        email: 'test@nusa.com',
+        full_name: 'Test User',
+        trust_level: 1,
+        is_premium: false,
+      },
+    });
 
     // Timestamps an older build left behind: last active 90 days ago,
     // signed in 400 days ago. Sessions no longer expire on either.
@@ -244,5 +255,105 @@ describe('AuthContext', () => {
 
     expect(supabase.auth.signOut).toHaveBeenCalled();
     expect(result.current.user).toBeNull();
+  });
+
+  const SCHEDULED_FOR = '2026-10-30T12:00:00.000Z';
+
+  function signedInAs(profile: Record<string, unknown> | undefined) {
+    mockAuth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
+      error: null,
+    } as GetSessionResult);
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    } as GetUserResult);
+    mockGetMyProfile.mockResolvedValue({ data: profile });
+  }
+
+  function profile(deletionScheduledFor: string | null) {
+    return {
+      id: 'user-1',
+      email: 'test@nusa.com',
+      full_name: 'Test User',
+      trust_level: 1,
+      is_premium: false,
+      deletion_scheduled_for: deletionScheduledFor,
+    };
+  }
+
+  async function settle() {
+    await act(async () => {});
+    await act(async () => {});
+    await act(async () => {});
+  }
+
+  it('registers push only once the profile has loaded', async () => {
+    // Signed in, but the profile row isn't there yet (sign-up still creating it).
+    signedInAs(undefined);
+    renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+
+    expect(mockRegisterForPushNotificationsAsync).not.toHaveBeenCalled();
+  });
+
+  it('keeps the deletion date, and registers no push for a pending account', async () => {
+    signedInAs(profile(SCHEDULED_FOR));
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+
+    expect(result.current.user?.deletion_scheduled_for).toBe(SCHEDULED_FOR);
+    expect(mockRegisterForPushNotificationsAsync).not.toHaveBeenCalled();
+  });
+
+  it('registers push after a restore, and refreshUser resolves with the profile', async () => {
+    signedInAs(profile(SCHEDULED_FOR));
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+
+    mockGetMyProfile.mockResolvedValue({ data: profile(null) });
+    let refreshed: Awaited<ReturnType<typeof result.current.refreshUser>> = null;
+    await act(async () => {
+      refreshed = await result.current.refreshUser();
+    });
+
+    expect(refreshed).toEqual(
+      expect.objectContaining({ id: 'user-1', deletion_scheduled_for: null })
+    );
+    expect(result.current.user?.deletion_scheduled_for).toBeNull();
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledWith(supabase, 'user-1');
+  });
+
+  it('refreshUser resolves with null when nobody is signed in', async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    } as unknown as GetUserResult);
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+
+    let refreshed: Awaited<ReturnType<typeof result.current.refreshUser>> | 'unset' = 'unset';
+    await act(async () => {
+      refreshed = await result.current.refreshUser();
+    });
+
+    expect(refreshed).toBeNull();
+  });
+
+  it('signs out every device by default, and only this one when asked', async () => {
+    mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+
+    await act(async () => {
+      await result.current.signOut();
+    });
+    expect(mockAuth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
+
+    await act(async () => {
+      await result.current.signOut({ scope: 'local' });
+    });
+    expect(mockAuth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
   });
 });
