@@ -69,6 +69,33 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
   const offersGoogle =
     reauthMethod === 'password' && supabaseUser !== null && hasGoogleIdentity(supabaseUser);
 
+  /** The user id of this device's session, or null when it can't be read. */
+  async function readSessionUserId(): Promise<string | null> {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      return session?.user.id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Another account, or none we can read, holds this device's session, and
+   * the RPC deletes whichever account the JWT names. Sign it out of this
+   * device only and delete nothing; the member signs in again. Signing out
+   * replaces the whole tree, so the alert must show whatever is focused.
+   */
+  async function signOutWrongAccount(method: 'google' | 'delete'): Promise<void> {
+    logClientEvent({
+      event: 'account_delete_reauth_failed',
+      context: { ...PLATFORM, method, reason: 'wrong_account' },
+    });
+    await signOut({ scope: 'local' });
+    Alert.alert(WRONG_ACCOUNT_TITLE, WRONG_ACCOUNT_MESSAGE);
+  }
+
   async function handleContinue() {
     if (busy) return;
     setBusy(true);
@@ -137,30 +164,17 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
     // the listener from loading whichever account comes back.
     pauseAuthListener();
     let googleError: Error | undefined;
-    let sessionUserId: string | null = null;
     try {
       ({ error: googleError } = await signInWithGoogle({ selectAccount: true }));
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      sessionUserId = session?.user.id ?? null;
     } catch (thrown) {
       googleError = thrown instanceof Error ? thrown : new Error('Google sign-in failed');
     } finally {
       resumeAuthListener();
     }
 
+    const sessionUserId = await readSessionUserId();
     if (sessionUserId !== expectedUserId) {
-      // Another account, or none we can read, now holds this device's
-      // session, and the RPC would delete whichever account the JWT names.
-      // Sign it out of this device only, delete nothing, and the member signs
-      // in again. Signing out replaces the whole tree, so the alert must show.
-      logClientEvent({
-        event: 'account_delete_reauth_failed',
-        context: { ...PLATFORM, method: 'google', reason: 'wrong_account' },
-      });
-      await signOut({ scope: 'local' });
-      Alert.alert(WRONG_ACCOUNT_TITLE, WRONG_ACCOUNT_MESSAGE);
+      await signOutWrongAccount('google');
       return;
     }
     if (!mountedRef.current) return;
@@ -183,6 +197,11 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
     if (busy) return;
     setBusy(true);
     setError('');
+    // The session must still be the member's: the RPC deletes whoever the JWT names.
+    if ((await readSessionUserId()) !== supabaseUser?.id) {
+      await signOutWrongAccount('delete');
+      return;
+    }
     const result = await requestAccountDeletion(supabase);
     if (result.error || !result.data) {
       if (!mountedRef.current) return;

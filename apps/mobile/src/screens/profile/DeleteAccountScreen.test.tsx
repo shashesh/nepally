@@ -204,6 +204,49 @@ describe('DeleteAccountScreen password step', () => {
     screen.rerender(<DeleteAccountScreen />);
     expect(screen.getByText('Continue with Google')).toBeTruthy();
   });
+
+  it('confirms with Google from the password step when Google is linked', async () => {
+    setAccount(['email', 'google']);
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    signedInSecondsAgo(5);
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete your account?')).toBeTruthy();
+    });
+    expect(mockSignInWithGoogle).toHaveBeenCalledWith({ selectAccount: true });
+  });
+
+  it('signs out a different Google account chosen from the password step', async () => {
+    setAccount(['email', 'google']);
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: tokenSignedIn(5), user: { id: 'user-2' } } },
+      error: null,
+    });
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+    expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
+  });
+
+  it('resumes the auth listener when the password sign-in throws', async () => {
+    mockSignInWithPassword.mockRejectedValue(new Error('Network request failed'));
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.changeText(screen.getByLabelText('Password'), 'right-pass');
+    fireEvent.press(screen.getByText('Confirm'));
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't log you in. Please try again.")).toBeTruthy();
+    });
+    expect(mockResumeAuthListener).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Confirm it's you")).toBeTruthy();
+  });
 });
 
 describe('DeleteAccountScreen Google step', () => {
@@ -333,6 +376,25 @@ describe('DeleteAccountScreen final step', () => {
       expect(screen.getByText(new RegExp(SUPPORT_EMAIL))).toBeTruthy();
     });
     expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('deletes nothing when the session changed hands before the final tap', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: tokenSignedIn(5), user: { id: 'user-2' } } },
+      error: null,
+    });
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'You signed in as a different account',
+      'Nothing was deleted. Sign in again as yourself.'
+    );
+    expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
   });
 
   it('keeps the member on the final step to retry after a network error', async () => {

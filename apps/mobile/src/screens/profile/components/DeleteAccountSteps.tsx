@@ -136,7 +136,6 @@ export function PasswordConfirmStep({
           autoCapitalize="none"
           returnKeyType="done"
           onSubmitEditing={onSubmit}
-          editable={!busy}
         />
         <TouchableOpacity
           style={styles.eyeButton}
