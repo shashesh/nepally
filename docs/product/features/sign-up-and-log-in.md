@@ -1,6 +1,6 @@
 # Sign Up and Log In
 
-**Last Updated:** 2026-09-24 (web UI overhaul PR 10a)
+**Last Updated:** 2026-10-02 (the return path and the restore screen, from account deletion)
 
 What signing up, logging in, email verification, the auth callback and ZIP onboarding do on web today. Auth is email and password, or Google. Phone sign-in is deferred. Since PR 10c (2026-09-24) the mobile email sign-up, log-in, Google and resend screens show the same shared error sentences in their alerts, and change password shows "Couldn't change your password. Please try again."; mobile's code-entry verification keeps its own three sentences. The journey itself is written up in [the sign-up and onboarding journey](../../user-journeys/onboarding/01-signup-and-onboarding.md).
 
@@ -21,9 +21,11 @@ A signed-in member gets the feed at `/`. A visitor gets the landing page:
 - **Google first.** "Continue with Google" hands off to Google and returns through the callback below. It stays busy, and keeps focus, while the browser leaves.
 - **Email and password below it**, under "or log in with email", then Log in.
 - **Validation.** Nothing shows before the first submit. A submit with problems puts each message on its field and moves focus to the first one: "Enter a valid email address." and "Enter your password.". From then on the messages re-check as the member types.
-- **Success** refreshes the member's profile and goes to `/feed`.
+- **Success** refreshes the member's profile and goes to the return address below, or `/feed`.
+- **A return address** (`?redirect=`) brings the member back to where they started. `/delete-account` is the page that sends one. Log in passes it on to Google, through the callback. Only a path on this site is accepted: shared `getSignInReturnPath` refuses another origin (`//evil.com`, `/\evil.com`, a space, tab or other control character, or a path that normalizes to `//` such as `/.//evil.com`), and also `/login` and `/auth/*`, which would only lead back into signing in. Anything it refuses is ignored, and the member goes to `/feed`.
 - **Arriving from sign-up with an existing address** (`?reason=existing-account&email=…`) prefills the email and shows: "An account with this email already exists. If you signed up with Google, use the Google button below to sign in."
-- A member who is already signed in is sent to `/feed`.
+- A member who is already signed in is sent to the return address, or `/feed`.
+- **A member whose account is pending deletion** signs in as usual, then sees the restore screen in place of every page. See [account deletion](account-deletion.md#signing-in-during-the-grace-period).
 
 ## Sign up (`/signup`)
 
@@ -61,7 +63,7 @@ Both the email link and Google land here. The page shows "Signing you in…" whi
 
 1. creates the member's profile if there isn't one yet (a new member starts at trust level 0);
 2. marks them verified by email or by Google, which is what lets them post;
-3. sends them to `/feed`, or to `/onboarding/zip` if they have no metro yet.
+3. sends them to `/feed`, or to `/onboarding/zip` if they have no metro yet. A safe `?redirect=` (see Log in) takes the place of `/feed`, but never of onboarding. The page reads it from `window.location`, because it is statically optimised and the router's first query is empty.
 
 Every step's result is checked, so the page always ends in one of three places:
 

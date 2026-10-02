@@ -47,7 +47,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
   - `apps/mobile/app.json` has no EAS project id (`eas init` not run), so push tokens cannot register in store builds.
   - `expo-updates` is not installed and there is no `updates.url` / `runtimeVersion`, so over-the-air (OTA) updates are not possible yet. `eas.json` names the channels, but nothing uses them.
 - **Store compliance gaps:**
-  - no in-app account deletion
+  - in-app account deletion: missing then, built since (2026-10-02). The checks that remain are in W3.
   - no Sign in with Apple, although iOS offers Google sign-in
 - **Mobile promotion purchase is incomplete.** `PromoteListingScreen` asks `create-promotion-checkout` for a PaymentIntent. But the app has no Stripe SDK, so it never collects payment. It then polls for an activation that can never happen.
 - **Mobile dead ends:** "Coming Soon" alerts in Home search (`HomeScreen.tsx`) and on chat avatars (`ConversationItem.tsx`, `MessageThreadScreen.tsx`).
@@ -138,13 +138,13 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Realigned tracker rows `038`–`046` on `nusa-staging` from timestamp versions to `NNN`.
   - Updated the "After (current)" section of `migration-workflow.md` to `001`–`046`.
   - Confirmed that staging and the repo list the same 46 migrations.
-- [ ] **Code:** Apply `001`–`047` in order on the empty prod database.
+- [ ] **Code:** Apply `001`–`052` in order on the empty prod database. `048`–`052` are account deletion.
   - Use the MCP `apply_migration` tool or the dashboard SQL editor, never `supabase db push`.
   - Realign the tracker rows to `NNN` as [migration-workflow.md](../../architecture/migration-workflow.md) describes.
   - The frozen files are safe on a fresh database.
   - Record the rehearsal in the same doc.
 - [ ] **Code:** Run `npm run seed:metro` against prod. The migrations do not seed `metro_areas` or `metro_area_zipcodes`. Check that the six markets exist and their ZIP counts roughly match staging (see [Launch markets](#launch-markets)).
-- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`. Without them every photo delete silently does nothing and every avatar upload fails, first-time ones included (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging and run `npm run test:security:storage` there. Prod gets it with `001`–`047`.
+- [ ] **Code:** Migration `039_storage_owner_select_policies`: owner-only SELECT policies on `storage.objects`. Without them every photo delete silently does nothing and every avatar upload fails, first-time ones included (see [supabase-setup.md](../../architecture/supabase-setup.md#2-storage-policies)). Apply to staging and run `npm run test:security:storage` there. Prod gets it with `001`–`052`.
 - [ ] **Code:** One-off orphan reconciliation on staging, after 039. Every file "deleted" since 027 reached staging (tracker version `20260416023723`) is still in its bucket and still public at its URL. With the service role, compare each bucket against the rows that reference it:
   - `post-photos` against `posts.photos`
   - `listing-photos` against `marketplace_listings.photos`
@@ -161,11 +161,11 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Post photo cleanup on web (`apps/web/src/lib/postSubmit.ts`) and mobile (`CreatePostScreen.tsx`) goes through the shared `cleanUpPostPhotos`. It logs `post_photos_cleanup_failed` with only the paths left behind. The post write has already decided what the member sees, so the failure is logged rather than shown.
   - The shared `removeProfilePhoto` deletes the file first. It stops and returns the error if the delete fails, leaving `users.profile_photo` untouched. The web profile page and mobile `EditProfileScreen` show that error, so the member can try again.
 
-- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25. All nine `test:security:*` smoke tests pass there (rerun 2026-09-27); prod gets it with `001`–`047`:
+- [ ] **Code:** Migration `041_restrict_function_execute` (planned as `040`, which went to `users.full_name`). Applied to staging on 2026-09-25. All nine `test:security:*` smoke tests pass there (rerun 2026-09-27); prod gets it with `001`–`052`:
   - Revoke `EXECUTE` from `PUBLIC` **and** from `anon`. Supabase grants `anon` explicitly, which is why 017's `REVOKE ... FROM PUBLIC` left `increment_listing_*` callable.
   - Revoke from `authenticated` too where signed-in users should not call a function.
   - Grant only the intended roles.
-  - Still to do: apply to prod as part of the `001`–`047` apply above, then check it with the read-only prod probes. The `test:security:*` smoke tests create and delete users, so they stay on staging (see W9). The staging tracker row was realigned to `041` in the 2026-09-25 reconcile.
+  - Still to do: apply to prod as part of the `001`–`052` apply above, then check it with the read-only prod probes. The `test:security:*` smoke tests create and delete users, so they stay on staging (see W9). The staging tracker row was realigned to `041` in the 2026-09-25 reconcile.
 - [x] **Code:** SEC-06 hardening backlog (staging 2026-09-25; prod gets `045`/`046` with the apply above):
   - Storage bucket `allowed_mime_types` and `file_size_limit`: migration `045` gives all four buckets (event photos too) the limits the apps already enforce. Checked by `npm run test:security:storage-limits`.
   - Cron functions: rather than a shared-secret header, both edge functions are gone. `expire-posts` was dead code: it queried `posts.expiry_date`, which the 2026-02 tag redesign dropped. Migration `046` replaces `expire-promotions` with `expire_paid_promotions()` on an hourly `pg_cron` job, so no public endpoint is left. Nothing had ever scheduled the old function, so ended paid promotions had stayed `active` on staging. Checked by `npm run test:security:promotion-expiry`.
@@ -181,6 +181,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - redirect URLs, including the `nepally://**` mobile scheme
   - Google OAuth client IDs and redirects for prod
 - [ ] **Code:** Wire prod env vars into Vercel (production environment) and EAS (production profile). Deploy edge functions and set their secrets on prod.
+  - That includes `purge-deleted-accounts`. **You** then set its secrets by the runbook in [supabase-setup.md](../../architecture/supabase-setup.md#account-purge-secrets-once-per-environment), "Account purge secrets": the function secret and the two Vault secrets. Until they are set, the hourly purge job fails and no deleted account is ever removed, which breaks the privacy policy's "within 30 days".
 - [x] **Code:** Web security headers in `next.config.js` (CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, frame-ancestors). Add the missing `/icon.png`.
 - [ ] **Code:** First run of `deploy-vercel-prod.yml` against the prod project, with the custom domain attached.
 - [ ] **Code:** Retire the two March plans properly. Every open item from both is already mapped in [Folded-in items](#folded-in-items), so neither loses its tracker. For each file:
@@ -206,19 +207,35 @@ See [Monitoring](#monitoring) for the full spec.
   - `getPromotionAnalytics` only returns one promotion's view delta, so neither exists yet.
 - [ ] **Code:** Uptime checks and a public status page linked from `/help`.
 - [ ] **Code:** Alert for Emergency posts pending more than 10 minutes. It sends a push to moderators and an email to you.
+- [ ] **Code:** Alert when the account purge falls behind: a failed `purge-deleted-accounts` run in `cron.job_run_details`, a `failed` count above 0 in the function's summary, or any account more than 2 days past its `deletion_scheduled_for`. Nothing else notices, and the privacy policy promises removal within 30 days (see [account-deletion.md](../../product/features/account-deletion.md#when-within-30-days-holds)).
 - [ ] **Code:** Update `/privacy` to name Sentry and PostHog.
 
 ### W3 — Store compliance (Oct 5–11)
 
-- [ ] **Code:** In-app account deletion (web + mobile Settings).
-  - The server side removes the auth user, anonymizes or deletes content per the privacy policy, and deletes storage objects.
-  - Also a public web page where people can ask for deletion without the app. Its URL goes into the Play Console.
+- [x] **Code:** In-app account deletion (web + mobile Settings). Done 2026-10-02 in PRs #111–#115, migrations `048`–`052`. What it does today: [account-deletion.md](../../product/features/account-deletion.md). The spec and plan are archived.
+  - The purge deletes the auth user, which takes the member's own rows with it, plus their storage objects and the copies of their words in other members' notifications and chat previews. Nothing is anonymized.
+  - Also a public web page where people can ask for deletion without the app: `/delete-account`. Once `nepally.us` is live, put `https://nepally.us/delete-account` in the Play Console's data-deletion field (App content → Data safety).
+- [ ] **You + Code:** Account deletion checks, carried over from the archived [plan](../../archive/plans/2026-09-28-account-deletion.md) (Tasks 2.7, 2.9, 3.21 and 4.11):
+  - **You:** set the purge secrets on staging by the runbook in [supabase-setup.md](../../architecture/supabase-setup.md#account-purge-secrets-once-per-environment). As of 2026-10-02 the hourly job still fails there with a null URL, so no account has ever been purged.
+  - **Code:** then run `npm run test:security:account-purge` and `npm run test:security:account-deletion` against staging. Both must exit 0. The purge check is the first real end-to-end purge.
+    - It refuses any project but staging. Never point it at production.
+    - It purges **every** due staging account, including test accounts left past their date by the manual checks below. Run it before them, or restore those accounts first.
+  - **You:** in the staging dashboard, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google returns to the Site URL and the return path is lost.
+  - **You:** on web against staging, delete an email account and a Google account. Google shows its chooser, and choosing a different account signs it out and deletes nothing. A second browser signed in as another member no longer sees the deleted one. Signing back in shows the restore screen, and Restore brings everything back.
+  - **You:** the past-date check, on staging only. Once the secrets are set, the hourly purge deletes any account at the next run after it is more than an hour past its date, so the "being deleted" screen may remain for nearly two hours after the date.
+    - In the SQL editor, set `deletion_scheduled_for = now() - interval '5 minutes'` on a throwaway test account.
+    - Sign in right away and check that "Your account is being deleted" shows, with only Sign out.
+    - Then either expect the account to be purged at the next hour, or restore it before then with `deletion_scheduled_for = NULL`.
+  - **You:** on a phone with a dev build, run `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`, then repeat the Google wrong-account, second-device and past-date checks above.
+- [ ] **Code:** Before the Play Console gets the `/delete-account` URL, fix two things in the app's copy:
+  - **The signed-out `/delete-account` page.** Google's data-deletion page must also say what is kept and for how long. Add a line on records kept by law (payment records, abuse investigations) with a link to `/privacy`, and keep the Data safety form consistent with it.
+  - **The Help page** (`help.page.tsx`) leaves events out of what is deleted. Privacy, the delete page and the feature doc include them.
 - [ ] **Code:** Sign in with Apple on iOS (Supabase Apple provider).
 - [ ] **Code:** Mobile auth hardening (mobile plan Step 1):
   - OAuth callback state and origin validation
   - media URL validation (block unsafe schemes and private hosts)
 - [ ] **Code:** Account security, Facebook/Reddit style (Decision 6), on web and mobile:
-  - Confirm identity again before deleting the account or changing email or password: the password for email accounts, redoing their provider sign-in for Google and Apple accounts.
+  - Confirm identity again before changing email or password: the password for email accounts, redoing their provider sign-in for Google and Apple accounts. Deleting the account already does this (shipped with account deletion, 2026-10-02).
   - After a password change, sign out every other device (`signOut({ scope: 'others' })`).
   - A **Sign out of all devices** option in Settings (`signOut({ scope: 'global' })`) for a lost or stolen phone.
 - [x] **Code:** Remove every mobile Promote entry point and unregister the `PromoteListing` route. Promoted and sponsored items keep displaying. The entry points are:
@@ -361,6 +378,7 @@ promotion_purchased {promotion_id, type, days, amount_cents, metro_id, platform,
 - Uptime: web down, Supabase REST down, edge functions failing (especially `stripe-webhook`).
 - Supabase: database CPU or disk above 80%; spend cap on.
 - App: Emergency post pending for more than 10 minutes.
+- App: the account purge failed a run, or an account is more than 2 days past its deletion date.
 - Daily 8 a.m. summary, each number taken from the tool that owns it:
   - SQL counts (signups, posts, reports, promotions sold), emailed by the W2 scheduled job
   - active users and the activation funnel, from a PostHog subscription

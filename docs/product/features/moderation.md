@@ -1,6 +1,6 @@
 # Moderation
 
-**Last Updated:** 2026-09-27 (report threshold 100, listing reports — migration 047)
+**Last Updated:** 2026-10-02 (reported members and listings that are gone, from account deletion)
 
 What the moderator queue at `/moderation` does on web today. Access and the server-side rules come from `supabase/migrations/035_emergency_post_moderation.sql` and `047_report_auto_hide_threshold.sql`:
 
@@ -23,9 +23,9 @@ There are two sections:
 - **Pending posts:** Emergency submissions and auto-hidden reported posts, oldest first. Each card shows the title (a link to the post), the author's public name, the place and age, a preview of up to 280 characters, the tags, then Approve and Remove.
 - **Open reports:** newest first. Each card is headed by the reason ("Spam"), then the reporter's note and what was reported. What the card offers depends on the target:
   - **A post:** its title (or "Post no longer available"), a View post link, and Dismiss, Remove post and Ban author.
-  - **A member:** a View member link, and Dismiss and Ban user.
+  - **A member:** a View member link, and Dismiss and Ban user. A member whose account was deleted shows "Member no longer available", with no link and no Ban user. A member still in their deletion grace period shows as usual, because moderators can still see them (see [account deletion](account-deletion.md)).
   - **A chat message:** a note that the content is private, and Dismiss only.
-  - **A listing:** a View listing link, and Dismiss only. Removing a listing from the queue is not built yet.
+  - **A listing:** a View listing link, and Dismiss only. Removing a listing from the queue is not built yet. A listing the moderator can no longer read shows "Listing no longer available", with no link. That covers a deleted account's listing, and one that is sold or removed; the card doesn't say which.
 
 Each section shows how many cards it holds ("3 waiting", "2 open").
 

@@ -1,19 +1,19 @@
 ---
 title: In-app account deletion (web and mobile)
-status: in-progress
+status: implemented
 created: 2026-09-28
 ---
 
 # In-app account deletion (web and mobile)
 
 **Date:** 2026-09-28
-**Status:** In progress. The server side (migrations 048–051 and the purge function) is applied on staging. 052 and the apps are not built yet.
+**Status:** Implemented 2026-10-02 (PRs #111–#115; migrations 048–052 applied on staging). What the feature does today is in [product/features/account-deletion.md](../../product/features/account-deletion.md). The staging and device checks still open were moved to the launch plan's W3.
 **Author:** Brainstormed with the user; written by Claude Code
 **Related docs:**
 
-- [plans/active/2026-09-18-production-launch.md](../plans/active/2026-09-18-production-launch.md) (W3, store compliance)
-- [decisions/2026-09-18-long-lived-sessions.md](../decisions/2026-09-18-long-lived-sessions.md) (re-auth for sensitive actions)
-- [architecture/migration-workflow.md](../architecture/migration-workflow.md)
+- [plans/active/2026-09-18-production-launch.md](../../plans/active/2026-09-18-production-launch.md) (W3, store compliance)
+- [decisions/2026-09-18-long-lived-sessions.md](../../decisions/2026-09-18-long-lived-sessions.md) (re-auth for sensitive actions)
+- [architecture/migration-workflow.md](../../architecture/migration-workflow.md)
 
 ---
 
@@ -69,7 +69,7 @@ column to `guard_user_privileged_columns()` (from 034) so it can only change
 through the functions below.
 
 The index is a plain `CREATE INDEX` inside 048, not a `CONCURRENTLY` migration of
-its own. [migration-workflow.md](../architecture/migration-workflow.md#adding-a-migration-going-forward)
+its own. [migration-workflow.md](../../architecture/migration-workflow.md#adding-a-migration-going-forward)
 step 6 exempts a fresh database, and production will replay 048 onto empty tables.
 On staging the `users` table holds only test accounts, and the new column is NULL in
 every row, so the build blocks writes for milliseconds.
