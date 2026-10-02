@@ -222,7 +222,7 @@ See [Monitoring](#monitoring) for the full spec.
     - It purges **every** due staging account, including test accounts left past their date by the manual checks below. Run it before them, or restore those accounts first.
   - **You:** in the staging dashboard, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google returns to the Site URL and the return path is lost.
   - **You:** on web against staging, delete an email account and a Google account. Google shows its chooser, and choosing a different account signs it out and deletes nothing. A second browser signed in as another member no longer sees the deleted one. Signing back in shows the restore screen, and Restore brings everything back.
-  - **You:** the past-date check, on staging only. Once the secrets are set, the hourly purge deletes any account more than an hour past its date, so the "being deleted" screen only shows inside that hour.
+  - **You:** the past-date check, on staging only. Once the secrets are set, the hourly purge deletes any account at the next run after it is more than an hour past its date, so the "being deleted" screen may remain for nearly two hours after the date.
     - In the SQL editor, set `deletion_scheduled_for = now() - interval '5 minutes'` on a throwaway test account.
     - Sign in right away and check that "Your account is being deleted" shows, with only Sign out.
     - Then either expect the account to be purged at the next hour, or restore it before then with `deletion_scheduled_for = NULL`.
