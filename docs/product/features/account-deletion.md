@@ -6,7 +6,7 @@ What deleting an account does on web and mobile today. Both app stores require i
 
 ## In short
 
-A member asks to delete their account and confirms it's them. The account is hidden from other members right away and deleted 29 days later. Signing in before that date offers to restore it. After the date an hourly job removes their photos and the copies of their words in other members' notifications and chat previews, then deletes the account itself, which takes every row of their data with it. The privacy policy promises removal "within 30 days", and this keeps that promise.
+A member asks to delete their account and confirms it's them. The account is hidden from other members right away and deleted 29 days later. Signing in before that date offers to restore it. After the date an hourly job removes their photos and the copies of their words in other members' notifications and chat previews, then deletes the account itself, which takes the member's own rows with it. A few records stay; see [What the purge doesn't remove](#what-the-purge-doesnt-remove). The privacy policy promises removal "within 30 days", which holds while the purge is healthy; see [When "within 30 days" holds](#when-within-30-days-holds).
 
 ## Where to find it
 
@@ -31,7 +31,7 @@ A member asks to delete their account and confirms it's them. The account is hid
 | The sign-in is older than 10 minutes (`reauth_required`)                   | Back to step 2, with "Please confirm it's you again."                                                                                                                              |
 | The account has no profile row (`profile_not_found`)                       | "We couldn't delete this account here. Email <support@nepally.us> from your account's email address and we'll delete it for you."                                                  |
 | Anything else (network, server)                                            | "Couldn't delete your account. Please try again." Nothing has changed.                                                                                                             |
-| Web: the deletion went through, but signing out failed                     | A toast: "Your account will be deleted on _date_, but we couldn't sign you out. Choose "Keep deletion and sign out" to try again." The restore screen then takes the flow's place. |
+| Web: the deletion went through, but signing out failed                     | A toast: "Your account will be deleted on _date_, but we couldn't sign you out. Choose 'Keep deletion and sign out' to try again." The restore screen then takes the flow's place. |
 | Mobile: the session no longer belongs to the member when they press Delete | Signed out of this device, with the different-account alert. Nothing is deleted.                                                                                                   |
 
 Failures are logged as `account_delete_failed`, `account_delete_reauth_failed` (with the method, and `wrong_account` or `storage_blocked` when that's the reason) and `account_delete_session_read_failed`.
@@ -66,11 +66,31 @@ An hourly `pg_cron` job, `purge-deleted-accounts` (migrations 049 and 050), call
 
 1. removes every storage object the member owns, in all four photo buckets, through the Storage API;
 2. deletes other members' message, comment and like notifications that name them, and resets each chat preview they wrote to the other member's last message, or empties it (`scrub_account_copies`, 052);
-3. deletes the auth user. Every table cascades from it, and the delete triggers count down comments, likes, follows, RSVPs and saves (051 added the comment trigger).
+3. deletes the auth user. Every table that holds the member's own rows cascades from it, and the delete triggers count down comments, likes, follows, RSVPs and saves (051 added the comment trigger). Two references on rows that aren't theirs are cleared instead (`SET NULL`): a conversation's creator and a report's reviewer.
 
-A failure at any step leaves that account for the next run. The function returns only counts (`purged`, `skipped`, `failed`) and never logs names or emails. Push notifications already on a phone can't be recalled.
+The account is re-read before the files go and again before step 2. If it is no longer due by then, because support restored it by hand, it is counted as skipped and left alone. If a step fails, the account is left for the next run, an hour later. Photos already removed stay removed, and the retry carries on from there. The account can't be restored by then, because its date has passed. The function returns only counts (`purged`, `skipped`, `failed`). It logs a failure by user id, never by name or email. Push notifications already on a phone can't be recalled.
 
-The job's URL and secret live in Vault, and the function's secret is set by hand in each environment, following [supabase-setup.md](../../architecture/supabase-setup.md#5-scheduled-jobs), "Scheduled Jobs". Until both are set, the job fails every hour and no account is purged in that environment.
+The job's URL and secret live in Vault, and the function's secret is set by hand in each environment, following the runbook in [supabase-setup.md](../../architecture/supabase-setup.md#account-purge-secrets-once-per-environment), "Account purge secrets". Until both are set, the job fails every hour and no account is purged in that environment.
+
+### When "within 30 days" holds
+
+A healthy purge removes an account about 29 days and 2 hours after the request: the hour's margin, plus up to an hour until the next run. Removal slips past 30 days when:
+
+- more than 50 accounts are due at once, because the rest wait for later runs at 50 an hour;
+- a step keeps failing for an account, which is retried every hour with nothing alerting anyone yet (an alert is planned in the launch plan's W2);
+- the secrets aren't set in that environment, when nothing is purged at all.
+
+## What the purge doesn't remove
+
+- **Reports about the member,** and about their posts, listings and messages. `reports.target_id` has no foreign key, so these stay for moderators, with the reporter's note, which can name the member. Reports the member filed are deleted.
+- **Like notifications written before migration 052.** They store no liker id, so the scrub can't find them, and their title keeps the liker's name. Only staging has any.
+- **Records outside the database:**
+  - Supabase's backups, until they age out
+  - the purge function's logs, which name a failed account by user id
+  - the hosting providers' technical logs
+  - Stripe's payment records
+
+  The privacy policy covers the payment records and the hosting logs.
 
 ## What other members see
 

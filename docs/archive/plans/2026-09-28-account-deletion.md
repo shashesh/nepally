@@ -2,7 +2,7 @@
 title: In-app account deletion
 status: implemented
 created: 2026-09-28
-spec: docs/specs/2026-09-28-account-deletion.md
+spec: docs/archive/specs/2026-09-28-account-deletion.md
 ---
 
 # In-App Account Deletion Implementation Plan
@@ -2060,7 +2060,7 @@ The full review of #111 (2026-09-30) found that other members keep copies of a p
     - New node test: a failed due-list lookup fails the run.
     - The purge check covers GET → 405; a soft-deleted comment not counted down twice; the purged member's own post taking its comments with it; a chat the other member spoke last in staying untouched; and a chat with only the purged member's messages emptying its preview.
   - Kept, with the reason in 052's header: the notification DELETE scans the table (see Risks).
-- [ ] **Step 7: Staging (needs the user).** Items 1–3 are done; item 4 waits on the secrets.
+- [ ] **Step 7: Staging (needs the user).** Items 1–3 are done; item 4 waits on the secrets (moved to the launch plan's W3 on 2026-10-02, with Task 2.7 Step 4).
   1. Apply 052 (`scrub_account_copies`) and realign the tracker row to `052`.
   2. Redeploy `purge-deleted-accounts`. It calls `scrub_account_copies`, so it must go after 052.
   3. `npm run test:security:functions` must pass.
@@ -7989,7 +7989,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
 
 ## PR 5 — Ship docs
 
-Done 2026-10-02 on `docs/account-deletion-shipped`. PRs 1–4 were merged as #111–#115 (2026-09-30 → 2026-10-02).
+Done 2026-10-02 on `docs/account-deletion-shipped`. The spec and plan (#111) and PRs 1–4 (#112–#115) were merged 2026-09-30 → 2026-10-02.
 
 - [x] Add `docs/product/features/account-deletion.md`: what the feature is today (flow, grace period, hiding, purge, public page), and add it to `docs/INDEX.md`.
 - [x] Set `status: implemented` on the spec and this plan, `git mv` both into `docs/archive/`, and fix links and INDEX.
@@ -7997,7 +7997,9 @@ Done 2026-10-02 on `docs/account-deletion-shipped`. PRs 1–4 were merged as #11
 - [x] Update `docs/product/roadmap.md` §"Remaining" item 5.
 - [x] Also: `sign-up-and-log-in.md` describes `?redirect=` and the restore screen, and `moderation.md` describes reported members and listings that are gone (from the PR 3 reviews).
 
-The user steps still open were moved to the launch plan's W3 as one item, so they stay tracked: Task 2.7 Steps 2 and 4 (the purge secrets, then the live checks), Task 3.21 Steps 3 and 5 (staging's redirect allow-list, the web check) and Task 4.11 Step 4 (the device check). On 2026-10-02 the hourly purge job was still failing on staging with a null URL, so the secrets weren't set yet. The production launch plan's W1 also gained the purge function's secrets and migrations `048`–`052`, as Risks asks. Code comments that cite `docs/specs/2026-09-28-account-deletion.md` keep that path, as earlier archived specs' do.
+The user steps still open were moved to the launch plan's W3 as one item, so they stay tracked: Task 2.7 Steps 2 and 4 (the purge secrets, then the live checks), Task 2.9 Step 7 item 4 (the same checks), Task 3.21 Steps 3 and 5 (staging's redirect allow-list, the web check) and Task 4.11 Step 4 (the device check). On 2026-10-02 the hourly purge job was still failing on staging with a null URL, so the secrets weren't set yet. The production launch plan's W1 also gained the purge function's secrets and migrations `048`–`052`, as Risks asks. Code comments that cite `docs/specs/2026-09-28-account-deletion.md` keep that path, as earlier archived specs' do.
+
+The PR's review added two items to the launch plan. W2 got an alert for a purge that fails or falls behind. W3 got an item to fix the app's copy: the signed-out `/delete-account` page should say what is kept, for Google Play, and Help leaves out events.
 
 ---
 
@@ -8027,7 +8029,7 @@ The user steps still open were moved to the launch plan's W3 as one item, so the
 - From the PR 2 review:
   - A small restore race remains. A member who restores while the purge is removing their files keeps the account but loses those files. Closing it fully would mean `cancel_account_deletion()` refusing once `deletion_scheduled_for` has passed, so "restore before the date" becomes the strict rule. That's a user-visible change to the restore screen, so it needs the user's decision first.
   - `index.ts` builds the Supabase client outside its `try`. The env vars it reads are injected by Supabase, but a missing one would skip the function's own 500 response.
-  - `PURGE_BATCH_SIZE` is 50 per day. A larger backlog drains oldest-first over several days. For the same reason, the live purge check could miss its own user if more than 50 older accounts were ever due on staging.
+  - `PURGE_BATCH_SIZE` is 50 per run, and the run is hourly since 050 (this note predates it, when it was daily). A larger backlog drains oldest-first over several runs. For the same reason, the live purge check could miss its own user if more than 50 older accounts were ever due on staging.
   - pg_net holds the outbound request, including the `x-purge-secret` header, in `net.http_request_queue` until it is sent. The secret commands in the runbook can land in shell or SQL-editor history. The endpoint has no rate limit; the 256-bit secret is its protection.
 - From the PR 3 chunk 1 review (no CRITICAL or HIGH):
   - `isDeletionDatePassed` treats an unparseable date as not passed, and `formatDeletionDate` renders "Invalid Date". Both only get values from `get_my_profile()` or the RPC, but failing closed (passed, and an empty string) would be safer.
