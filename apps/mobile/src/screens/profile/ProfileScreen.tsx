@@ -188,7 +188,7 @@ export function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: signOut },
+      { text: 'Log Out', style: 'destructive', onPress: () => void signOut() },
     ]);
   };
 
@@ -198,6 +198,10 @@ export function ProfileScreen() {
 
   const handleOpenChangePassword = () => {
     navigation.navigate('ChangePassword');
+  };
+
+  const handleOpenDeleteAccount = () => {
+    navigation.navigate('DeleteAccount');
   };
 
   const handleMenuPress = () => {
@@ -393,6 +397,8 @@ export function ProfileScreen() {
               style={styles.menuButton}
               onPress={handleMenuPress}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Open menu"
             >
               <Ionicons name="menu" size={22} color={colors.text.primary} />
             </TouchableOpacity>
@@ -419,6 +425,16 @@ export function ProfileScreen() {
                         onPress={() => { setMenuOpen(false); handleOpenChangePassword(); }}
                       >
                         <Text style={styles.menuDropdownText}>Change Password</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.menuDropdownItem}
+                        onPress={() => {
+                          setMenuOpen(false);
+                          handleOpenDeleteAccount();
+                        }}
+                      >
+                        <Text style={styles.menuDropdownText}>Delete Account</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity

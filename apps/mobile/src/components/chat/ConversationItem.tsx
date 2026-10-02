@@ -18,6 +18,7 @@ import { formatPublicName, formatRelativeTime } from '@nepally/shared';
 
 interface ConversationItemProps {
   otherUserName: string;
+  otherUserAvailable: boolean;
   otherUserPhoto?: string | null;
   otherUserTrustLevel?: number;
   lastMessage: string | null;
@@ -28,6 +29,7 @@ interface ConversationItemProps {
 
 export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
   otherUserName,
+  otherUserAvailable,
   otherUserPhoto,
   otherUserTrustLevel,
   lastMessage,
@@ -70,20 +72,25 @@ export const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
       >
         {/* Avatar */}
         <View style={styles.avatarContainer}>
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handleAvatarPress(e.nativeEvent.pageX, e.nativeEvent.pageY);
-            }}
-            activeOpacity={0.7}
-          >
-            <Avatar
-              name={publicName}
-              photoUrl={otherUserPhoto}
-              trustLevel={otherUserTrustLevel}
-              size="medium"
-            />
-          </TouchableOpacity>
+          {otherUserAvailable ? (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleAvatarPress(e.nativeEvent.pageX, e.nativeEvent.pageY);
+              }}
+              activeOpacity={0.7}
+            >
+              <Avatar
+                name={publicName}
+                photoUrl={otherUserPhoto}
+                trustLevel={otherUserTrustLevel}
+                size="medium"
+              />
+            </TouchableOpacity>
+          ) : (
+            // A pending or purged partner has no profile to open (spec §5.6).
+            <Avatar name={publicName} size="medium" />
+          )}
         </View>
 
         {/* Content */}

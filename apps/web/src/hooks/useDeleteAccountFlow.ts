@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import type { User } from '@supabase/supabase-js';
 import {
-  PROFILE_NOT_FOUND,
   REAUTH_REQUIRED,
-  SUPPORT_EMAIL,
   formatDeletionDate,
   getAccountDeletionErrorCode,
   getAuthErrorMessage,
+  getDeleteAccountFailureMessage,
+  getReauthPasswordErrorMessage,
   getScheduledDeletionDate,
   isRecentSignIn,
   logClientEvent,
@@ -21,7 +21,6 @@ import { useAuth } from './useAuth';
 /** Holds the member's user id across the Google round trip. */
 export const REAUTH_USER_KEY = 'nepally.deleteAccount.userId';
 
-const WRONG_PASSWORD = 'That password is incorrect.';
 const CONFIRM_AGAIN = "Please confirm it's you again.";
 const STORAGE_BLOCKED =
   "This browser is blocking site storage, so we can't confirm it's you with Google. Allow site data for Nepally, or try another browser.";
@@ -57,19 +56,6 @@ function initialStep(returnedFromGoogle: boolean, userId: string): DeleteAccount
   const expected = readReauthUserId();
   if (expected === null) return 'explain';
   return expected === userId ? 'final' : 'wrong-account';
-}
-
-function passwordErrorMessage(error: Error): string {
-  return (error as { code?: unknown }).code === 'invalid_credentials'
-    ? WRONG_PASSWORD
-    : getAuthErrorMessage(error, 'log-in');
-}
-
-function deleteFailureMessage(code: unknown, error: Error | null | undefined): string {
-  if (code === PROFILE_NOT_FOUND) {
-    return `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`;
-  }
-  return error?.message ?? "Couldn't delete your account. Please try again.";
 }
 
 /** State and handlers for the account deletion flow (spec §5.2). */
@@ -146,7 +132,7 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
         context: { platform: 'web', method: 'password' },
         error: result.error,
       });
-      setError(passwordErrorMessage(result.error));
+      setError(getReauthPasswordErrorMessage(result.error));
       return;
     }
     setPassword('');
@@ -204,7 +190,7 @@ export function useDeleteAccountFlow(): DeleteAccountFlowState {
         context: { platform: 'web' },
         error: result.error,
       });
-      setError(deleteFailureMessage(code, result.error));
+      setError(getDeleteAccountFailureMessage(result.error));
       return;
     }
     const scheduled = result.data;

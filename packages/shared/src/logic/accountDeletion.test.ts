@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   formatDeletionDate,
   getLastSignInAt,
+  getReauthPasswordErrorMessage,
   getReauthMethod,
   getScheduledDeletionDate,
   hasGoogleIdentity,
   isDeletionDatePassed,
   isRecentSignIn,
+  WRONG_PASSWORD_MESSAGE,
 } from './accountDeletion';
+import { CONNECTION_ERROR_MESSAGE } from './authErrors';
 
 function base64Url(value: object): string {
   return btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -107,5 +110,26 @@ describe('deletion dates', () => {
     expect(isDeletionDatePassed('2026-10-01T11:59:59.000Z', NOW_MS)).toBe(true);
     expect(isDeletionDatePassed('2026-10-01T12:00:00.000Z', NOW_MS)).toBe(true);
     expect(isDeletionDatePassed('2026-10-01T12:00:01.000Z', NOW_MS)).toBe(false);
+  });
+});
+
+describe('getReauthPasswordErrorMessage', () => {
+  it('names a wrong password', () => {
+    expect(getReauthPasswordErrorMessage({ code: 'invalid_credentials' })).toBe(
+      WRONG_PASSWORD_MESSAGE
+    );
+    expect(WRONG_PASSWORD_MESSAGE).toBe('That password is incorrect.');
+  });
+
+  it('says so when Nepally could not be reached', () => {
+    expect(getReauthPasswordErrorMessage({ name: 'AuthRetryableFetchError', status: 0 })).toBe(
+      CONNECTION_ERROR_MESSAGE
+    );
+  });
+
+  it('falls back to the log-in sentence, never the raw message', () => {
+    expect(getReauthPasswordErrorMessage(new Error('raw auth message'))).toBe(
+      "Couldn't log you in. Please try again."
+    );
   });
 });

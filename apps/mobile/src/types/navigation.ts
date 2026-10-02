@@ -48,6 +48,7 @@ export type ProfileStackParamList = {
   ProfileView: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
+  DeleteAccount: undefined;
 };
 
 /**
@@ -83,6 +84,8 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserTrustLevel: number;
     otherUserPhotoUrl?: string | null;
+    /** False when the partner is pending deletion or purged (getConversations). Absent means available. */
+    otherUserAvailable?: boolean;
     /** Text the message box starts with, e.g. which listing a buyer is asking about. Not sent until the member taps Send. */
     initialDraft?: string;
   };
@@ -131,6 +134,8 @@ export type RootStackParamList = {
   Onboarding: NavigatorScreenParams<OnboardingStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
   Chat: NavigatorScreenParams<ChatStackParamList>;
+  /** A member pending deletion sees only this (RootNavigator's gate). */
+  AccountRestore: undefined;
 };
 
 /* eslint-disable @typescript-eslint/no-namespace */

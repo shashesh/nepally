@@ -1,0 +1,59 @@
+appId: us.nepally.app
+---
+# Delete the E2E account, sign back in, restore it. It ends restored.
+# A run that stops half way leaves the shared E2E account pending, and the
+# other flows then fail at sign-in. Running this flow again restores it
+# first, so it heals itself. It doesn't use login-helper.yaml: the helper
+# waits for "Feed", which a pending account never reaches.
+- launchApp:
+    clearState: true
+
+- tapOn: 'Log In'
+- assertVisible: 'sign in with your email'
+- tapOn:
+    text: 'Email'
+- inputText: 'e2e-test@nusa.app'
+- tapOn:
+    text: 'Password'
+- inputText: 'Password123!'
+- tapOn: 'Log In'
+- extendedWaitUntil:
+    notVisible: 'sign in with your email'
+    timeout: 15000
+# Left pending by an earlier run that stopped half way: restore it first.
+- runFlow:
+    when:
+      visible: 'Your account is scheduled for deletion'
+    commands:
+      - tapOn: 'Restore my account'
+- assertVisible:
+    id: 'create-post-fab'
+
+# Profile → menu → Delete Account
+- tapOn: 'Profile'
+- tapOn: 'Open menu'
+- tapOn: 'Delete Account'
+- assertVisible: 'Delete your account'
+- assertVisible: 'Signed in as e2e-test@nusa.app'
+
+# Just signed in, so there is no password step.
+- tapOn: 'Continue'
+- assertVisible: 'Delete your account?'
+- tapOn: 'Delete my account'
+- assertVisible: 'Account scheduled for deletion'
+- tapOn: 'OK'
+
+# Signed out. Signing back in shows the restore screen.
+- tapOn: 'Log In'
+- assertVisible: 'sign in with your email'
+- tapOn:
+    text: 'Email'
+- inputText: 'e2e-test@nusa.app'
+- tapOn:
+    text: 'Password'
+- inputText: 'Password123!'
+- tapOn: 'Log In'
+- assertVisible: 'Your account is scheduled for deletion'
+- tapOn: 'Restore my account'
+- assertVisible:
+    id: 'create-post-fab'

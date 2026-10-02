@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ApiError, toApiError } from '../utils/apiError';
+import { SUPPORT_EMAIL } from '../constants/appConfig';
 import {
   DELETION_IN_PROGRESS,
   PROFILE_NOT_FOUND,
@@ -19,6 +20,12 @@ const SENTENCES: Record<AccountDeletionErrorCode, string> = {
   [DELETION_IN_PROGRESS]: 'Your account is already being deleted.',
   [PROFILE_NOT_FOUND]: "We couldn't find your profile.",
 };
+
+/** Shown when a deletion request fails in a way the member can only retry. */
+export const DELETE_ACCOUNT_FAILED = "Couldn't delete your account. Please try again.";
+
+/** Shown when a restore fails in a way the member can only retry. */
+export const RESTORE_ACCOUNT_FAILED = "Couldn't restore your account. Please try again.";
 
 function isAccountDeletionErrorCode(value: unknown): value is AccountDeletionErrorCode {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(SENTENCES, value);
@@ -38,6 +45,17 @@ function toAccountDeletionError(raw: unknown, fallback: string): Error {
 export function getAccountDeletionErrorCode(error: unknown): AccountDeletionErrorCode | null {
   if (!(error instanceof ApiError)) return null;
   return isAccountDeletionErrorCode(error.code) ? error.code : null;
+}
+
+/**
+ * What the delete flow says when requestAccountDeletion fails, other than
+ * REAUTH_REQUIRED (which sends the member back to confirm it's them). Never
+ * a raw error message.
+ */
+export function getDeleteAccountFailureMessage(error: unknown): string {
+  return getAccountDeletionErrorCode(error) === PROFILE_NOT_FOUND
+    ? `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`
+    : DELETE_ACCOUNT_FAILED;
 }
 
 export interface AccountDeletionResult {
@@ -60,7 +78,7 @@ export async function requestAccountDeletion(
     return { data };
   } catch (error) {
     return {
-      error: toAccountDeletionError(error, "Couldn't delete your account. Please try again."),
+      error: toAccountDeletionError(error, DELETE_ACCOUNT_FAILED),
     };
   }
 }
@@ -73,7 +91,7 @@ export async function cancelAccountDeletion(supabase: SupabaseClient): Promise<{
     return {};
   } catch (error) {
     return {
-      error: toAccountDeletionError(error, "Couldn't restore your account. Please try again."),
+      error: toAccountDeletionError(error, RESTORE_ACCOUNT_FAILED),
     };
   }
 }

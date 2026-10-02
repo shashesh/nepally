@@ -22,14 +22,15 @@ import {
   logClientEvent,
 } from '@nepally/shared';
 import { AuthContext } from '../../contexts/AuthContext';
-import { signInWithGoogle } from '../../services/auth/googleAuth';
+import { isGoogleSignInCancelled, signInWithGoogle } from '../../services/auth/googleAuth';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing, heights, borderRadius } from '../../styles/spacing';
 import { TextButton } from '../../components/buttons/TextButton';
 
 export function SignupMethodScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'SignupMethod'>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<OnboardingStackParamList, 'SignupMethod'>>();
   const { refreshUser } = useContext(AuthContext);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -40,7 +41,7 @@ export function SignupMethodScreen() {
 
       if (result.error) {
         // Cancelled by user — don't show an alert
-        if (result.error.message === 'Google sign-in was cancelled') return;
+        if (isGoogleSignInCancelled(result.error)) return;
         throw result.error;
       }
 
@@ -51,14 +52,18 @@ export function SignupMethodScreen() {
       const fullName = result.user.full_name || 'Google User';
 
       if (!email) {
-        Alert.alert('Error', 'No email address returned from Google. Please try again or use email signup.');
+        Alert.alert(
+          'Error',
+          'No email address returned from Google. Please try again or use email signup.'
+        );
         return;
       }
 
       // Create profile if new user (will fail silently for existing users)
       const profileResult = await createUserProfile(supabase, userId, email, fullName);
       if (profileResult.error) {
-        const isDuplicate = profileResult.error.message?.includes('duplicate') ||
+        const isDuplicate =
+          profileResult.error.message?.includes('duplicate') ||
           profileResult.error.message?.includes('already exists');
         if (!isDuplicate) {
           console.error('Profile creation error:', profileResult.error);
@@ -103,9 +108,7 @@ export function SignupMethodScreen() {
       <View style={styles.content}>
         {/* Header */}
         <Text style={styles.title}>Create Your Account</Text>
-        <Text style={styles.subtitle}>
-          Choose your preferred signup method
-        </Text>
+        <Text style={styles.subtitle}>Choose your preferred signup method</Text>
 
         {/* Signup Options */}
         <View style={styles.optionsContainer}>
@@ -144,9 +147,7 @@ export function SignupMethodScreen() {
         {/* Privacy Reassurance */}
         <View style={styles.reassurance}>
           <Ionicons name="shield-checkmark" size={16} color={colors.success} />
-          <Text style={styles.reassuranceText}>
-            We never share your personal info
-          </Text>
+          <Text style={styles.reassuranceText}>We never share your personal info</Text>
         </View>
 
         {/* Spacer */}

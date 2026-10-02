@@ -5312,34 +5312,2678 @@ git commit -m "docs: re-auth by provider sign-in; the account deletion component
 
 ## PR 4 — Mobile
 
-Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 merged, for the shared code.
+Branch `feat/account-deletion-mobile`, from master after #114 (PR 3) merged on 2026-10-01. 048 to 052 are applied on staging.
 
-**Tasks:**
+**Found at the start of PR 4 (2026-10-01):**
 
-- **4.1 `DeleteAccountScreen`.**
-  - `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx` (+ test) has the same three steps as web.
-  - Password re-auth uses `pauseAuthListener` / `resumeAuthListener` around `signInWithPassword`, the way `ChangePasswordScreen.tsx:66-100` does.
-  - Google re-auth calls `services/auth/googleAuth.ts` with `prompt: 'select_account'`, then compares the returned session's user id with the one from before. `googleAuth.ts` exchanges the code straight into the live session. So on a mismatch, sign that session out and send the member to sign in again, as on web.
-  - As on web (PR 3, after the Copilot review): the password step also offers Google when `hasGoogleIdentity(user)`, and gives `SUPPORT_EMAIL` for a forgotten password. Explain and the final step say "Signed in as _email_".
-  - `profile_not_found` shows the `SUPPORT_EMAIL` fallback.
-  - Mobile `AuthContext.signOut` ignores Supabase's `{ error }` (`AuthContext.tsx:210-219`), and that's fine. supabase-js removes the local session even when revoking it on the server fails (PR 3, "Found at the start of PR 3"), so it needs no local fallback.
-  - Every async handler checks `navigation.isFocused()` before navigating or alerting, the same guard #109 added to chat starts.
-  - On success it shows an alert, "Your account will be deleted on _date_. Sign in before then to restore it.", then signs out and runs `clearAllData()`.
-  - Tests cover every state in spec §7, following the golden rules in `apps/mobile/CLAUDE.md`.
-- **4.2 Navigation.**
-  - Add `DeleteAccount: undefined` to the profile stack's param list in `apps/mobile/src/types/navigation.ts`, and the screen to `ProfileNavigator.tsx`. Export both new screens from `screens/profile/index.ts`, because `ProfileNavigator` imports from that barrel.
-  - Add `AccountRestore: undefined` to `RootStackParamList` for the gate in 4.4. `RootNavigator` imports `AccountRestoreScreen` from its own file, not the barrel, which would pull in every profile screen (`RootNavigator.test.tsx:12-30` avoids that on purpose).
-  - Add a "Delete account" item to the Profile dropdown menu in `ProfileScreen.tsx:411-428`, after Change Password. Update `ProfileScreen.test.tsx`.
-- **4.3 `AccountRestoreScreen`.** `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx` (+ test): **Restore my account** calls `cancelAccountDeletion` then refreshes the profile; **Keep deletion and sign out** signs out. After the date, or when `getAccountDeletionErrorCode(error)` is `DELETION_IN_PROGRESS`, it shows "Your account is being deleted" with only Sign out, as on web.
-- **4.4 The `RootNavigator` gate.** When `user?.deletion_scheduled_for` is set, show `AccountRestoreScreen` in place of onboarding and the main tabs. Update `RootNavigator.test.tsx`.
-  - Mobile `AuthContext` declares its own `User` interface and copies a fixed list of fields from `getMyProfile()` (`AuthContext.tsx:13` and `:105-121`). So the column is loaded but dropped. Add it to both, or switch the context to the shared `User`.
-  - Push: `AuthContext` calls `registerPushTokenForUser` on sign-in, before `refreshUser()` loads the profile. Move registration after the profile loads, skip it for a pending account, and register after a successful restore. Update `AuthContext.test.tsx`.
-- **4.5 The chat fallback.** In `components/chat/ConversationItem.tsx` and `screens/chat/MessageThreadScreen.tsx` (and their tests), `other_user_available: false` shows the default avatar, and doesn't open a profile. The name is already `UNAVAILABLE_ACCOUNT_NAME`, and `formatPublicName` passes it through unchanged (PR 3, Task 3.4). These components get the partner only through props and route params, so pass the flag through both. A purged partner (`other_user_id: null`) hides the composer. PR 3's null guards already hide Block.
-  - `NotificationsScreen.tsx:165-175` opens `MessageThread` straight from a notification, with `otherUserName: target.senderName ?? notif.title`, and the thread never refetches. So a pending partner's real name, photo, Block and Conversation options all show. Resolve the partner through `getConversations` (in the handler or the thread screen) and use its `other_user_name`, `other_user_id`, `other_user_photo` and `other_user_available`. Found in the PR 3 chunk 2 review.
-  - Hide Block for an unavailable (pending) partner too, once the flag reaches the thread. Blocking a hidden member does no harm, but "Block Unavailable account?" reads oddly.
-- **4.6 Gate, review, draft PR.** Then run a Maestro flow once on a dev build: sign in, delete, sign in again, restore. Add it under `apps/mobile/.maestro/` if the flow is stable.
+- **Restore needs the reloaded profile.** Mobile `refreshUser` resolves with nothing, and web's restore screen checks the profile `refreshUser` returns. Task 4.3 makes mobile's resolve with the profile, or null.
+- **The wrong-account sign-out must stay on this device.** Mobile `AuthContext.signOut` always revokes every session (supabase-js defaults to `scope: 'global'`). After a Google slip, the session on the device belongs to someone else's account, and a global sign-out would end their sessions on their own devices too. Task 4.3 gives `signOut` a `scope`, and the flow signs that account out with `'local'`, as web does.
+- **`googleAuth.ts` takes no options.** Task 4.2 adds `selectAccount`, which sends `prompt=select_account`, the same as web's `signInWithGoogle`. Its "cancelled" check is a string compare in `SignupMethodScreen`, so Task 4.2 also exports `isGoogleSignInCancelled`.
+- **The exchange can't be undone.** `googleAuth.ts` exchanges the code straight into the live session, and the RPC deletes whichever account the JWT names. So after Google returns, the flow reads the session (not Google's answer). Anything but the member's own user id, including no session at all, is treated as the wrong account: it signs out locally and deletes nothing.
+- **The `isFocused` guard has nothing to guard.** The flow and the restore screen show their errors inline, not as alerts, and never navigate from an async handler. Their only two alerts come after a sign-out, which replaces the whole tree, so those must show whatever was focused. Unmount guards (`mountedRef`) still protect every `setState` after an `await` (`apps/mobile/CLAUDE.md`, rule 7).
+- **Push registers on the session, before the profile.** Both the mount effect and the auth listener call `registerPushTokenForUser(session.user.id)`. Task 4.3 moves the call into `refreshUser`, after the profile loads, and skips it while `deletion_scheduled_for` is set. Restoring calls `refreshUser`, so the token comes back then.
+- **The failure sentences belong in shared.** Web's flow keeps "That password is incorrect." and the `profile_not_found` sentence in its own hook. Task 4.1 moves them into `@nepally/shared` for both apps (the root `CLAUDE.md`: apps never redefine shared constants). The delete failure helper also stops showing a raw `Error` message, which closes that PR 3 follow-up for the delete flow.
+- **The message thread can't refetch its partner cheaply.** Every entry point except notifications passes a partner who is visible to the member. So Task 4.10 resolves the partner in the notification handler, through `getConversations`, and leaves the thread to its route params.
+- **Tests that read the clock mock `useNow`.** `useNow` runs an interval, which would put the restore screen's tests on fake timers (rules 1–4). A fixed `mockNow()` keeps them on `render` + `waitFor` (rule 6).
 
-**Acceptance:** on a device, a member can delete their account with a password and with Google. Signing back in shows the restore screen, and Restore works. Chats with a pending member show "Unavailable account".
+**How this PR runs:** three chunks. Each ends with its gate and one `code-reviewer`; chunk 2 also gets a `security-reviewer` for the re-auth paths. Commit after every task. Run one test file with `npx jest <path>` from `apps/mobile` (or `npx vitest run <path>` from `packages/shared`; web Vitest from an uppercase `C:\…` working directory). Use `npx prettier --write <file>` on each changed file, never `npm run format`.
+
+| Chunk | Tasks    | Theme                                                                                              |
+| ----- | -------- | -------------------------------------------------------------------------------------------------- |
+| 1     | 4.1–4.5  | Plumbing: shared failure sentences, the Google chooser, `AuthContext`, the restore screen and gate |
+| 2     | 4.6–4.7  | The delete flow, its route and the Profile menu entry                                              |
+| 3     | 4.8–4.11 | Chat fallback, notifications, docs and the Maestro flow, ship                                      |
+
+### Chunk 1: plumbing
+
+### Task 4.1: The flow's failure sentences in shared
+
+**Files:**
+
+- Modify: `packages/shared/src/api/accountDeletion.ts`, `packages/shared/src/logic/accountDeletion.ts`
+- Modify: `apps/web/src/hooks/useDeleteAccountFlow.ts`
+- Test: `packages/shared/src/api/accountDeletion.test.ts`, `packages/shared/src/logic/accountDeletion.test.ts`
+
+- [x] **Step 1: Write the failing tests.** In `packages/shared/src/logic/accountDeletion.test.ts`, add `getReauthPasswordErrorMessage` and `WRONG_PASSWORD_MESSAGE` to the import from `./accountDeletion`, add `import { CONNECTION_ERROR_MESSAGE } from './authErrors';`, and append:
+
+```ts
+describe('getReauthPasswordErrorMessage', () => {
+  it('names a wrong password', () => {
+    expect(getReauthPasswordErrorMessage({ code: 'invalid_credentials' })).toBe(
+      WRONG_PASSWORD_MESSAGE
+    );
+    expect(WRONG_PASSWORD_MESSAGE).toBe('That password is incorrect.');
+  });
+
+  it('says so when Nepally could not be reached', () => {
+    expect(getReauthPasswordErrorMessage({ name: 'AuthRetryableFetchError', status: 0 })).toBe(
+      CONNECTION_ERROR_MESSAGE
+    );
+  });
+
+  it('falls back to the log-in sentence, never the raw message', () => {
+    expect(getReauthPasswordErrorMessage(new Error('raw auth message'))).toBe(
+      "Couldn't log you in. Please try again."
+    );
+  });
+});
+```
+
+In `packages/shared/src/api/accountDeletion.test.ts`, add `DELETE_ACCOUNT_FAILED`, `RESTORE_ACCOUNT_FAILED` and `getDeleteAccountFailureMessage` to the import from `./accountDeletion`, add `import { SUPPORT_EMAIL } from '../constants/appConfig';` and `import { PROFILE_NOT_FOUND } from '../constants/accountDeletion';` (skip either if the file already imports it), and append:
+
+```ts
+describe('getDeleteAccountFailureMessage', () => {
+  it('sends a member with no profile row to support', () => {
+    const message = getDeleteAccountFailureMessage(
+      new ApiError("We couldn't find your profile.", { code: PROFILE_NOT_FOUND })
+    );
+    expect(message).toBe(
+      `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`
+    );
+  });
+
+  it('never shows a raw error message', () => {
+    expect(getDeleteAccountFailureMessage(new Error('relation "users" does not exist'))).toBe(
+      DELETE_ACCOUNT_FAILED
+    );
+    expect(getDeleteAccountFailureMessage(undefined)).toBe(DELETE_ACCOUNT_FAILED);
+  });
+});
+
+describe('failure sentences', () => {
+  it('are the fallbacks the RPC wrappers use', async () => {
+    const failing = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { code: 'XX000', message: 'boom' } }),
+    } as unknown as SupabaseClient;
+
+    expect((await requestAccountDeletion(failing)).error?.message).toBe(DELETE_ACCOUNT_FAILED);
+    expect((await cancelAccountDeletion(failing)).error?.message).toBe(RESTORE_ACCOUNT_FAILED);
+  });
+});
+```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd packages/shared && npx vitest run src/logic/accountDeletion.test.ts src/api/accountDeletion.test.ts`
+Expected: FAIL. The new exports don't exist.
+
+- [x] **Step 3: Add the password sentence** to `packages/shared/src/logic/accountDeletion.ts`. Add `import { getAuthErrorMessage } from './authErrors';` below the existing import, and append:
+
+```ts
+/** What a wrong password says on the delete flow's confirm step. */
+export const WRONG_PASSWORD_MESSAGE = 'That password is incorrect.';
+
+/** What a failed password re-auth tells the member: a wrong password by name, anything else as log-in says it. */
+export function getReauthPasswordErrorMessage(error: unknown): string {
+  const code =
+    typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+  return code === 'invalid_credentials'
+    ? WRONG_PASSWORD_MESSAGE
+    : getAuthErrorMessage(error, 'log-in');
+}
+```
+
+- [x] **Step 4: Add the delete sentences** to `packages/shared/src/api/accountDeletion.ts`. Add `import { SUPPORT_EMAIL } from '../constants/appConfig';` to the imports. Below `SENTENCES`, add:
+
+```ts
+/** Shown when a deletion request fails in a way the member can only retry. */
+export const DELETE_ACCOUNT_FAILED = "Couldn't delete your account. Please try again.";
+
+/** Shown when a restore fails in a way the member can only retry. */
+export const RESTORE_ACCOUNT_FAILED = "Couldn't restore your account. Please try again.";
+```
+
+In `requestAccountDeletion` and `cancelAccountDeletion`, replace the two literal fallbacks with `DELETE_ACCOUNT_FAILED` and `RESTORE_ACCOUNT_FAILED`. After `getAccountDeletionErrorCode`, add:
+
+```ts
+/**
+ * What the delete flow says when requestAccountDeletion fails, other than
+ * REAUTH_REQUIRED (which sends the member back to confirm it's them). Never
+ * a raw error message.
+ */
+export function getDeleteAccountFailureMessage(error: unknown): string {
+  return getAccountDeletionErrorCode(error) === PROFILE_NOT_FOUND
+    ? `We couldn't delete this account here. Email ${SUPPORT_EMAIL} from your account's email address and we'll delete it for you.`
+    : DELETE_ACCOUNT_FAILED;
+}
+```
+
+- [x] **Step 5: Run the shared tests.**
+
+Run: `cd packages/shared && npx vitest run src/logic/accountDeletion.test.ts src/api/accountDeletion.test.ts`
+Expected: PASS.
+
+- [x] **Step 6: Web uses them.** In `apps/web/src/hooks/useDeleteAccountFlow.ts`:
+  - Delete `WRONG_PASSWORD`, `passwordErrorMessage` and `deleteFailureMessage`.
+  - In `handlePassword`, `setError(passwordErrorMessage(result.error))` becomes `setError(getReauthPasswordErrorMessage(result.error));`.
+  - In `handleDelete`, `setError(deleteFailureMessage(code, result.error))` becomes `setError(getDeleteAccountFailureMessage(result.error));`.
+  - In the `@nepally/shared` import, drop `PROFILE_NOT_FOUND` and `SUPPORT_EMAIL` and add `getDeleteAccountFailureMessage` and `getReauthPasswordErrorMessage`. Keep `getAuthErrorMessage`: `handleGoogle` still uses it.
+
+- [x] **Step 7: Run the web flow's tests.** The sentences are unchanged, so they pass as they are.
+
+Run (from an uppercase `C:\…` path): `cd apps/web && npx vitest run src/components/account/DeleteAccountFlow.test.tsx`
+Expected: PASS.
+
+- [x] **Step 8: Commit.**
+
+```bash
+git add packages/shared/src/api/accountDeletion.ts packages/shared/src/api/accountDeletion.test.ts packages/shared/src/logic/accountDeletion.ts packages/shared/src/logic/accountDeletion.test.ts apps/web/src/hooks/useDeleteAccountFlow.ts
+git commit -m "refactor(shared): the delete flow's failure sentences, for both apps"
+```
+
+### Task 4.2: Google's account chooser on mobile
+
+**Files:**
+
+- Modify: `apps/mobile/src/services/auth/googleAuth.ts`, `apps/mobile/src/screens/onboarding/SignupMethodScreen.tsx`
+- Test: `apps/mobile/src/services/auth/googleAuth.test.ts`
+
+- [x] **Step 1: Write the failing tests.** In `googleAuth.test.ts`, import `isGoogleSignInCancelled` along with the other two, and add inside the `describe`:
+
+```ts
+it('asks Google for its account chooser when selectAccount is set', async () => {
+  mockAuth.signInWithOAuth.mockResolvedValue({
+    data: { url: 'https://accounts.google.com/oauth?state=abc' },
+    error: null,
+  });
+  mockOpenAuthSession.mockResolvedValue({ type: 'cancel' });
+
+  await signInWithGoogle({ selectAccount: true });
+
+  expect(mockAuth.signInWithOAuth).toHaveBeenCalledWith({
+    provider: 'google',
+    options: {
+      redirectTo: 'nepally://auth/callback',
+      skipBrowserRedirect: true,
+      queryParams: { prompt: 'select_account' },
+    },
+  });
+});
+
+it('tells a cancelled sign-in apart from a failed one', async () => {
+  mockAuth.signInWithOAuth.mockResolvedValue({
+    data: { url: 'https://accounts.google.com/oauth?state=abc' },
+    error: null,
+  });
+  mockOpenAuthSession.mockResolvedValue({ type: 'cancel' });
+
+  const cancelled = await signInWithGoogle();
+
+  expect(isGoogleSignInCancelled(cancelled.error)).toBe(true);
+  expect(isGoogleSignInCancelled(new Error('Invalid OAuth callback URL'))).toBe(false);
+  expect(isGoogleSignInCancelled(undefined)).toBe(false);
+});
+```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd apps/mobile && npx jest src/services/auth/googleAuth.test.ts`
+Expected: FAIL. `isGoogleSignInCancelled` is not exported, and the options carry no `queryParams`.
+
+- [x] **Step 3: Add the option.** In `googleAuth.ts`, above `signInWithGoogle`:
+
+```ts
+/** What signInWithGoogle returns when the member closes Google's sign-in. */
+const GOOGLE_SIGN_IN_CANCELLED = 'Google sign-in was cancelled';
+
+export interface GoogleSignInOptions {
+  /** Make Google show its account chooser even with one account signed in, as re-auth needs. */
+  selectAccount?: boolean;
+}
+```
+
+Change the signature to `export async function signInWithGoogle(options: GoogleSignInOptions = {}): Promise<GoogleAuthResult> {`. In the `signInWithOAuth` options, after `skipBrowserRedirect: true,`, add:
+
+```ts
+        ...(options.selectAccount ? { queryParams: { prompt: 'select_account' } } : {}),
+```
+
+Replace `new Error('Google sign-in was cancelled')` with `new Error(GOOGLE_SIGN_IN_CANCELLED)`. After `signInWithGoogle`, add:
+
+```ts
+/** True when the member closed Google's sign-in without finishing it. */
+export function isGoogleSignInCancelled(error: Error | undefined): boolean {
+  return error?.message === GOOGLE_SIGN_IN_CANCELLED;
+}
+```
+
+- [x] **Step 4: Use it in sign-up.** In `SignupMethodScreen.tsx`, import `isGoogleSignInCancelled` with `signInWithGoogle`, and replace `if (result.error.message === 'Google sign-in was cancelled') return;` with `if (isGoogleSignInCancelled(result.error)) return;`.
+
+- [x] **Step 5: Run the tests.**
+
+Run: `cd apps/mobile && npx jest src/services/auth/googleAuth.test.ts src/screens/onboarding`
+Expected: PASS.
+
+- [x] **Step 6: Commit.**
+
+```bash
+git add apps/mobile/src/services/auth/googleAuth.ts apps/mobile/src/services/auth/googleAuth.test.ts apps/mobile/src/screens/onboarding/SignupMethodScreen.tsx
+git commit -m "feat(mobile): Google sign-in can ask for the account chooser"
+```
+
+### Task 4.3: `AuthContext`: the deletion date, a reloaded profile, sign-out scope, push after the profile
+
+**Files:**
+
+- Modify: `apps/mobile/src/contexts/AuthContext.tsx`
+- Test: `apps/mobile/src/contexts/AuthContext.test.tsx`
+
+- [x] **Step 1: Write the failing tests.** Append inside the `describe('AuthContext', …)` block of `AuthContext.test.tsx`:
+
+```tsx
+const SCHEDULED_FOR = '2026-10-30T12:00:00.000Z';
+
+function signedInAs(profile: Record<string, unknown> | undefined) {
+  mockAuth.getSession.mockResolvedValue({
+    data: { session: { user: { id: 'user-1', email: 'test@nusa.com' } } },
+    error: null,
+  } as GetSessionResult);
+  mockAuth.getUser.mockResolvedValue({
+    data: { user: { id: 'user-1' } },
+    error: null,
+  } as GetUserResult);
+  mockGetMyProfile.mockResolvedValue({ data: profile });
+}
+
+function profile(deletionScheduledFor: string | null) {
+  return {
+    id: 'user-1',
+    email: 'test@nusa.com',
+    full_name: 'Test User',
+    trust_level: 1,
+    is_premium: false,
+    deletion_scheduled_for: deletionScheduledFor,
+  };
+}
+
+async function settle() {
+  await act(async () => {});
+  await act(async () => {});
+  await act(async () => {});
+}
+
+it('registers push only once the profile has loaded', async () => {
+  // Signed in, but the profile row isn't there yet (sign-up still creating it).
+  signedInAs(undefined);
+  renderHook(() => React.useContext(AuthContext), { wrapper });
+  await settle();
+
+  expect(mockRegisterForPushNotificationsAsync).not.toHaveBeenCalled();
+});
+
+it('keeps the deletion date, and registers no push for a pending account', async () => {
+  signedInAs(profile(SCHEDULED_FOR));
+  const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+  await settle();
+
+  expect(result.current.user?.deletion_scheduled_for).toBe(SCHEDULED_FOR);
+  expect(mockRegisterForPushNotificationsAsync).not.toHaveBeenCalled();
+});
+
+it('registers push after a restore, and refreshUser resolves with the profile', async () => {
+  signedInAs(profile(SCHEDULED_FOR));
+  const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+  await settle();
+
+  mockGetMyProfile.mockResolvedValue({ data: profile(null) });
+  let refreshed: Awaited<ReturnType<typeof result.current.refreshUser>> = null;
+  await act(async () => {
+    refreshed = await result.current.refreshUser();
+  });
+
+  expect(refreshed).toEqual(
+    expect.objectContaining({ id: 'user-1', deletion_scheduled_for: null })
+  );
+  expect(result.current.user?.deletion_scheduled_for).toBeNull();
+  expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+  expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledWith(supabase, 'user-1');
+});
+
+it('refreshUser resolves with null when nobody is signed in', async () => {
+  mockAuth.getUser.mockResolvedValue({
+    data: { user: null },
+    error: null,
+  } as unknown as GetUserResult);
+  const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+  await settle();
+
+  let refreshed: Awaited<ReturnType<typeof result.current.refreshUser>> | 'unset' = 'unset';
+  await act(async () => {
+    refreshed = await result.current.refreshUser();
+  });
+
+  expect(refreshed).toBeNull();
+});
+
+it('signs out every device by default, and only this one when asked', async () => {
+  mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
+  const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+  await settle();
+
+  await act(async () => {
+    await result.current.signOut();
+  });
+  expect(mockAuth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
+
+  await act(async () => {
+    await result.current.signOut({ scope: 'local' });
+  });
+  expect(mockAuth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
+});
+```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd apps/mobile && npx jest src/contexts/AuthContext.test.tsx`
+Expected: FAIL. Push registers before the profile, the date is dropped, `refreshUser` resolves with `undefined`, and `signOut` passes no scope.
+
+- [x] **Step 3: Change `AuthContext.tsx`.**
+  - Export the interface (`export interface User {`), and add after `following_count?: number;`:
+
+    ```ts
+      /** Set while the account is pending deletion (048); RootNavigator then shows only the restore screen. */
+      deletion_scheduled_for?: string | null;
+    ```
+
+  - Above `interface AuthContextType`, add:
+
+    ```ts
+    export interface SignOutOptions {
+      /** 'local' signs out this device only. The default, 'global', ends every session. */
+      scope?: 'global' | 'local';
+    }
+    ```
+
+  - In `AuthContextType`, `signOut` becomes `signOut: (options?: SignOutOptions) => Promise<void>;` and `refreshUser` becomes:
+
+    ```ts
+    /** Reloads the profile. Resolves with it, or null when it couldn't be loaded. */
+    refreshUser: () => Promise<User | null>;
+    ```
+
+  - In the `createContext` default, `refreshUser: async () => {},` becomes `refreshUser: async () => null,`.
+  - Replace `refreshUser` with:
+
+    ```ts
+    const refreshUser = useCallback(async (): Promise<User | null> => {
+      try {
+        const {
+          data: { user: supabaseUser },
+        } = await supabase.auth.getUser();
+
+        if (!supabaseUser) {
+          // Don't clear user here — transient auth operations (e.g. signInWithPassword
+          // during password change) can briefly return null. Only signOut should clear user.
+          return null;
+        }
+
+        // Fetch own profile through the get_my_profile RPC — email, phone,
+        // zip_code are not readable via the REST column grant (migration 036).
+        const { data: userData, error } = await getMyProfile(supabase);
+
+        // Profile not yet created (e.g. auth state fires before createUserProfile completes during signup)
+        if (error) throw error;
+        if (!userData) {
+          setUser(null);
+          return null;
+        }
+
+        const userProfile: User = {
+          id: userData.id,
+          email: userData.email,
+          full_name: userData.full_name,
+          phone: userData.phone,
+          profile_photo: userData.profile_photo || undefined,
+          bio: userData.bio ?? null,
+          zip_code: userData.zip_code,
+          metro_area_id: userData.metro_area_id,
+          trust_level: userData.trust_level,
+          is_premium: userData.is_premium ?? false,
+          hometown_district: userData.hometown_district ?? null,
+          college: userData.college ?? null,
+          years_in_us: userData.years_in_us ?? null,
+          languages: userData.languages ?? [],
+          follower_count: userData.follower_count ?? 0,
+          following_count: userData.following_count ?? 0,
+          deletion_scheduled_for: userData.deletion_scheduled_for ?? null,
+        };
+
+        setUser(userProfile);
+        await saveUserData(userProfile);
+        // Push waits for the profile: an account pending deletion gets no
+        // token until it is restored (spec §6, "Push while pending").
+        if (!userProfile.deletion_scheduled_for) {
+          void registerPushTokenForUser(userProfile.id);
+        }
+        return userProfile;
+      } catch (error) {
+        console.error('Failed to refresh user:', error);
+        return null;
+      }
+    }, [registerPushTokenForUser]);
+    ```
+
+  - In the mount effect, delete `void registerPushTokenForUser(sessionUser.id);` and change its dependency list to `[refreshUser]`.
+  - In the `onAuthStateChange` effect, delete `void registerPushTokenForUser(session.user.id);` and change its dependency list to `[refreshUser]`.
+  - Replace `signOut` with:
+
+    ```ts
+    const signOut = async (options: SignOutOptions = {}) => {
+      try {
+        await supabase.auth.signOut({ scope: options.scope ?? 'global' });
+        await clearAllData();
+        setUser(null);
+        setSupabaseUser(null);
+        pushRegistrationAttemptedUserIdRef.current = null;
+      } catch (error) {
+        console.error('Failed to sign out:', error);
+      }
+    };
+    ```
+
+    supabase-js removes this device's session even when the server call fails, and fires `SIGNED_OUT`, so a failure still ends signed out (PR 3, "Found at the start of PR 3").
+
+- [x] **Step 4: Run the tests.** The existing tests still pass: a profile loads in "loads user profile when session exists", so push registers once.
+
+Run: `cd apps/mobile && npx jest src/contexts/AuthContext.test.tsx`
+Expected: PASS.
+
+- [x] **Step 5: Type-check the callers.** `refreshUser`'s new return type is a widening (callers `await` it and ignore the value), and `signOut`'s parameter is optional.
+
+Run: `npm run type-check --workspace=apps/mobile`
+Expected: exit 0.
+
+- [x] **Step 6: Commit.**
+
+```bash
+git add apps/mobile/src/contexts/AuthContext.tsx apps/mobile/src/contexts/AuthContext.test.tsx
+git commit -m "feat(mobile): AuthContext keeps the deletion date and registers push after the profile"
+```
+
+### Task 4.4: `AccountRestoreScreen`
+
+**Files:**
+
+- Create: `apps/mobile/src/screens/profile/AccountRestoreScreen.tsx`
+- Test: `apps/mobile/src/screens/profile/AccountRestoreScreen.test.tsx`
+
+- [x] **Step 1: Write the failing test** in `AccountRestoreScreen.test.tsx`:
+
+```tsx
+import React from 'react';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import {
+  ApiError,
+  DELETION_IN_PROGRESS,
+  RESTORE_ACCOUNT_FAILED,
+  formatDeletionDate,
+} from '@nepally/shared';
+import { AccountRestoreScreen } from './AccountRestoreScreen';
+
+const mockUseAuth = jest.fn();
+const mockRefreshUser = jest.fn();
+const mockSignOut = jest.fn();
+const mockCancelAccountDeletion = jest.fn();
+const mockLogClientEvent = jest.fn();
+const mockNow = jest.fn();
+
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: { children?: React.ReactNode }) => children,
+}));
+
+jest.mock('../../hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+// A fixed clock: useNow's interval would need fake timers (apps/mobile/CLAUDE.md, rule 1).
+jest.mock('../../hooks/useNow', () => ({
+  useNow: () => mockNow(),
+}));
+
+jest.mock('../../config/supabase', () => ({ supabase: { from: jest.fn() } }));
+
+jest.mock('@nepally/shared', () => ({
+  ...jest.requireActual('@nepally/shared'),
+  cancelAccountDeletion: (...args: unknown[]) => mockCancelAccountDeletion(...args),
+  logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),
+}));
+
+const SCHEDULED_FOR = '2026-10-30T12:00:00.000Z';
+const RELOAD_FAILED = "We couldn't confirm the restore. Close and reopen the app.";
+
+function setScheduledFor(deletionScheduledFor: string | null) {
+  mockUseAuth.mockReturnValue({
+    user: {
+      id: 'user-1',
+      email: 'sita@example.com',
+      full_name: 'Sita Sharma',
+      trust_level: 1,
+      is_premium: false,
+      deletion_scheduled_for: deletionScheduledFor,
+    },
+    refreshUser: mockRefreshUser,
+    signOut: mockSignOut,
+  });
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  setScheduledFor(SCHEDULED_FOR);
+  mockNow.mockReturnValue(new Date('2026-10-01T12:00:00.000Z'));
+  mockCancelAccountDeletion.mockResolvedValue({});
+  mockRefreshUser.mockResolvedValue({ id: 'user-1', deletion_scheduled_for: null });
+  mockSignOut.mockResolvedValue(undefined);
+});
+
+describe('AccountRestoreScreen', () => {
+  it('shows the deletion date, Restore and Keep deletion', () => {
+    const screen = render(<AccountRestoreScreen />);
+
+    expect(screen.getByText('Your account is scheduled for deletion')).toBeTruthy();
+    expect(screen.getByText(new RegExp(formatDeletionDate(SCHEDULED_FOR)))).toBeTruthy();
+    expect(screen.getByText('Restore my account')).toBeTruthy();
+    expect(screen.getByText('Keep deletion and sign out')).toBeTruthy();
+  });
+
+  it('restores the account, then reloads the profile', async () => {
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Restore my account'));
+
+    await waitFor(() => {
+      expect(mockRefreshUser).toHaveBeenCalledTimes(1);
+    });
+    expect(mockCancelAccountDeletion).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(RELOAD_FAILED)).toBeNull();
+  });
+
+  it('says so when the reloaded profile is still scheduled', async () => {
+    mockRefreshUser.mockResolvedValue({ id: 'user-1', deletion_scheduled_for: SCHEDULED_FOR });
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Restore my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText(RELOAD_FAILED)).toBeTruthy();
+    });
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_restore_reload_failed' })
+    );
+  });
+
+  it('says so when the profile could not be reloaded', async () => {
+    mockRefreshUser.mockResolvedValue(null);
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Restore my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText(RELOAD_FAILED)).toBeTruthy();
+    });
+  });
+
+  it('shows the retry sentence, never the raw error, when restoring fails', async () => {
+    mockCancelAccountDeletion.mockResolvedValue({ error: new Error('connection refused') });
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Restore my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText(RESTORE_ACCOUNT_FAILED)).toBeTruthy();
+    });
+    expect(screen.queryByText('connection refused')).toBeNull();
+    expect(mockRefreshUser).not.toHaveBeenCalled();
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_restore_failed' })
+    );
+  });
+
+  it('switches to "being deleted" when the server says the date has passed', async () => {
+    mockCancelAccountDeletion.mockResolvedValue({
+      error: new ApiError('Your account is already being deleted.', { code: DELETION_IN_PROGRESS }),
+    });
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Restore my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Your account is being deleted')).toBeTruthy();
+    });
+    expect(screen.queryByText('Restore my account')).toBeNull();
+    expect(screen.getByText('Sign out')).toBeTruthy();
+  });
+
+  it('offers only Sign out once the date has passed', () => {
+    mockNow.mockReturnValue(new Date('2026-10-31T12:00:00.000Z'));
+    const screen = render(<AccountRestoreScreen />);
+
+    expect(screen.getByText('Your account is being deleted')).toBeTruthy();
+    expect(screen.queryByText('Restore my account')).toBeNull();
+    expect(screen.getByText('Sign out')).toBeTruthy();
+  });
+
+  it('keeps the deletion and signs out', async () => {
+    const screen = render(<AccountRestoreScreen />);
+    fireEvent.press(screen.getByText('Keep deletion and sign out'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+    });
+    expect(mockCancelAccountDeletion).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing for an account with no deletion date', () => {
+    setScheduledFor(null);
+    const screen = render(<AccountRestoreScreen />);
+
+    expect(screen.toJSON()).toBeNull();
+  });
+});
+```
+
+- [x] **Step 2: Run it and watch it fail.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile/AccountRestoreScreen.test.tsx`
+Expected: FAIL. `./AccountRestoreScreen` doesn't exist.
+
+- [x] **Step 3: Write the screen** in `AccountRestoreScreen.tsx`:
+
+```tsx
+import React, { useEffect, useRef, useState } from 'react';
+import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  DELETION_IN_PROGRESS,
+  RESTORE_ACCOUNT_FAILED,
+  cancelAccountDeletion,
+  formatDeletionDate,
+  getAccountDeletionErrorCode,
+  isDeletionDatePassed,
+  logClientEvent,
+} from '@nepally/shared';
+import { supabase } from '../../config/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { useNow } from '../../hooks/useNow';
+import { PrimaryButton } from '../../components/buttons/PrimaryButton';
+import { SecondaryButton } from '../../components/buttons/SecondaryButton';
+import { colors } from '../../styles/colors';
+import { typography } from '../../styles/typography';
+import { spacing } from '../../styles/spacing';
+
+/**
+ * Restore went through, but the reloaded profile is missing or still dated,
+ * so we can't say it's restored. Reopening the app shows the database's answer.
+ */
+const RELOAD_FAILED = "We couldn't confirm the restore. Close and reopen the app.";
+
+type Busy = 'restore' | 'sign-out' | null;
+
+/**
+ * What a member pending deletion sees in place of the app (RootNavigator's
+ * gate, spec §5.5): restore the account, or keep the deletion and sign out.
+ * Once the date has passed, restoring is closed (050) and only Sign out is left.
+ */
+export function AccountRestoreScreen() {
+  const { user, refreshUser, signOut } = useAuth();
+  const scheduledFor = user?.deletion_scheduled_for ?? null;
+  const [busy, setBusy] = useState<Busy>(null);
+  const [error, setError] = useState('');
+  const [refused, setRefused] = useState(false);
+  // useNow ticks, so a screen left open past the date closes Restore by itself.
+  const now = useNow();
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  if (!scheduledFor) return null;
+  const beingDeleted = refused || isDeletionDatePassed(scheduledFor, now.getTime());
+
+  async function handleRestore() {
+    if (busy) return;
+    setBusy('restore');
+    setError('');
+    const result = await cancelAccountDeletion(supabase);
+    if (!mountedRef.current) return;
+    if (result.error) {
+      setBusy(null);
+      if (getAccountDeletionErrorCode(result.error) === DELETION_IN_PROGRESS) {
+        setRefused(true);
+        return;
+      }
+      logClientEvent({
+        event: 'account_restore_failed',
+        context: { platform: 'mobile' },
+        error: result.error,
+      });
+      setError(RESTORE_ACCOUNT_FAILED);
+      return;
+    }
+    const refreshed = await refreshUser();
+    // The gate swaps this screen for the app once the profile has no date.
+    if (!mountedRef.current) return;
+    if (!refreshed || refreshed.deletion_scheduled_for) {
+      setBusy(null);
+      logClientEvent({ event: 'account_restore_reload_failed', context: { platform: 'mobile' } });
+      setError(RELOAD_FAILED);
+    }
+  }
+
+  async function handleSignOut() {
+    if (busy) return;
+    setBusy('sign-out');
+    setError('');
+    // Signing out clears the profile, so the gate shows sign-in in this screen's place.
+    await signOut();
+    if (mountedRef.current) setBusy(null);
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <View style={styles.content}>
+        <Text style={styles.title} accessibilityRole="header">
+          {beingDeleted
+            ? 'Your account is being deleted'
+            : 'Your account is scheduled for deletion'}
+        </Text>
+        <Text style={styles.description}>
+          {beingDeleted
+            ? 'Its deletion date has passed, so it can no longer be restored.'
+            : `It will be deleted on ${formatDeletionDate(scheduledFor)}. Restore it to keep using Nepally.`}
+        </Text>
+        {error ? (
+          <Text style={styles.error} accessibilityRole="alert">
+            {error}
+          </Text>
+        ) : null}
+        {beingDeleted ? (
+          <PrimaryButton
+            title="Sign out"
+            onPress={() => void handleSignOut()}
+            loading={busy === 'sign-out'}
+            disabled={busy !== null}
+          />
+        ) : (
+          <>
+            <PrimaryButton
+              title="Restore my account"
+              onPress={() => void handleRestore()}
+              loading={busy === 'restore'}
+              disabled={busy !== null}
+            />
+            <SecondaryButton
+              title="Keep deletion and sign out"
+              onPress={() => void handleSignOut()}
+              loading={busy === 'sign-out'}
+              disabled={busy !== null}
+            />
+          </>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.l,
+    gap: spacing.s,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text.primary,
+  },
+  description: {
+    ...typography.body,
+    color: colors.text.secondary,
+  },
+  error: {
+    ...typography.caption,
+    color: colors.error,
+  },
+});
+```
+
+- [x] **Step 4: Run the test.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile/AccountRestoreScreen.test.tsx`
+Expected: PASS.
+
+- [x] **Step 5: Commit.**
+
+```bash
+git add apps/mobile/src/screens/profile/AccountRestoreScreen.tsx apps/mobile/src/screens/profile/AccountRestoreScreen.test.tsx
+git commit -m "feat(mobile): the restore screen for an account pending deletion"
+```
+
+### Task 4.5: The `RootNavigator` gate
+
+**Files:**
+
+- Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/navigation/RootNavigator.tsx`
+- Test: `apps/mobile/src/navigation/RootNavigator.test.tsx`
+
+- [x] **Step 1: Write the failing tests.** In `RootNavigator.test.tsx`, next to the other stand-ins, add:
+
+```tsx
+jest.mock('../screens/profile/AccountRestoreScreen', () => {
+  const ReactLocal = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return { AccountRestoreScreen: () => ReactLocal.createElement(Text, null, 'restore screen') };
+});
+```
+
+Widen `setLoadState`'s `user` type to `{ id: string; metro_area_id?: string; deletion_scheduled_for?: string | null } | null`, and add to `expectNoNavigator`: `expect(screen.queryByText('restore screen')).toBeNull();`. Then append inside the `describe`:
+
+```tsx
+it('shows only the restore screen to a member pending deletion', () => {
+  setLoadState({
+    authLoading: false,
+    onboardingLoading: false,
+    user: {
+      id: 'user-1',
+      metro_area_id: '19100',
+      deletion_scheduled_for: '2026-10-30T12:00:00.000Z',
+    },
+  });
+  renderNavigator();
+  expect(screen.getByText('restore screen')).toBeTruthy();
+  expect(screen.queryByText('main tabs')).toBeNull();
+});
+
+it('shows the restore screen before onboarding', () => {
+  setLoadState({
+    authLoading: false,
+    onboardingLoading: false,
+    user: { id: 'user-1', deletion_scheduled_for: '2026-10-30T12:00:00.000Z' },
+  });
+  renderNavigator();
+  expect(screen.getByText('restore screen')).toBeTruthy();
+  expect(screen.queryByText('onboarding flow')).toBeNull();
+});
+
+it('opens the app once the account is restored', () => {
+  setLoadState({
+    authLoading: false,
+    onboardingLoading: false,
+    user: {
+      id: 'user-1',
+      metro_area_id: '19100',
+      deletion_scheduled_for: '2026-10-30T12:00:00.000Z',
+    },
+  });
+  renderNavigator();
+  expect(screen.getByText('restore screen')).toBeTruthy();
+
+  setLoadState({
+    authLoading: false,
+    onboardingLoading: false,
+    user: { id: 'user-1', metro_area_id: '19100', deletion_scheduled_for: null },
+  });
+  screen.rerender(navigatorTree());
+  expect(screen.getByText('main tabs')).toBeTruthy();
+});
+```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd apps/mobile && npx jest src/navigation/RootNavigator.test.tsx`
+Expected: FAIL. The pending member gets the main tabs or onboarding.
+
+- [x] **Step 3: Add the route.** In `types/navigation.ts`, add to `RootStackParamList`:
+
+```ts
+/** A member pending deletion sees only this (RootNavigator's gate). */
+AccountRestore: undefined;
+```
+
+- [x] **Step 4: Add the gate.** In `RootNavigator.tsx`, import the screen from its own file, not the `screens/profile` barrel (which would load every profile screen):
+
+```tsx
+import { AccountRestoreScreen } from '../screens/profile/AccountRestoreScreen';
+```
+
+Replace everything from `const showOnboarding = …` to the end of the `return` with:
+
+```tsx
+const showOnboarding = !user || !user.metro_area_id;
+
+// A member pending deletion sees only the restore screen until they restore
+// or sign out, whatever their onboarding state (spec §5.4).
+let screens: React.ReactNode;
+if (user?.deletion_scheduled_for) {
+  screens = <Stack.Screen name="AccountRestore" component={AccountRestoreScreen} />;
+} else if (showOnboarding) {
+  screens = <Stack.Screen name="Onboarding" component={OnboardingNavigator} />;
+} else {
+  screens = (
+    <>
+      <Stack.Screen name="Main" component={MainTabNavigator} />
+      <Stack.Screen name="Chat" component={ChatNavigator} />
+    </>
+  );
+}
+
+return <Stack.Navigator screenOptions={{ headerShown: false }}>{screens}</Stack.Navigator>;
+```
+
+Keep the existing comment above `showOnboarding`.
+
+- [x] **Step 5: Run the tests.**
+
+Run: `cd apps/mobile && npx jest src/navigation`
+Expected: PASS, including `navigationIntegration.test.tsx`.
+
+- [x] **Step 6: Commit.**
+
+```bash
+git add apps/mobile/src/types/navigation.ts apps/mobile/src/navigation/RootNavigator.tsx apps/mobile/src/navigation/RootNavigator.test.tsx
+git commit -m "feat(mobile): RootNavigator shows only the restore screen to a pending account"
+```
+
+**Chunk 1 gate.** Run each step on its own and check its exit code (`npm run <step> >/dev/null 2>&1; echo <step>=$?`): `type-check`, `lint`, `lint:guards`, `npm run test --workspace=packages/shared`, `npm run test --workspace=apps/mobile`, and web Vitest from `C:\…` (`npm run test --workspace=apps/web`, since Task 4.1 touched web). Then one `code-reviewer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 4 chunk 1 review` commit; everything else goes to Follow-ups.
+
+### Chunk 2: the delete flow
+
+### Task 4.6: `DeleteAccountScreen`
+
+**Files:**
+
+- Create: `apps/mobile/src/hooks/useDeleteAccountFlow.ts` (state and handlers)
+- Create: `apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx` (the four steps, presentational)
+- Create: `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx` (picks the step)
+- Test: `apps/mobile/src/screens/profile/DeleteAccountScreen.test.tsx`
+
+- [x] **Step 1: Write the failing test** in `DeleteAccountScreen.test.tsx`. It drives the real hook and steps through the screen, with Supabase, Google and the RPC mocked. There are no timers and no fetch on mount, so it uses `render` + `waitFor` only (rule 6).
+
+```tsx
+import React from 'react';
+import { Alert } from 'react-native';
+import { fireEvent, render, waitFor, type RenderResult } from '@testing-library/react-native';
+import {
+  ApiError,
+  DELETE_ACCOUNT_FAILED,
+  PROFILE_NOT_FOUND,
+  REAUTH_REQUIRED,
+  SUPPORT_EMAIL,
+  formatDeletionDate,
+} from '@nepally/shared';
+import { DeleteAccountScreen } from './DeleteAccountScreen';
+
+const mockGoBack = jest.fn();
+const mockUseAuth = jest.fn();
+const mockSignOut = jest.fn();
+const mockPauseAuthListener = jest.fn();
+const mockResumeAuthListener = jest.fn();
+const mockGetSession = jest.fn();
+const mockSignInWithPassword = jest.fn();
+const mockSignInWithGoogle = jest.fn();
+const mockRequestAccountDeletion = jest.fn();
+const mockLogClientEvent = jest.fn();
+
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ goBack: mockGoBack }),
+}));
+
+jest.mock('../../hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+jest.mock('../../config/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: (...args: unknown[]) => mockGetSession(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
+    },
+  },
+}));
+
+jest.mock('../../services/auth/googleAuth', () => ({
+  signInWithGoogle: (...args: unknown[]) => mockSignInWithGoogle(...args),
+  // The same check googleAuth.ts makes; the real module pulls in Expo's browser.
+  isGoogleSignInCancelled: (error?: Error) => error?.message === 'Google sign-in was cancelled',
+}));
+
+jest.mock('@nepally/shared', () => ({
+  ...jest.requireActual('@nepally/shared'),
+  requestAccountDeletion: (...args: unknown[]) => mockRequestAccountDeletion(...args),
+  logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),
+}));
+
+const EMAIL = 'sita@example.com';
+const SCHEDULED = '2026-10-30T12:00:00.000Z';
+
+/** An access token whose only `amr` entry is `secondsAgo` old. */
+function tokenSignedIn(secondsAgo: number): string {
+  const encode = (value: object) => btoa(JSON.stringify(value)).replace(/=+$/, '');
+  const timestamp = Math.floor(Date.now() / 1000) - secondsAgo;
+  return `${encode({ alg: 'HS256' })}.${encode({ amr: [{ method: 'password', timestamp }] })}.sig`;
+}
+
+function setAccount(providers: string[]) {
+  mockUseAuth.mockReturnValue({
+    user: {
+      id: 'user-1',
+      email: EMAIL,
+      full_name: 'Sita Sharma',
+      trust_level: 1,
+      is_premium: false,
+    },
+    supabaseUser: { id: 'user-1', email: EMAIL, app_metadata: { providers } },
+    signOut: mockSignOut,
+    pauseAuthListener: mockPauseAuthListener,
+    resumeAuthListener: mockResumeAuthListener,
+  });
+}
+
+function signedInSecondsAgo(secondsAgo: number) {
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: tokenSignedIn(secondsAgo), user: { id: 'user-1' } } },
+    error: null,
+  });
+}
+
+async function continueToConfirm(screen: RenderResult) {
+  fireEvent.press(screen.getByText('Continue'));
+  await waitFor(() => {
+    expect(screen.getByText("Confirm it's you")).toBeTruthy();
+  });
+}
+
+async function continueToFinal(screen: RenderResult) {
+  signedInSecondsAgo(60);
+  fireEvent.press(screen.getByText('Continue'));
+  await waitFor(() => {
+    expect(screen.getByText('Delete your account?')).toBeTruthy();
+  });
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  setAccount(['email']);
+  // Signed in an hour ago: too long for the server's 10 minutes.
+  signedInSecondsAgo(3600);
+  mockSignInWithPassword.mockResolvedValue({ data: {}, error: null });
+  mockSignInWithGoogle.mockResolvedValue({
+    user: { id: 'user-1', email: EMAIL, full_name: 'Sita Sharma' },
+  });
+  mockRequestAccountDeletion.mockResolvedValue({ data: SCHEDULED });
+  mockSignOut.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('DeleteAccountScreen explain step', () => {
+  it('names the account and says what goes, and when', () => {
+    const screen = render(<DeleteAccountScreen />);
+
+    expect(screen.getByText('Delete your account')).toBeTruthy();
+    expect(screen.getByText(`Signed in as ${EMAIL}`)).toBeTruthy();
+    expect(screen.getByText(/the messages you sent/)).toBeTruthy();
+    expect(screen.getByText(/Sign in before then to restore it/)).toBeTruthy();
+  });
+
+  it('goes back on Cancel', () => {
+    const screen = render(<DeleteAccountScreen />);
+    fireEvent.press(screen.getByText('Cancel'));
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips confirming after a recent sign-in', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    expect(screen.getByText(`Signed in as ${EMAIL}`)).toBeTruthy();
+  });
+
+  it('asks to confirm when the session cannot be read', async () => {
+    mockGetSession.mockRejectedValue(new Error('storage unavailable'));
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_delete_session_read_failed' })
+    );
+  });
+});
+
+describe('DeleteAccountScreen password step', () => {
+  it('asks for the password first', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.press(screen.getByText('Confirm'));
+
+    expect(screen.getByText('Enter your password.')).toBeTruthy();
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('names a wrong password', async () => {
+    mockSignInWithPassword.mockResolvedValue({
+      data: {},
+      error: { code: 'invalid_credentials', message: 'Invalid login credentials' },
+    });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.changeText(screen.getByLabelText('Password'), 'wrong-pass');
+    fireEvent.press(screen.getByText('Confirm'));
+
+    await waitFor(() => {
+      expect(screen.getByText('That password is incorrect.')).toBeTruthy();
+    });
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_delete_reauth_failed' })
+    );
+  });
+
+  it('signs in again with the paused listener, then moves on', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.changeText(screen.getByLabelText('Password'), 'right-pass');
+    fireEvent.press(screen.getByText('Confirm'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete your account?')).toBeTruthy();
+    });
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({ email: EMAIL, password: 'right-pass' });
+    const signInOrder = mockSignInWithPassword.mock.invocationCallOrder[0];
+    expect(mockPauseAuthListener.mock.invocationCallOrder[0]).toBeLessThan(signInOrder);
+    expect(mockResumeAuthListener.mock.invocationCallOrder[0]).toBeGreaterThan(signInOrder);
+  });
+
+  it('gives the support email, and offers Google only when it is linked', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    expect(screen.getByText(SUPPORT_EMAIL)).toBeTruthy();
+    expect(screen.queryByText('Continue with Google')).toBeNull();
+
+    setAccount(['email', 'google']);
+    screen.rerender(<DeleteAccountScreen />);
+    expect(screen.getByText('Continue with Google')).toBeTruthy();
+  });
+});
+
+describe('DeleteAccountScreen Google step', () => {
+  beforeEach(() => {
+    setAccount(['google']);
+  });
+
+  it('asks a Google account to sign in with Google, with the chooser', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    expect(screen.queryByLabelText('Password')).toBeNull();
+
+    signedInSecondsAgo(5);
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete your account?')).toBeTruthy();
+    });
+    expect(mockSignInWithGoogle).toHaveBeenCalledWith({ selectAccount: true });
+    expect(mockPauseAuthListener).toHaveBeenCalledTimes(1);
+    expect(mockResumeAuthListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs a different account out of this device only, and deletes nothing', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    mockSignInWithGoogle.mockResolvedValue({
+      user: { id: 'user-2', email: 'other@example.com', full_name: 'Other' },
+    });
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: tokenSignedIn(5), user: { id: 'user-2' } } },
+      error: null,
+    });
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'You signed in as a different account',
+      'Nothing was deleted. Sign in again as yourself.'
+    );
+    expect(mockRequestAccountDeletion).not.toHaveBeenCalled();
+  });
+
+  it('treats a missing session after Google as the wrong account', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+  });
+
+  it('stays put, quietly, when Google is cancelled', async () => {
+    mockSignInWithGoogle.mockResolvedValue({ error: new Error('Google sign-in was cancelled') });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(mockResumeAuthListener).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByText("Confirm it's you")).toBeTruthy();
+    expect(screen.queryByText("Couldn't continue with Google. Please try again.")).toBeNull();
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('says so when Google fails', async () => {
+    mockSignInWithGoogle.mockResolvedValue({ error: new Error('Invalid OAuth callback URL') });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToConfirm(screen);
+    fireEvent.press(screen.getByText('Continue with Google'));
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't continue with Google. Please try again.")).toBeTruthy();
+    });
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+});
+
+describe('DeleteAccountScreen final step', () => {
+  it('deletes, signs every device out, then gives the date', async () => {
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Account scheduled for deletion',
+        `Your account will be deleted on ${formatDeletionDate(SCHEDULED)}. Sign in before then to restore it.`
+      );
+    });
+    expect(mockRequestAccountDeletion).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledWith();
+    expect(mockSignOut.mock.invocationCallOrder[0]).toBeLessThan(
+      (Alert.alert as jest.Mock).mock.invocationCallOrder[0]
+    );
+  });
+
+  it('goes back to confirming when the sign-in is too old', async () => {
+    mockRequestAccountDeletion.mockResolvedValue({
+      error: new ApiError("Please confirm it's you again.", { code: REAUTH_REQUIRED }),
+    });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText("Please confirm it's you again.")).toBeTruthy();
+    });
+    expect(screen.getByText("Confirm it's you")).toBeTruthy();
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('sends a member with no profile row to support', async () => {
+    mockRequestAccountDeletion.mockResolvedValue({
+      error: new ApiError("We couldn't find your profile.", { code: PROFILE_NOT_FOUND }),
+    });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText(new RegExp(SUPPORT_EMAIL))).toBeTruthy();
+    });
+    expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it('keeps the member on the final step to retry after a network error', async () => {
+    mockRequestAccountDeletion.mockResolvedValue({ error: new Error('Network request failed') });
+    const screen = render(<DeleteAccountScreen />);
+    await continueToFinal(screen);
+    fireEvent.press(screen.getByText('Delete my account'));
+
+    await waitFor(() => {
+      expect(screen.getByText(DELETE_ACCOUNT_FAILED)).toBeTruthy();
+    });
+    expect(screen.getByText('Delete your account?')).toBeTruthy();
+    expect(screen.queryByText('Network request failed')).toBeNull();
+    expect(mockLogClientEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'account_delete_failed' })
+    );
+  });
+});
+```
+
+- [x] **Step 2: Run it and watch it fail.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile/DeleteAccountScreen.test.tsx`
+Expected: FAIL. `./DeleteAccountScreen` doesn't exist.
+
+- [x] **Step 3: Write the hook** in `apps/mobile/src/hooks/useDeleteAccountFlow.ts`:
+
+```ts
+import { useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
+import {
+  REAUTH_REQUIRED,
+  formatDeletionDate,
+  getAccountDeletionErrorCode,
+  getAuthErrorMessage,
+  getDeleteAccountFailureMessage,
+  getReauthMethod,
+  getReauthPasswordErrorMessage,
+  getScheduledDeletionDate,
+  hasGoogleIdentity,
+  isRecentSignIn,
+  logClientEvent,
+  requestAccountDeletion,
+} from '@nepally/shared';
+import type { ReauthMethod } from '@nepally/shared';
+import { supabase } from '../config/supabase';
+import { isGoogleSignInCancelled, signInWithGoogle } from '../services/auth/googleAuth';
+import { useAuth } from './useAuth';
+
+export type DeleteAccountStep = 'explain' | 'confirm' | 'final';
+
+const ENTER_PASSWORD = 'Enter your password.';
+const WRONG_ACCOUNT_TITLE = 'You signed in as a different account';
+const WRONG_ACCOUNT_MESSAGE = 'Nothing was deleted. Sign in again as yourself.';
+const PLATFORM = { platform: 'mobile' } as const;
+
+export interface DeleteAccountFlowState {
+  step: DeleteAccountStep;
+  /** The account being deleted, named on the explain and final steps. */
+  email: string;
+  reauthMethod: ReauthMethod;
+  /** A password account that also has Google, which can stand in for a forgotten password. */
+  offersGoogle: boolean;
+  scheduledDate: string;
+  notice: string;
+  error: string;
+  password: string;
+  setPassword: (value: string) => void;
+  busy: boolean;
+  handleContinue: () => Promise<void>;
+  handlePassword: () => Promise<void>;
+  handleGoogle: () => Promise<void>;
+  handleDelete: () => Promise<void>;
+}
+
+/** State and handlers for the account deletion flow (spec §5.2 and §5.4). */
+export function useDeleteAccountFlow(): DeleteAccountFlowState {
+  const { user, supabaseUser, signOut, pauseAuthListener, resumeAuthListener } = useAuth();
+  const [step, setStep] = useState<DeleteAccountStep>('explain');
+  // Read the clock once, not on every render.
+  const [scheduledDate] = useState(() => getScheduledDeletionDate());
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const email = supabaseUser?.email ?? user?.email ?? '';
+  const reauthMethod: ReauthMethod = supabaseUser ? getReauthMethod(supabaseUser) : 'password';
+  const offersGoogle =
+    reauthMethod === 'password' && supabaseUser !== null && hasGoogleIdentity(supabaseUser);
+
+  async function handleContinue() {
+    if (busy) return;
+    setBusy(true);
+    let isRecent = false;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      isRecent = Boolean(session && isRecentSignIn(session.access_token));
+    } catch (sessionError) {
+      // Confirming again is the safe side: the server re-checks re-auth anyway.
+      logClientEvent({
+        event: 'account_delete_session_read_failed',
+        context: PLATFORM,
+        error: sessionError,
+      });
+    }
+    if (!mountedRef.current) return;
+    setBusy(false);
+    setNotice('');
+    setStep(isRecent ? 'final' : 'confirm');
+  }
+
+  async function handlePassword() {
+    if (busy) return;
+    if (!password) {
+      setError(ENTER_PASSWORD);
+      return;
+    }
+    setBusy(true);
+    setError('');
+    // Paused as ChangePasswordScreen does, so the fresh sign-in doesn't
+    // reload the auth state under this screen.
+    pauseAuthListener();
+    let signInError: unknown = null;
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      signInError = authError;
+    } catch (thrown) {
+      signInError = thrown;
+    } finally {
+      resumeAuthListener();
+    }
+    if (!mountedRef.current) return;
+    setBusy(false);
+    if (signInError) {
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { ...PLATFORM, method: 'password' },
+        error: signInError,
+      });
+      setError(getReauthPasswordErrorMessage(signInError));
+      return;
+    }
+    setPassword('');
+    setNotice('');
+    setStep('final');
+  }
+
+  async function handleGoogle() {
+    const expectedUserId = supabaseUser?.id;
+    if (busy || !expectedUserId) return;
+    setBusy(true);
+    setError('');
+    // googleAuth exchanges the code straight into the live session, so keep
+    // the listener from loading whichever account comes back.
+    pauseAuthListener();
+    let googleError: Error | undefined;
+    let sessionUserId: string | null = null;
+    try {
+      ({ error: googleError } = await signInWithGoogle({ selectAccount: true }));
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      sessionUserId = session?.user.id ?? null;
+    } catch (thrown) {
+      googleError = thrown instanceof Error ? thrown : new Error('Google sign-in failed');
+    } finally {
+      resumeAuthListener();
+    }
+
+    if (sessionUserId !== expectedUserId) {
+      // Another account, or none we can read, now holds this device's
+      // session, and the RPC would delete whichever account the JWT names.
+      // Sign it out of this device only, delete nothing, and the member signs
+      // in again. Signing out replaces the whole tree, so the alert must show.
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { ...PLATFORM, method: 'google', reason: 'wrong_account' },
+      });
+      await signOut({ scope: 'local' });
+      Alert.alert(WRONG_ACCOUNT_TITLE, WRONG_ACCOUNT_MESSAGE);
+      return;
+    }
+    if (!mountedRef.current) return;
+    setBusy(false);
+    if (googleError) {
+      if (isGoogleSignInCancelled(googleError)) return;
+      logClientEvent({
+        event: 'account_delete_reauth_failed',
+        context: { ...PLATFORM, method: 'google' },
+        error: googleError,
+      });
+      setError(getAuthErrorMessage(googleError, 'google'));
+      return;
+    }
+    setNotice('');
+    setStep('final');
+  }
+
+  async function handleDelete() {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    const result = await requestAccountDeletion(supabase);
+    if (result.error || !result.data) {
+      if (!mountedRef.current) return;
+      setBusy(false);
+      if (getAccountDeletionErrorCode(result.error) === REAUTH_REQUIRED) {
+        // The RPC's sentence: "Please confirm it's you again."
+        setNotice(result.error?.message ?? '');
+        setStep('confirm');
+        return;
+      }
+      logClientEvent({ event: 'account_delete_failed', context: PLATFORM, error: result.error });
+      setError(getDeleteAccountFailureMessage(result.error));
+      return;
+    }
+    // Scheduled. Sign out every device (the default scope) and clear this
+    // one's data. RootNavigator then shows the welcome screen, and the alert
+    // gives the date over it.
+    const scheduled = result.data;
+    await signOut();
+    Alert.alert(
+      'Account scheduled for deletion',
+      `Your account will be deleted on ${formatDeletionDate(scheduled)}. Sign in before then to restore it.`
+    );
+  }
+
+  return {
+    step,
+    email,
+    reauthMethod,
+    offersGoogle,
+    scheduledDate,
+    notice,
+    error,
+    password,
+    setPassword,
+    busy,
+    handleContinue,
+    handlePassword,
+    handleGoogle,
+    handleDelete,
+  };
+}
+```
+
+- [x] **Step 4: Write the steps** in `apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx`:
+
+```tsx
+import React, { useState } from 'react';
+import { Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SUPPORT_EMAIL, formatDeletionDate } from '@nepally/shared';
+import { PrimaryButton } from '../../../components/buttons/PrimaryButton';
+import { SecondaryButton } from '../../../components/buttons/SecondaryButton';
+import { colors } from '../../../styles/colors';
+import { typography } from '../../../styles/typography';
+import { spacing, borderRadius } from '../../../styles/spacing';
+
+const REMOVED = [
+  'your profile and photos',
+  'your posts and comments',
+  'the messages you sent (messages other members sent you stay in their chats)',
+  'your listings and events (active promotions end with the listings)',
+];
+
+function StepHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.title} accessibilityRole="header">
+        {title}
+      </Text>
+      <Text style={styles.description}>{description}</Text>
+    </View>
+  );
+}
+
+function ErrorText({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <Text style={styles.error} accessibilityRole="alert">
+      {message}
+    </Text>
+  );
+}
+
+/** Says which account is about to go, so a Google chooser slip can't go unnoticed. */
+function SignedInAs({ email }: { email: string }) {
+  if (!email) return null;
+  return <Text style={styles.signedInAs}>{`Signed in as ${email}`}</Text>;
+}
+
+function GoogleButton({ busy, onPress }: { busy: boolean; onPress: () => void }) {
+  return (
+    <SecondaryButton
+      title="Continue with Google"
+      onPress={onPress}
+      loading={busy}
+      disabled={busy}
+    />
+  );
+}
+
+interface ExplainStepProps {
+  email: string;
+  scheduledDate: string;
+  busy: boolean;
+  onContinue: () => void;
+  onCancel: () => void;
+}
+
+export function ExplainStep({
+  email,
+  scheduledDate,
+  busy,
+  onContinue,
+  onCancel,
+}: ExplainStepProps) {
+  return (
+    <View style={styles.step}>
+      <StepHeader
+        title="Delete your account"
+        description="Read this first. After the grace period it can't be undone."
+      />
+      <SignedInAs email={email} />
+      <Text style={styles.body}>Deleting your account removes:</Text>
+      {REMOVED.map((item) => (
+        <View key={item} style={styles.listItem}>
+          <Text style={styles.body}>{'\u2022'}</Text>
+          <Text style={[styles.body, styles.listText]}>{item}</Text>
+        </View>
+      ))}
+      <Text style={styles.body}>
+        {`Your account is hidden from other members right away and deleted on ${formatDeletionDate(scheduledDate)}. Sign in before then to restore it.`}
+      </Text>
+      <PrimaryButton title="Continue" onPress={onContinue} loading={busy} disabled={busy} />
+      <SecondaryButton title="Cancel" onPress={onCancel} disabled={busy} />
+    </View>
+  );
+}
+
+interface PasswordConfirmStepProps {
+  notice: string;
+  error: string;
+  password: string;
+  busy: boolean;
+  onPasswordChange: (value: string) => void;
+  onSubmit: () => void;
+  /** Set when the account has Google too, which can stand in for a forgotten password. */
+  onGoogle?: () => void;
+}
+
+export function PasswordConfirmStep({
+  notice,
+  error,
+  password,
+  busy,
+  onPasswordChange,
+  onSubmit,
+  onGoogle,
+}: PasswordConfirmStepProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  function openSupportEmail() {
+    // No mail app: the address is on screen to copy, so there is nothing to report.
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => undefined);
+  }
+
+  return (
+    <View style={styles.step}>
+      <StepHeader
+        title="Confirm it's you"
+        description={notice || 'Enter your password to continue.'}
+      />
+      <ErrorText message={error} />
+      <Text style={styles.label}>Password</Text>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={[styles.input, error ? styles.inputError : null]}
+          accessibilityLabel="Password"
+          value={password}
+          onChangeText={onPasswordChange}
+          secureTextEntry={!showPassword}
+          autoComplete="current-password"
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+          editable={!busy}
+        />
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowPassword((shown) => !shown)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color={colors.text.secondary}
+          />
+        </TouchableOpacity>
+      </View>
+      <PrimaryButton title="Confirm" onPress={onSubmit} loading={busy} disabled={busy} />
+      {onGoogle ? (
+        <>
+          <Text style={styles.or}>or</Text>
+          <GoogleButton busy={busy} onPress={onGoogle} />
+        </>
+      ) : null}
+      <Text style={styles.help}>
+        {'Forgot your password? Email '}
+        <Text style={styles.link} accessibilityRole="link" onPress={openSupportEmail}>
+          {SUPPORT_EMAIL}
+        </Text>
+        {" from your account's email address and we'll delete it for you."}
+      </Text>
+    </View>
+  );
+}
+
+interface GoogleConfirmStepProps {
+  notice: string;
+  error: string;
+  busy: boolean;
+  onGoogle: () => void;
+}
+
+export function GoogleConfirmStep({ notice, error, busy, onGoogle }: GoogleConfirmStepProps) {
+  return (
+    <View style={styles.step}>
+      <StepHeader
+        title="Confirm it's you"
+        description={notice || 'Sign in with Google again to continue.'}
+      />
+      <ErrorText message={error} />
+      <GoogleButton busy={busy} onPress={onGoogle} />
+    </View>
+  );
+}
+
+interface FinalStepProps {
+  email: string;
+  scheduledDate: string;
+  error: string;
+  busy: boolean;
+  onDelete: () => void;
+  onCancel: () => void;
+}
+
+export function FinalStep({
+  email,
+  scheduledDate,
+  error,
+  busy,
+  onDelete,
+  onCancel,
+}: FinalStepProps) {
+  return (
+    <View style={styles.step}>
+      <StepHeader
+        title="Delete your account?"
+        description={`Your account will be hidden now and deleted on ${formatDeletionDate(scheduledDate)}.`}
+      />
+      <SignedInAs email={email} />
+      <ErrorText message={error} />
+      <PrimaryButton
+        title="Delete my account"
+        onPress={onDelete}
+        loading={busy}
+        disabled={busy}
+        style={styles.dangerButton}
+      />
+      <SecondaryButton title="Cancel" onPress={onCancel} disabled={busy} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  step: {
+    gap: spacing.s,
+  },
+  header: {
+    gap: spacing.xs,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text.primary,
+  },
+  description: {
+    ...typography.body,
+    color: colors.text.secondary,
+  },
+  signedInAs: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  body: {
+    ...typography.body,
+    color: colors.text.primary,
+  },
+  listItem: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingLeft: spacing.xs,
+  },
+  listText: {
+    flex: 1,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.s,
+    paddingRight: 48,
+    ...typography.body,
+    color: colors.text.primary,
+  },
+  inputError: {
+    borderColor: colors.error,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    height: 48,
+    justifyContent: 'center',
+  },
+  or: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  help: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  link: {
+    color: colors.primary.main,
+    textDecorationLine: 'underline',
+  },
+  error: {
+    ...typography.caption,
+    color: colors.error,
+  },
+  dangerButton: {
+    backgroundColor: colors.error,
+  },
+});
+```
+
+- [x] **Step 5: Write the screen** in `apps/mobile/src/screens/profile/DeleteAccountScreen.tsx`:
+
+```tsx
+import React from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useDeleteAccountFlow } from '../../hooks/useDeleteAccountFlow';
+import type { DeleteAccountFlowState } from '../../hooks/useDeleteAccountFlow';
+import {
+  ExplainStep,
+  FinalStep,
+  GoogleConfirmStep,
+  PasswordConfirmStep,
+} from './components/DeleteAccountSteps';
+import { colors } from '../../styles/colors';
+import { spacing } from '../../styles/spacing';
+
+function CurrentStep({ flow, onCancel }: { flow: DeleteAccountFlowState; onCancel: () => void }) {
+  switch (flow.step) {
+    case 'explain':
+      return (
+        <ExplainStep
+          email={flow.email}
+          scheduledDate={flow.scheduledDate}
+          busy={flow.busy}
+          onContinue={() => void flow.handleContinue()}
+          onCancel={onCancel}
+        />
+      );
+    case 'confirm':
+      return flow.reauthMethod === 'password' ? (
+        <PasswordConfirmStep
+          notice={flow.notice}
+          error={flow.error}
+          password={flow.password}
+          busy={flow.busy}
+          onPasswordChange={flow.setPassword}
+          onSubmit={() => void flow.handlePassword()}
+          onGoogle={flow.offersGoogle ? () => void flow.handleGoogle() : undefined}
+        />
+      ) : (
+        <GoogleConfirmStep
+          notice={flow.notice}
+          error={flow.error}
+          busy={flow.busy}
+          onGoogle={() => void flow.handleGoogle()}
+        />
+      );
+    case 'final':
+      return (
+        <FinalStep
+          email={flow.email}
+          scheduledDate={flow.scheduledDate}
+          error={flow.error}
+          busy={flow.busy}
+          onDelete={() => void flow.handleDelete()}
+          onCancel={onCancel}
+        />
+      );
+  }
+}
+
+/** Profile → Delete Account: explain, confirm it's you, delete (spec §5.2). */
+export function DeleteAccountScreen() {
+  const navigation = useNavigation();
+  const flow = useDeleteAccountFlow();
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.flex}
+    >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <CurrentStep flow={flow} onCancel={() => navigation.goBack()} />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  content: {
+    padding: spacing.l,
+  },
+});
+```
+
+- [x] **Step 6: Run the test.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile/DeleteAccountScreen.test.tsx`
+Expected: PASS.
+
+- [x] **Step 7: Commit.**
+
+```bash
+git add apps/mobile/src/hooks/useDeleteAccountFlow.ts apps/mobile/src/screens/profile/components/DeleteAccountSteps.tsx apps/mobile/src/screens/profile/DeleteAccountScreen.tsx apps/mobile/src/screens/profile/DeleteAccountScreen.test.tsx
+git commit -m "feat(mobile): the delete account flow, with password and Google re-auth"
+```
+
+### Task 4.7: The route and the Profile menu entry
+
+**Files:**
+
+- Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/navigation/ProfileNavigator.tsx`, `apps/mobile/src/screens/profile/index.ts`, `apps/mobile/src/screens/profile/ProfileScreen.tsx`
+- Test: `apps/mobile/src/screens/profile/ProfileScreen.test.tsx`
+
+- [x] **Step 1: Write the failing test.** In `ProfileScreen.test.tsx`, add `View` to the `react-native` import, add `const mockNavigate = jest.fn();` with the other mocks, and make the navigation mock use it: `useNavigation: () => ({ navigate: mockNavigate, getParent: jest.fn() }),`. Append:
+
+```tsx
+type MeasureCallback = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  pageX: number,
+  pageY: number
+) => void;
+
+describe('ProfileScreen menu', () => {
+  beforeEach(() => {
+    // The menu opens from measure's callback, and the mocked View's measure
+    // never calls back (checked 2026-10-01). Answer as a layout pass would.
+    jest
+      .spyOn(
+        View.prototype as unknown as { measure: (callback: MeasureCallback) => void },
+        'measure'
+      )
+      .mockImplementation((callback) => callback(0, 0, 40, 40, 330, 50));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('opens Delete Account from the menu', async () => {
+    const screen = render(<ProfileScreen />);
+    await waitFor(() => {
+      expect(mockGetPostsByAuthorId).toHaveBeenCalled();
+    });
+
+    fireEvent.press(screen.getByLabelText('Open menu'));
+    expect(screen.getByText('Change Password')).toBeTruthy();
+    fireEvent.press(screen.getByText('Delete Account'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('DeleteAccount');
+  });
+});
+```
+
+- [x] **Step 2: Run it and watch it fail.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile/ProfileScreen.test.tsx`
+Expected: FAIL. No element is labelled "Open menu".
+
+- [x] **Step 3: Add the route and export the screens.** In `types/navigation.ts`, add `DeleteAccount: undefined;` to `ProfileStackParamList` after `ChangePassword`. In `screens/profile/index.ts`, add:
+
+```ts
+export { DeleteAccountScreen } from './DeleteAccountScreen';
+export { AccountRestoreScreen } from './AccountRestoreScreen';
+```
+
+- [x] **Step 4: Register the screen.** In `ProfileNavigator.tsx`, import `DeleteAccountScreen` from `'../screens/profile'` with the others, and add after the `ChangePassword` screen:
+
+```tsx
+<Stack.Screen
+  name="DeleteAccount"
+  component={DeleteAccountScreen}
+  options={{ title: 'Delete Account' }}
+/>
+```
+
+- [x] **Step 5: Add the menu entry.** In `ProfileScreen.tsx`:
+  - Give the menu button a label: add `accessibilityRole="button"` and `accessibilityLabel="Open menu"` to the `TouchableOpacity` with `ref={menuButtonRef}`.
+  - After `handleOpenChangePassword`, add:
+
+    ```tsx
+    const handleOpenDeleteAccount = () => {
+      navigation.navigate('DeleteAccount');
+    };
+    ```
+
+  - In the menu, after the Change Password item, add:
+
+    ```tsx
+    <TouchableOpacity
+      style={styles.menuDropdownItem}
+      onPress={() => {
+        setMenuOpen(false);
+        handleOpenDeleteAccount();
+      }}
+    >
+      <Text style={styles.menuDropdownText}>Delete Account</Text>
+    </TouchableOpacity>
+    ```
+
+- [x] **Step 6: Run the tests.**
+
+Run: `cd apps/mobile && npx jest src/screens/profile src/navigation`
+Expected: PASS.
+
+- [x] **Step 7: Commit.**
+
+```bash
+git add apps/mobile/src/types/navigation.ts apps/mobile/src/navigation/ProfileNavigator.tsx apps/mobile/src/screens/profile/index.ts apps/mobile/src/screens/profile/ProfileScreen.tsx apps/mobile/src/screens/profile/ProfileScreen.test.tsx
+git commit -m "feat(mobile): Delete Account in the Profile menu"
+```
+
+**Chunk 2 gate.** The same steps as chunk 1, without web (`type-check`, `lint`, `lint:guards`, the shared and mobile suites). Then a `code-reviewer` and a `security-reviewer` on the chunk's diff. Point the security review at the wrong-account path (the session check after Google, the local sign-out), the password re-auth's paused listener, and the order of delete, sign-out and alert. Fix CRITICAL and HIGH in one `fix: address PR 4 chunk 2 review` commit.
+
+### Chunk 3: chat, notifications, docs, ship
+
+### Task 4.8: The chat fallback
+
+**Files:**
+
+- Modify: `apps/mobile/src/types/navigation.ts`, `apps/mobile/src/components/chat/ConversationItem.tsx`, `apps/mobile/src/screens/chat/ConversationListScreen.tsx`, `apps/mobile/src/screens/chat/MessageThreadScreen.tsx`
+- Test: `apps/mobile/src/components/chat/ConversationItem.test.tsx`, `apps/mobile/src/screens/chat/ConversationListScreen.test.tsx`, `apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx`
+
+- [x] **Step 1: Write the failing tests.**
+  - In `ConversationItem.test.tsx`, add `otherUserAvailable` to both existing renders (`otherUserAvailable`, meaning true), import `UNAVAILABLE_ACCOUNT_NAME` from `@nepally/shared`, and append inside the `describe`:
+
+    ```tsx
+    it('shows an unavailable partner with no avatar menu', () => {
+      const onPress = jest.fn();
+      const screen = render(
+        <ConversationItem
+          otherUserName={UNAVAILABLE_ACCOUNT_NAME}
+          otherUserAvailable={false}
+          otherUserTrustLevel={0}
+          otherUserPhoto={null}
+          lastMessage="See you then"
+          lastMessageTime="2026-03-01T10:00:00Z"
+          unreadCount={0}
+          onPress={onPress}
+        />
+      );
+
+      expect(screen.getByText('Unavailable account')).toBeTruthy();
+      // The avatar is no button of its own, so the press opens the chat, not a menu.
+      fireEvent.press(screen.getByText('UA'), { nativeEvent: { pageX: 120, pageY: 180 } });
+      expect(screen.queryByText('View Profile')).toBeNull();
+      expect(onPress).toHaveBeenCalledTimes(1);
+    });
+    ```
+
+  - In `ConversationListScreen.test.tsx`, add `other_user_available: true,` to the fixture and `otherUserAvailable: true,` to the expected navigation params.
+  - In `MessageThreadScreen.test.tsx`, append a new `describe`:
+
+    ```tsx
+    describe('MessageThreadScreen with an unavailable partner', () => {
+      beforeEach(() => {
+        jest.clearAllMocks();
+        mockSubscribeToMessages.mockReturnValue({ unsubscribe: jest.fn() });
+        mockGetMessages.mockResolvedValue({
+          data: [
+            {
+              id: 'msg-1',
+              conversation_id: 'conv-1',
+              sender_id: 'other-user',
+              text: 'See you then',
+              type: 'text',
+              read: true,
+              read_at: null,
+              timestamp: '2026-03-01T10:00:00Z',
+            },
+          ],
+        });
+      });
+
+      it('shows a pending partner with no profile menu or Block, and keeps the composer', async () => {
+        mockUseRoute.mockReturnValue({
+          params: {
+            conversationId: 'conv-1',
+            otherUserId: 'other-user',
+            otherUserName: 'Unavailable account',
+            otherUserTrustLevel: 0,
+            otherUserPhotoUrl: null,
+            otherUserAvailable: false,
+          },
+        });
+        const screen = render(<MessageThreadScreen />);
+        await act(async () => {});
+
+        expect(screen.getByText('Unavailable account')).toBeTruthy();
+        expect(screen.queryByLabelText('Conversation options')).toBeNull();
+        for (const initials of screen.getAllByText('UA')) {
+          fireEvent.press(initials, { nativeEvent: { pageX: 120, pageY: 160 } });
+        }
+        await act(async () => {});
+        expect(screen.queryByText('View Profile')).toBeNull();
+        expect(screen.getByPlaceholderText('Type a message...')).toBeTruthy();
+      });
+
+      it('replaces the composer for a purged partner, with no hello line', async () => {
+        mockGetMessages.mockResolvedValue({ data: [] });
+        mockUseRoute.mockReturnValue({
+          params: {
+            conversationId: 'conv-1',
+            otherUserId: null,
+            otherUserName: 'Unavailable account',
+            otherUserTrustLevel: 0,
+            otherUserPhotoUrl: null,
+            otherUserAvailable: false,
+          },
+        });
+        const screen = render(<MessageThreadScreen />);
+        await act(async () => {});
+
+        expect(screen.queryByPlaceholderText('Type a message...')).toBeNull();
+        expect(
+          screen.getByText("This account has been deleted, so it can't get new messages.")
+        ).toBeTruthy();
+        expect(screen.queryByText('No messages yet. Say hello!')).toBeNull();
+      });
+    });
+    ```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd apps/mobile && npx jest src/components/chat src/screens/chat`
+Expected: FAIL. The props and params don't exist yet, the avatar menu opens, and the composer shows.
+
+- [x] **Step 3: Add the route param.** In `types/navigation.ts`, in `MessageThread`, after `otherUserPhotoUrl`:
+
+```ts
+    /** False when the partner is pending deletion or purged (getConversations). Absent means available. */
+    otherUserAvailable?: boolean;
+```
+
+- [x] **Step 4: The list row.** In `ConversationItem.tsx`, add `otherUserAvailable: boolean;` to the props after `otherUserTrustLevel`, destructure it, and replace the avatar's `TouchableOpacity` (inside `styles.avatarContainer`) with:
+
+```tsx
+{
+  otherUserAvailable ? (
+    <TouchableOpacity
+      onPress={(e) => {
+        e.stopPropagation?.();
+        handleAvatarPress(e.nativeEvent.pageX, e.nativeEvent.pageY);
+      }}
+      activeOpacity={0.7}
+    >
+      <Avatar
+        name={publicName}
+        photoUrl={otherUserPhoto}
+        trustLevel={otherUserTrustLevel}
+        size="medium"
+      />
+    </TouchableOpacity>
+  ) : (
+    // A pending or purged partner has no profile to open (spec §5.6).
+    <Avatar name={publicName} size="medium" />
+  );
+}
+```
+
+In `ConversationListScreen.tsx`, pass `otherUserAvailable={item.other_user_available}` to `ConversationItem`, and add `otherUserAvailable: conv.other_user_available,` to the `MessageThread` params in `handleConversationPress`.
+
+- [x] **Step 5: The thread.** In `MessageThreadScreen.tsx`:
+  - Destructure `otherUserAvailable = true,` from `route.params`, after `otherUserPhotoUrl`.
+  - Below `publicName`, add:
+
+    ```tsx
+    // Pending (hidden) or purged: no photo, profile or Block (spec §5.6). A
+    // purged partner has no participant row, so nobody would get a message.
+    const isPartnerAvailable = otherUserAvailable && otherUserId !== null;
+    const isPartnerPurged = otherUserId === null;
+    const partnerPhotoUrl = isPartnerAvailable ? otherUserPhotoUrl : null;
+    ```
+
+  - In the header, replace the `<View>` that wraps the avatar's `TouchableOpacity` with:
+
+    ```tsx
+    <View>
+      {isPartnerAvailable ? (
+        <TouchableOpacity
+          onPress={(event) => {
+            openProfileMenuAt(event.nativeEvent.pageX, event.nativeEvent.pageY);
+          }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Avatar
+            name={publicName}
+            photoUrl={partnerPhotoUrl}
+            trustLevel={otherUserTrustLevel}
+            size="small"
+          />
+        </TouchableOpacity>
+      ) : (
+        <Avatar name={publicName} size="small" />
+      )}
+    </View>
+    ```
+
+  - The verified badge's condition becomes `isPartnerAvailable && otherUserTrustLevel >= TrustLevel.VERIFIED`.
+  - The kebab's condition `{otherUserId ? (` becomes `{isPartnerAvailable ? (`.
+  - In `MessageBubble`, `senderPhotoUrl={otherUserPhotoUrl}` becomes `senderPhotoUrl={partnerPhotoUrl}`, and `onAvatarPress` becomes:
+
+    ```tsx
+                      onAvatarPress={
+                        isPartnerAvailable
+                          ? (pageX, pageY) => {
+                              openProfileMenuAt(pageX, pageY);
+                            }
+                          : undefined
+                      }
+    ```
+
+  - `ListEmptyComponent` becomes:
+
+    ```tsx
+                ListEmptyComponent={
+                  isPartnerPurged ? null : (
+                    <View style={styles.threadStateContainer}>
+                      <Text style={styles.threadStateText}>No messages yet. Say hello!</Text>
+                    </View>
+                  )
+                }
+    ```
+
+  - Replace `<ChatInput onSend={handleSend} initialText={initialDraft} />` with:
+
+    ```tsx
+    {
+      isPartnerPurged ? (
+        <View style={styles.composerNotice}>
+          <Text style={styles.composerNoticeText}>
+            This account has been deleted, so it can&apos;t get new messages.
+          </Text>
+        </View>
+      ) : (
+        <ChatInput onSend={handleSend} initialText={initialDraft} />
+      );
+    }
+    ```
+
+  - Add to the `StyleSheet`:
+
+    ```ts
+      composerNotice: {
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.s,
+        backgroundColor: colors.background,
+      },
+      composerNoticeText: {
+        ...typography.caption,
+        color: colors.text.secondary,
+        textAlign: 'center',
+      },
+    ```
+
+- [x] **Step 6: Run the tests.**
+
+Run: `cd apps/mobile && npx jest src/components/chat src/screens/chat`
+Expected: PASS.
+
+- [x] **Step 7: Commit.**
+
+```bash
+git add apps/mobile/src/types/navigation.ts apps/mobile/src/components/chat/ConversationItem.tsx apps/mobile/src/components/chat/ConversationItem.test.tsx apps/mobile/src/screens/chat/ConversationListScreen.tsx apps/mobile/src/screens/chat/ConversationListScreen.test.tsx apps/mobile/src/screens/chat/MessageThreadScreen.tsx apps/mobile/src/screens/chat/MessageThreadScreen.test.tsx
+git commit -m "feat(mobile): chats show an unavailable partner, and a purged one gets no composer"
+```
+
+### Task 4.9: Message notifications open the thread with the partner as the list sees them
+
+**Files:**
+
+- Modify: `apps/mobile/src/screens/notifications/NotificationsScreen.tsx`
+- Test: `apps/mobile/src/screens/notifications/NotificationsScreen.test.tsx`
+
+- [x] **Step 1: Write the failing tests.** In `NotificationsScreen.test.tsx`:
+  - Add `const mockGetConversations = jest.fn();`, `const mockLogClientEvent = jest.fn();` and `const mockIsFocused = jest.fn();` with the other mocks.
+  - Add `isFocused: () => mockIsFocused(),` to the `useNavigation` mock.
+  - Add to the `@nepally/shared` mock: `getConversations: (...args: unknown[]) => mockGetConversations(...args),` and `logClientEvent: (...args: unknown[]) => mockLogClientEvent(...args),`.
+  - In `beforeEach`, add `mockIsFocused.mockReturnValue(true);` and `mockGetConversations.mockResolvedValue({ data: [] });`.
+  - Add a fixture helper after `baseNotification`:
+
+    ```tsx
+    function conversation(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'conv-1',
+        last_message: 'Hi',
+        last_message_time: '2026-10-01T10:00:00Z',
+        created_at: '2026-10-01T09:00:00Z',
+        other_user_id: 'user-2',
+        other_user_name: 'Asha Gurung',
+        other_user_photo: 'https://example.com/asha.jpg',
+        other_user_trust_level: 2,
+        other_user_available: true,
+        unread_count: 1,
+        ...overrides,
+      };
+    }
+
+    function messageNotification() {
+      return baseNotification({
+        type: 'message',
+        title: 'New message',
+        data: { conversation_id: 'conv-1', sender_id: 'user-2', sender_name: 'Asha' },
+      });
+    }
+    ```
+
+  - Replace the test "routes message notifications to MessageThread when sender metadata exists" with:
+
+    ```tsx
+    it("opens a message notification's chat with the partner the conversation list has", async () => {
+      mockGetConversations.mockResolvedValue({ data: [conversation()] });
+      mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('New message'));
+
+      await waitFor(() => {
+        expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+          screen: 'MessageThread',
+          params: {
+            conversationId: 'conv-1',
+            otherUserId: 'user-2',
+            otherUserName: 'Asha Gurung',
+            otherUserTrustLevel: 2,
+            otherUserPhotoUrl: 'https://example.com/asha.jpg',
+            otherUserAvailable: true,
+          },
+        });
+      });
+      expect(mockGetConversations).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    });
+
+    it('opens the chat of a pending sender as an unavailable account', async () => {
+      mockGetConversations.mockResolvedValue({
+        data: [
+          conversation({
+            other_user_name: 'Unavailable account',
+            other_user_photo: null,
+            other_user_trust_level: 0,
+            other_user_available: false,
+          }),
+        ],
+      });
+      mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('New message'));
+
+      await waitFor(() => {
+        expect(mockParentNavigate).toHaveBeenCalledWith('Chat', {
+          screen: 'MessageThread',
+          params: expect.objectContaining({
+            otherUserName: 'Unavailable account',
+            otherUserPhotoUrl: null,
+            otherUserAvailable: false,
+          }),
+        });
+      });
+    });
+
+    it('opens the conversation list when the chat is not in it', async () => {
+      mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('New message'));
+
+      await waitFor(() => {
+        expect(mockParentNavigate).toHaveBeenCalledWith('Chat', { screen: 'ConversationList' });
+      });
+    });
+
+    it('opens the conversation list, and logs, when the lookup fails', async () => {
+      mockGetConversations.mockResolvedValue({ error: new Error('Failed to fetch conversations') });
+      mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('New message'));
+
+      await waitFor(() => {
+        expect(mockParentNavigate).toHaveBeenCalledWith('Chat', { screen: 'ConversationList' });
+      });
+      expect(mockLogClientEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'notification_conversation_lookup_failed' })
+      );
+    });
+
+    it('stays put when the member moved on during the lookup', async () => {
+      mockIsFocused.mockReturnValue(false);
+      mockGetConversations.mockResolvedValue({ data: [conversation()] });
+      mockGetNotifications.mockResolvedValue({ data: [messageNotification()] });
+
+      const { getByText } = await renderAndSettle();
+      fireEvent.press(getByText('New message'));
+
+      await waitFor(() => {
+        expect(mockGetConversations).toHaveBeenCalledTimes(1);
+      });
+      await act(async () => {});
+      expect(mockParentNavigate).not.toHaveBeenCalled();
+    });
+    ```
+
+- [x] **Step 2: Run them and watch them fail.**
+
+Run: `cd apps/mobile && npx jest src/screens/notifications/NotificationsScreen.test.tsx`
+Expected: FAIL. The handler navigates from the notification's payload, never calling `getConversations`.
+
+- [x] **Step 3: Resolve the partner.** In `NotificationsScreen.tsx`:
+  - Add `getConversations` and `logClientEvent` to the `@nepally/shared` import, `ConversationWithParticipant` to the type import, and `ChatStackParamList` to the `../../types/navigation` type import.
+  - Above `export function NotificationsScreen`, add:
+
+    ```tsx
+    /** The member's conversation by id, with its partner as getConversations sees them, or null. */
+    async function findConversation(
+      userId: string,
+      conversationId: string
+    ): Promise<ConversationWithParticipant | null> {
+      const { data, error } = await getConversations(supabase, userId);
+      if (error) {
+        logClientEvent({
+          event: 'notification_conversation_lookup_failed',
+          context: { platform: 'mobile' },
+          error,
+        });
+        return null;
+      }
+      return data?.find((conversation) => conversation.id === conversationId) ?? null;
+    }
+    ```
+
+  - Replace the whole `if (target.kind === 'message') { … }` block with:
+
+    ```tsx
+    if (target.kind === 'message') {
+      const parentNavigation = navigation.getParent() as ParentNavigator | undefined;
+      // The payload's sender name and id can be out of date: the sender may
+      // be pending deletion or gone (spec §5.6). The conversation list knows,
+      // so open the thread with its partner, or the list when it isn't there.
+      const conversation = user ? await findConversation(user.id, target.conversationId) : null;
+      // Moved to another screen meanwhile: don't pull the member into a chat.
+      if (!navigation.isFocused()) return;
+      if (!conversation) {
+        parentNavigation?.navigate('Chat', { screen: 'ConversationList' });
+        return;
+      }
+      const params: ChatStackParamList['MessageThread'] = {
+        conversationId: conversation.id,
+        otherUserId: conversation.other_user_id,
+        otherUserName: conversation.other_user_name,
+        otherUserTrustLevel: conversation.other_user_trust_level ?? 0,
+        otherUserPhotoUrl: conversation.other_user_photo ?? null,
+        otherUserAvailable: conversation.other_user_available,
+      };
+      parentNavigation?.navigate('Chat', { screen: 'MessageThread', params });
+      return;
+    }
+    ```
+
+  - Add `user` to `handleNotifPress`'s dependency list: `[navigation, user]`.
+
+- [x] **Step 4: Run the tests.**
+
+Run: `cd apps/mobile && npx jest src/screens/notifications/NotificationsScreen.test.tsx`
+Expected: PASS.
+
+- [x] **Step 5: Commit.**
+
+```bash
+git add apps/mobile/src/screens/notifications/NotificationsScreen.tsx apps/mobile/src/screens/notifications/NotificationsScreen.test.tsx
+git commit -m "fix(mobile): message notifications open the chat with its partner as the list has them"
+```
+
+### Task 4.10: Docs and the Maestro flow
+
+**Files:**
+
+- Modify: `docs/product/features/in-app-chat.md`, `docs/product/features/notifications.md`, this plan
+- Create: `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`
+
+- [x] **Step 1: The chat doc.** In `in-app-chat.md`, after the "**Mobile (2026-09-24, PR 10c).**" paragraph, add:
+
+```markdown
+**Unavailable accounts (both apps, 2026-10-01).** A partner who is pending deletion or purged shows as "Unavailable account", with an initials avatar and no profile menu or Block. While they are pending, the conversation still takes messages, and they see them if they restore. After the purge the thread keeps the messages sent to them, and says "This account has been deleted, so it can't get new messages." in place of the composer. On mobile, a message notification opens its chat with the partner as the conversation list has them, so a pending sender shows as unavailable there too.
+```
+
+- [x] **Step 2: The notifications doc.** In `notifications.md`, at the end of the "Rows." bullet, add: "On mobile, a message notification looks its chat up in the conversation list first and opens it with the partner as the list has them, or opens the list when the chat isn't there."
+
+- [x] **Step 3: The Maestro flow.** Create `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`:
+
+```yaml
+appId: us.nepally.app
+---
+# Delete the E2E account, sign back in, restore it.
+# It ends restored. If a run stops half way, the account is left pending:
+# run this flow again (signing in lands on the restore screen) to restore it.
+- launchApp:
+    clearState: true
+
+- runFlow: ../helpers/login-helper.yaml
+
+# Profile → menu → Delete Account
+- tapOn: 'Profile'
+- tapOn: 'Open menu'
+- tapOn: 'Delete Account'
+- assertVisible: 'Delete your account'
+- assertVisible: 'Signed in as e2e-test@nusa.app'
+
+# Just signed in, so there is no password step.
+- tapOn: 'Continue'
+- assertVisible: 'Delete your account?'
+- tapOn: 'Delete my account'
+- assertVisible: 'Account scheduled for deletion'
+- tapOn: 'OK'
+
+# Signed out. Signing back in shows the restore screen. These are the
+# helper's steps without its last check: a pending account never sees "Feed".
+- tapOn: 'Log In'
+- assertVisible: 'sign in with your email'
+- tapOn:
+    text: 'Email'
+- inputText: 'e2e-test@nusa.app'
+- tapOn:
+    text: 'Password'
+- inputText: 'Password123!'
+- tapOn: 'Log In'
+- assertVisible: 'Your account is scheduled for deletion'
+- tapOn: 'Restore my account'
+- assertVisible:
+    id: 'create-post-fab'
+```
+
+- [x] **Step 4: Tick this plan.** Tick PR 4's finished steps.
+
+- [x] **Step 5: Check and commit.**
+
+Run: `npx prettier --write docs/product/features/in-app-chat.md docs/product/features/notifications.md docs/plans/active/2026-09-28-account-deletion.md`, then `npm run docs:check` and `npm run lint:md`.
+Expected: exit 0 for both.
+
+```bash
+git add docs/product/features/in-app-chat.md docs/product/features/notifications.md docs/plans/active/2026-09-28-account-deletion.md apps/mobile/.maestro/flows/07-delete-and-restore.yaml
+git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for delete and restore"
+```
+
+### Task 4.11: Gate, review, draft PR, device check
+
+- [x] **Step 1: Run the full gate** and check every exit code (`npm run <step> >/dev/null 2>&1; echo <step>=$?`):
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run lint:guards`
+  - `npm run test --workspace=packages/shared`
+  - from `C:\…`, `npm run test --workspace=apps/web`
+  - `npm run test --workspace=apps/mobile`
+  - `npm run docs:check`
+  - `npm run lint:md`
+
+  Then `npm run ci:local`, since drafts run no CI.
+
+- [x] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (re-auth, the wrong-account sign-out, the gate, push while pending) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 4 review` commit; the rest go to Follow-ups.
+- [x] **Step 3: Ship the draft.** Draft #115, opened 2026-10-01, with Copilot's review requested.
+  - Push with `git push -u origin feat/account-deletion-mobile`.
+  - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
+  - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
+- [ ] **Step 4: Check on a device (needs the user, on a dev build).**
+  - Run the Maestro flow: `npm run test:e2e --workspace=apps/mobile -- flows/07-delete-and-restore.yaml`, or `maestro test apps/mobile/.maestro/flows/07-delete-and-restore.yaml`. If it isn't stable, drop the file from the PR and record why here.
+  - Delete a Google account: Google shows its chooser. Choosing a different Google account signs it out of the device, says "You signed in as a different account", and deletes nothing.
+  - A second device signed in as another member sees "Unavailable account" in their chat with the deleted member, and no Block.
+  - Moving a test account's date into the past with the service role shows "Your account is being deleted" with only Sign out.
+
+**Acceptance:** on a device, a member can delete their account with a password and with Google. Signing back in shows the restore screen, and Restore works. After the date, the restore screen offers only Sign out. Chats with a pending member show "Unavailable account", and a purged partner's thread has no composer. A pending account registers no push token until it is restored.
 
 ---
 
@@ -5434,3 +8078,32 @@ Break this PR into steps when it starts. It needs 048 and 050 applied and PR 3 m
   - The date on Explain and the final step is computed in the browser when the flow opens, so it can read a day early if the page stays open across midnight. Recompute it on entering the final step.
   - Types and tidying: `ConversationWithParticipant` lets `other_user_id: null` sit with `other_user_available: true`. A discriminated union would drop the extra `&& other_user_id` checks in `ConversationRow` and `ThreadHeader`, whose avatar branches are also duplicated. In `getSignInReturnPath`, `pathname === '/auth/callback'` is covered by `startsWith('/auth/')`.
   - Missing tests: an empty password, and `requestAccountDeletion` resolving with no date.
+- From the PR 4 chunk 1 review (no CRITICAL or HIGH):
+  - Fixed in PR 4: a second device that registered before the deletion now registers again when the member restores there. The request deletes every device's token, and that device's "already registered" mark used to survive the pending profile.
+  - A failed profile load now registers no push token until the next `refreshUser` (an auth event or a screen that refreshes). Before, registration ran from the session, before the profile. An offline cold start can stay without a token for the session. Retrying on the next `AppState` `active` would close it.
+  - Fixed in PR 4 (after Copilot's second review rated it High): a `refreshUser` still in flight when `signOut` finished could set the old profile, write it back to AsyncStorage after `clearAllData`, and try to register push for a signed-out device. The failed registration then left the dedupe mark set, so the same member's next sign-in on that device registered no token. `AuthContext` now bumps a generation counter on every sign-out (explicit, or a `SIGNED_OUT` event), and a refresh that started before one drops its result.
+  - Missing tests: "registers push only once the profile has loaded" asserts only the negative case (the restore test has the positive one); the `onAuthStateChange` `SIGNED_IN` path with a pending profile; the restore screen's unmount guard; a restore-screen sign-out that fails and leaves the screen usable.
+- From the PR 4 chunk 2 code and security reviews (no CRITICAL or HIGH; neither found a path that deletes another account):
+  - Fixed in PR 4: the delete re-checks the session's user id right before the RPC (defence in depth: the RPC deletes whoever the JWT names); the password field no longer turns non-editable while busy, which dismissed the keyboard after a wrong password; and tests now cover Google from the password step (including a wrong account) and a thrown password sign-in resuming the listener.
+  - `AuthContext.signOut` ignores the `{ error }` supabase-js resolves with. The one path that keeps the stored session is `_useSession` failing to read it (for example a secure-store error). The screen then clears, but the session could load again on the next cold start. Check the result, and retry the local sign-out on an error.
+  - Choosing a Google account Supabase has never seen, at re-auth, creates a new auth user before the flow signs it out. Nothing removes that user. Note it in spec §6, or clean it up server-side.
+  - When the session can't be read after Google (`getSession` throws or returns none), the member is signed out under "You signed in as a different account". Failing safe is right, but the words aren't. Log `reason: 'session_unreadable'` and use a neutral sentence for that case.
+  - The handlers' `busy` guard reads render state, and `pauseAuthListener` is a boolean. Two presses inside one frame could start two flows, and the first flow's resume would unpause the second's window. The RPC is idempotent and the id checks still run. A `busyRef` and a pause counter would close it.
+  - Accessibility: `ErrorText` needs `accessibilityLiveRegion="polite"` for Android to announce a new error. `PrimaryButton` and `SecondaryButton` set no `accessibilityRole` or `accessibilityState`, and lose their name while `loading` (the text becomes a spinner). That's a shared-component change. The password field could add `textContentType="password"`.
+  - Missing tests: Cancel on the final step; the flow's unmount guard; the buttons disabled while busy; the Profile menu closing after Delete Account. The `View.prototype.measure` stub's `jest.restoreAllMocks()` resets the file's `jest.fn()` mocks for any `describe` added after it.
+- From the PR 4 whole-PR code, security and test reviews (no CRITICAL or HIGH):
+  - Fixed in PR 4:
+    - The Maestro flow restores the shared E2E account first when an earlier run left it pending. Its comment had claimed a re-run would recover, but the login helper waits for "Feed", which a pending account never reaches, so every flow that signs in would have failed.
+    - New tests pin three things: a deletion with an unreadable or missing session (signed out, nothing deleted), a purged sender opened from a notification (`otherUserId: null`, never the payload's `sender_id`), and the conversation list passing an unavailable partner on.
+  - `EmailSignupScreen.handleLogin` and `SignupMethodScreen`'s Google handler keep running after `refreshUser` loads a pending profile and the gate swaps onboarding out. They query `users` (hidden for a pending member) and navigate on the unmounted onboarding stack. Nothing visible happens, only a dev warning. Use the profile `refreshUser` now returns: stop when it has `deletion_scheduled_for`, and route on its `metro_area_id` instead of a second query.
+  - A message notification tap runs a full `getConversations` with no busy state, so two taps run two lookups and navigate twice. Add an in-flight ref, or a single-conversation fetch in shared.
+  - The five chat starts from content (`PublicProfileScreen`, `ListingDetailScreen`, `EventDetailScreen`, `HomeScreen`, `PostDetailScreen`) leave `otherUserAvailable` out, which means available. A screen left open while its author requests deletion can therefore open a live-looking thread, showing only what was already on screen. Making the param required would make every caller state it. Copilot's second review rated this High and asked for the partner to be resolved before navigating. That wasn't done in PR 4, because nothing new is shown. A one-place fix: when the param is absent, `MessageThreadScreen` looks the conversation up with `getConversations` in the background and switches to the unavailable state if the partner is hidden.
+  - Nothing on the server stops a pending account inserting a `device_tokens` row (048 deletes them only at request time), and the push function doesn't skip pending accounts. The client never registers while pending. A policy or trigger would back spec §6's "no token until restored". This is the same item as the PR 3 chunk 3 push follow-up.
+  - Tests:
+    - "registers push only once the profile has loaded" settles with three fixed `act` flushes before asserting a negative. Wait for `getMyProfile` first.
+    - The thread tests don't pin that an unavailable partner's photo and verified badge are dropped, because the fixtures already pass none. Pass a photo and trust level 2 with `otherUserAvailable: false`.
+    - The delete screen's mock re-implements `isGoogleSignInCancelled`.
+    - `signOut({ scope: 'local' })` isn't checked to clear `user`.
+    - `refreshUser`'s catch path returning null is untested.
+    - A double press on Delete isn't tested, and would expose the render-state `busy` guard above.
+  - A purged thread with no messages shows an empty body above the composer notice. Acceptable.

@@ -57,10 +57,16 @@ export default function MessageThreadScreen() {
     otherUserName,
     otherUserTrustLevel,
     otherUserPhotoUrl,
+    otherUserAvailable = true,
     initialDraft,
   } = route.params;
   // Route params carry the full name; the thread shows the public form (decision 13).
   const publicName = formatPublicName(otherUserName);
+  // Pending (hidden) or purged: no photo, profile or Block (spec §5.6). A
+  // purged partner has no participant row, so nobody would get a message.
+  const isPartnerAvailable = otherUserAvailable && otherUserId !== null;
+  const isPartnerPurged = otherUserId === null;
+  const partnerPhotoUrl = isPartnerAvailable ? otherUserPhotoUrl : null;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -320,27 +326,31 @@ export default function MessageThreadScreen() {
         </TouchableOpacity>
 
         <View>
-          <TouchableOpacity
-            onPress={(event) => {
-              openProfileMenuAt(event.nativeEvent.pageX, event.nativeEvent.pageY);
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <Avatar
-              name={publicName}
-              photoUrl={otherUserPhotoUrl}
-              trustLevel={otherUserTrustLevel}
-              size="small"
-            />
-          </TouchableOpacity>
+          {isPartnerAvailable ? (
+            <TouchableOpacity
+              onPress={(event) => {
+                openProfileMenuAt(event.nativeEvent.pageX, event.nativeEvent.pageY);
+              }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Avatar
+                name={publicName}
+                photoUrl={partnerPhotoUrl}
+                trustLevel={otherUserTrustLevel}
+                size="small"
+              />
+            </TouchableOpacity>
+          ) : (
+            <Avatar name={publicName} size="small" />
+          )}
         </View>
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>
             {publicName}
           </Text>
-          {otherUserTrustLevel >= TrustLevel.VERIFIED && (
+          {isPartnerAvailable && otherUserTrustLevel >= TrustLevel.VERIFIED && (
             <Ionicons
               name="checkmark-circle"
               size={16}
@@ -350,7 +360,7 @@ export default function MessageThreadScreen() {
           )}
         </View>
 
-        {otherUserId ? (
+        {isPartnerAvailable ? (
           <TouchableOpacity
             style={styles.menuButton}
             onPress={() => setMenuVisible(!menuVisible)}
@@ -439,12 +449,16 @@ export default function MessageThreadScreen() {
                   isSent={isSent}
                   isRead={msg.read}
                   senderName={publicName}
-                  senderPhotoUrl={otherUserPhotoUrl}
+                  senderPhotoUrl={partnerPhotoUrl}
                   senderTrustLevel={otherUserTrustLevel}
                   showAvatar={isLastInGroup}
-                  onAvatarPress={(pageX, pageY) => {
-                    openProfileMenuAt(pageX, pageY);
-                  }}
+                  onAvatarPress={
+                    isPartnerAvailable
+                      ? (pageX, pageY) => {
+                          openProfileMenuAt(pageX, pageY);
+                        }
+                      : undefined
+                  }
                 />
               );
             }}
@@ -459,14 +473,24 @@ export default function MessageThreadScreen() {
               flatListRef.current?.scrollToEnd({ animated: false });
             }}
             ListEmptyComponent={
-              <View style={styles.threadStateContainer}>
-                <Text style={styles.threadStateText}>No messages yet. Say hello!</Text>
-              </View>
+              isPartnerPurged ? null : (
+                <View style={styles.threadStateContainer}>
+                  <Text style={styles.threadStateText}>No messages yet. Say hello!</Text>
+                </View>
+              )
             }
           />
         )}
 
-        <ChatInput onSend={handleSend} initialText={initialDraft} />
+        {isPartnerPurged ? (
+          <View style={styles.composerNotice}>
+            <Text style={styles.composerNoticeText}>
+              This account has been deleted, so it can&apos;t get new messages.
+            </Text>
+          </View>
+        ) : (
+          <ChatInput onSend={handleSend} initialText={initialDraft} />
+        )}
       </Animated.View>
     </SafeAreaView>
   );
@@ -592,6 +616,18 @@ const styles = StyleSheet.create({
   },
   threadStateText: {
     ...typography.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  composerNotice: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    backgroundColor: colors.background,
+  },
+  composerNoticeText: {
+    ...typography.caption,
     color: colors.text.secondary,
     textAlign: 'center',
   },

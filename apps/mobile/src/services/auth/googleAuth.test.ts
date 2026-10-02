@@ -20,7 +20,7 @@ jest.mock('../../config/supabase', () => ({
   },
 }));
 
-import { handleGoogleAuthCallback, signInWithGoogle } from './googleAuth';
+import { handleGoogleAuthCallback, isGoogleSignInCancelled, signInWithGoogle } from './googleAuth';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../config/supabase';
@@ -167,5 +167,38 @@ describe('googleAuth service', () => {
   it('rejects callback URL with no code', async () => {
     const result = await handleGoogleAuthCallback('nepally://auth/callback');
     expect(result.error).toBeInstanceOf(Error);
+  });
+
+  it('asks Google for its account chooser when selectAccount is set', async () => {
+    mockAuth.signInWithOAuth.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/oauth?state=abc' },
+      error: null,
+    });
+    mockOpenAuthSession.mockResolvedValue({ type: 'cancel' });
+
+    await signInWithGoogle({ selectAccount: true });
+
+    expect(mockAuth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: 'nepally://auth/callback',
+        skipBrowserRedirect: true,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+  });
+
+  it('tells a cancelled sign-in apart from a failed one', async () => {
+    mockAuth.signInWithOAuth.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/oauth?state=abc' },
+      error: null,
+    });
+    mockOpenAuthSession.mockResolvedValue({ type: 'cancel' });
+
+    const cancelled = await signInWithGoogle();
+
+    expect(isGoogleSignInCancelled(cancelled.error)).toBe(true);
+    expect(isGoogleSignInCancelled(new Error('Invalid OAuth callback URL'))).toBe(false);
+    expect(isGoogleSignInCancelled(undefined)).toBe(false);
   });
 });

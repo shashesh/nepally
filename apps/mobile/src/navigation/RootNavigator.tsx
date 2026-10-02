@@ -5,6 +5,7 @@ import { RootStackParamList } from '../types/navigation';
 import { OnboardingNavigator } from './OnboardingNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ChatNavigator } from './ChatNavigator';
+import { AccountRestoreScreen } from '../screens/profile/AccountRestoreScreen';
 import { useAuth } from '../hooks/useAuth';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { colors } from '../styles/colors';
@@ -31,18 +32,23 @@ export function RootNavigator() {
   // regardless of any AsyncStorage flags (prevents stale state from skipping location step).
   const showOnboarding = !user || !user.metro_area_id;
 
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {showOnboarding ? (
-        <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
-      ) : (
-        <>
-          <Stack.Screen name="Main" component={MainTabNavigator} />
-          <Stack.Screen name="Chat" component={ChatNavigator} />
-        </>
-      )}
-    </Stack.Navigator>
-  );
+  // A member pending deletion sees only the restore screen until they restore
+  // or sign out, whatever their onboarding state (spec §5.4).
+  let screens: React.ReactNode;
+  if (user?.deletion_scheduled_for) {
+    screens = <Stack.Screen name="AccountRestore" component={AccountRestoreScreen} />;
+  } else if (showOnboarding) {
+    screens = <Stack.Screen name="Onboarding" component={OnboardingNavigator} />;
+  } else {
+    screens = (
+      <>
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen name="Chat" component={ChatNavigator} />
+      </>
+    );
+  }
+
+  return <Stack.Navigator screenOptions={{ headerShown: false }}>{screens}</Stack.Navigator>;
 }
 
 const styles = StyleSheet.create({
