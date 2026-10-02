@@ -35,7 +35,7 @@ Two more facts shaped the decision:
 1. **Draft PRs run nothing.** CI, Docs and the Vercel preview skip every job while the PR is a draft. Skipped jobs cost nothing. They also listen for `converted_to_draft`: turning a ready PR back into a draft starts a skipped run, which cancels the run in flight through the per-PR concurrency group. `scripts/ci/draft-triggers.test.js` checks the triggers and the per-job draft guard.
 2. **PRs open as drafts, and the user starts CI.**
    - Copilot reviews the draft first.
-   - Agents request that review themselves (`gh pr edit <number> --add-reviewer @copilot`), and again after pushing fixes. Copilot's "review draft pull requests" option lives in rulesets, which this repo cannot use.
+   - Agents request that review themselves (`gh pr edit <number> --add-reviewer @copilot`), and again after pushing fixes. Copilot's "review draft pull requests" option lives in rulesets, which this repo cannot use. _Amended 2026-10-02: agents no longer request it. The user requests Copilot's review when they want one._
    - The user marks the PR ready for review. The `ready_for_review` event starts CI. Agents never mark a PR ready.
 3. **Docs-only changes never start CI.** `ci.yml` ignores `**/*.md` and `docs/**` (`paths-ignore`) on PRs and on master pushes. The Docs workflow still checks those changes.
 4. **Fewer, fuller jobs.**
