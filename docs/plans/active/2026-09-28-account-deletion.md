@@ -49,7 +49,7 @@ The same chunked process as the [mobile marketplace fixes](../../archive/plans/2
   - the full unit suite of every workspace touched. Run web Vitest from a `C:\…` working directory; a lowercase `c:\` fails whole files.
   - `npm run docs:check` and `npm run lint:md`
 - **Then one code-review agent** reviews the PR's whole diff, and a `security-reviewer` agent reviews PRs 1 and 2. CRITICAL and HIGH findings are fixed in one `fix: address PR N review` commit. Everything else goes to [Follow-ups](#follow-ups-not-scheduled), **never to new tasks**.
-- **Then ship it as a draft.** Push, open a **draft** PR, and request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`. The user marks it ready, which starts CI.
+- **Then ship it as a draft.** Push and open a **draft** PR. Don't request Copilot's review; the user does that when they want one. The user marks it ready, which starts CI.
 - **Migrations are applied to staging only when the user asks for it directly.** `apply_migration` is blocked otherwise. Right after applying, realign the tracker row (see [migration-workflow.md](../../architecture/migration-workflow.md#adding-a-migration-going-forward)).
 - Format a single Markdown file with `npx prettier --write <file>`. `npm run format -- <file>` reformats the whole repo.
 - Keep `git commit` in its own command. A hook rejects a command that has both `git commit` and a `-n` flag anywhere in it.
