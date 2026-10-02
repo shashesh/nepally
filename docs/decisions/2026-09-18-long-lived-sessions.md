@@ -26,7 +26,7 @@ For a community app people open a few times a week, that means signing in again 
   - `AuthContext` pauses the timer when the app goes to the background and resumes it on return (`stopAutoRefresh` / `startAutoRefresh` on `AppState` changes).
   - This is Supabase's React Native pattern, and it keeps a session valid however long the app sat unused.
 - Supabase Auth → Sessions keeps "Time-box user sessions" and "Inactivity timeout" at never, and "Single session per user" off, in every project.
-- Sensitive actions ask the user to confirm who they are instead: deleting the account, and changing email or password. Email accounts re-enter the password; Google and Apple accounts redo their provider sign-in (Google with `prompt=select_account`). _Amended 2026-09-30: an emailed code (`supabase.auth.reauthenticate()`) was the first choice, but its code can only be checked by a password change, so it can't gate deletion. See [account deletion](../specs/2026-09-28-account-deletion.md), D5._
+- Sensitive actions ask the user to confirm who they are instead: deleting the account, and changing email or password. Email accounts re-enter the password; Google and Apple accounts redo their provider sign-in (Google with `prompt=select_account`). _Amended 2026-09-30: an emailed code (`supabase.auth.reauthenticate()`) was the first choice, but its code can only be checked by a password change, so it can't gate deletion. See [account deletion](../archive/specs/2026-09-28-account-deletion.md), D5._
 - The user controls their sessions:
   - A password change signs out other devices (`signOut({ scope: 'others' })`).
   - **Sign out of all devices** in Settings (`signOut({ scope: 'global' })`) covers a lost or stolen phone.

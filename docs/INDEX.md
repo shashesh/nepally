@@ -44,6 +44,7 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 
 ### Feature specs (evergreen — what each feature is today)
 
+- [product/features/account-deletion.md](product/features/account-deletion.md) — account deletion on web and mobile: the delete flow and re-auth, 29-day hidden grace period, restore screen, hourly purge, public `/delete-account` page, what other members see
 - [product/features/phase1-feature-breakdown.md](product/features/phase1-feature-breakdown.md) — Phase 1 feature index
 - [product/features/events.md](product/features/events.md) — events feature spec
 - [product/features/events-feature-breakdown.md](product/features/events-feature-breakdown.md) — events feature sub-breakdown
@@ -60,14 +61,13 @@ Plan and spec status lives in each file's frontmatter, not here — one source, 
 ## Plans (in-flight only — finished plans move to `archive/plans/`)
 
 - [plans/_template.md](plans/_template.md) — template for new implementation plans
-- [plans/active/2026-09-28-account-deletion.md](plans/active/2026-09-28-account-deletion.md) — in-app account deletion in 5 PRs: migration 048 (request/cancel/hiding), purge edge function + 049–052 (hourly cron, restore deadline, comment count, scrub copies), shared + web, mobile, ship docs
 - [plans/active/2026-09-18-production-launch.md](plans/active/2026-09-18-production-launch.md) — 12-week production launch (public launch Dec 1, 2026): prod environment, store compliance, monitoring, support operations, six launch markets, week-by-week tracker
 - [plans/active/mobile-usability-security-hardening.md](plans/active/mobile-usability-security-hardening.md) — mobile usability and security hardening
 - [plans/active/phase1-remediation-checklist.md](plans/active/phase1-remediation-checklist.md) — live tracker for Phase 1 post-audit remediation (security, moderation, notifications, auth)
 
 ## Specs (point-in-time designs — archived when the work ships)
 
-- [specs/2026-09-28-account-deletion.md](specs/2026-09-28-account-deletion.md) — in-app account deletion (web + mobile): 29-day hidden grace period, restore on sign-in until the date, recent sign-in check, hourly purge of auth user, photos and copies in other members' notifications, public `/delete-account` page
+_None active._
 
 Shipped designs live in [archive/specs/](archive/specs/).
 
@@ -129,5 +129,5 @@ See [archive/](archive/):
 
 - `archive/PROGRESS.md` — historical implementation tracker (superseded by roadmap)
 - `archive/marketplace-category-consolidation-plan.md` — shipped as migration 016
-- `archive/plans/` — 21 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, the React Compiler lint cleanup, the web UI overhaul (PRs 0–10c; its "Open follow-ups (after the overhaul)" section is the post-overhaul backlog, and "After the overhaul — Mantine 9" is the next step), and the 2026-09-27 mobile marketplace fixes (PRs #102–#106; its "Follow-ups (not scheduled)" section is the marketplace backlog)
-- `archive/specs/` — 8 design specs for shipped features, including the web UI overhaul design
+- `archive/plans/` — 22 completed or abandoned plans, including events, public-profile-view, promote-listing, promotion-lifecycle, drop-is-featured, fix-promotions-display, the 2026-04 docs reorganization, marketplace UX + listing-details + mobile redesigns, the "Your Community Today" PR trilogy, notifications, the Postgres 15→17 sync, the Expo SDK 54→57 migration, the React Compiler lint cleanup, the web UI overhaul (PRs 0–10c; its "Open follow-ups (after the overhaul)" section is the post-overhaul backlog, and "After the overhaul — Mantine 9" is the next step), the 2026-09-27 mobile marketplace fixes (PRs #102–#106; its "Follow-ups (not scheduled)" section is the marketplace backlog), and the 2026-09-28 account deletion (PRs #111–#115; its "Follow-ups (not scheduled)" section is the account deletion backlog)
+- `archive/specs/` — 9 design specs for shipped features, including the web UI overhaul and account deletion designs

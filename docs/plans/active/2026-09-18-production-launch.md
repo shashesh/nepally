@@ -47,7 +47,7 @@ It is monitored and supported by one person. Every kind of failure has a rehears
   - `apps/mobile/app.json` has no EAS project id (`eas init` not run), so push tokens cannot register in store builds.
   - `expo-updates` is not installed and there is no `updates.url` / `runtimeVersion`, so over-the-air (OTA) updates are not possible yet. `eas.json` names the channels, but nothing uses them.
 - **Store compliance gaps:**
-  - no in-app account deletion
+  - no in-app account deletion (built 2026-10-02; the checks that remain are in W3)
   - no Sign in with Apple, although iOS offers Google sign-in
 - **Mobile promotion purchase is incomplete.** `PromoteListingScreen` asks `create-promotion-checkout` for a PaymentIntent. But the app has no Stripe SDK, so it never collects payment. It then polls for an activation that can never happen.
 - **Mobile dead ends:** "Coming Soon" alerts in Home search (`HomeScreen.tsx`) and on chat avatars (`ConversationItem.tsx`, `MessageThreadScreen.tsx`).
@@ -138,7 +138,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - Realigned tracker rows `038`–`046` on `nusa-staging` from timestamp versions to `NNN`.
   - Updated the "After (current)" section of `migration-workflow.md` to `001`–`046`.
   - Confirmed that staging and the repo list the same 46 migrations.
-- [ ] **Code:** Apply `001`–`047` in order on the empty prod database.
+- [ ] **Code:** Apply `001`–`052` in order on the empty prod database. `048`–`052` are account deletion.
   - Use the MCP `apply_migration` tool or the dashboard SQL editor, never `supabase db push`.
   - Realign the tracker rows to `NNN` as [migration-workflow.md](../../architecture/migration-workflow.md) describes.
   - The frozen files are safe on a fresh database.
@@ -181,6 +181,7 @@ Only one week is `In Progress` at a time. Update the row when a week starts and 
   - redirect URLs, including the `nepally://**` mobile scheme
   - Google OAuth client IDs and redirects for prod
 - [ ] **Code:** Wire prod env vars into Vercel (production environment) and EAS (production profile). Deploy edge functions and set their secrets on prod.
+  - That includes `purge-deleted-accounts`. **You** then set its secrets by the runbook in [supabase-setup.md](../../architecture/supabase-setup.md#5-scheduled-jobs), "Scheduled Jobs": the function secret and the two Vault secrets. Until they are set, the hourly purge job fails and no deleted account is ever removed, which breaks the privacy policy's "within 30 days".
 - [x] **Code:** Web security headers in `next.config.js` (CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, frame-ancestors). Add the missing `/icon.png`.
 - [ ] **Code:** First run of `deploy-vercel-prod.yml` against the prod project, with the custom domain attached.
 - [ ] **Code:** Retire the two March plans properly. Every open item from both is already mapped in [Folded-in items](#folded-in-items), so neither loses its tracker. For each file:
@@ -210,9 +211,15 @@ See [Monitoring](#monitoring) for the full spec.
 
 ### W3 — Store compliance (Oct 5–11)
 
-- [ ] **Code:** In-app account deletion (web + mobile Settings).
+- [x] **Code:** In-app account deletion (web + mobile Settings). Done 2026-10-02 in PRs #111–#115, migrations `048`–`052`. What it does today: [account-deletion.md](../../product/features/account-deletion.md). The spec and plan are archived.
   - The server side removes the auth user, anonymizes or deletes content per the privacy policy, and deletes storage objects.
-  - Also a public web page where people can ask for deletion without the app. Its URL goes into the Play Console.
+  - Also a public web page where people can ask for deletion without the app: `/delete-account`. Once `nepally.us` is live, put `https://nepally.us/delete-account` in the Play Console's data-deletion field (App content → Data safety).
+- [ ] **You + Code:** Account deletion checks, carried over from the archived [plan](../../archive/plans/2026-09-28-account-deletion.md) (Tasks 2.7, 3.21 and 4.11):
+  - **You:** set the purge secrets on staging by the runbook in [supabase-setup.md](../../architecture/supabase-setup.md#5-scheduled-jobs). As of 2026-10-02 the hourly job still fails there with a null URL, so no account has ever been purged.
+  - **Code:** then run `npm run test:security:account-purge` and `npm run test:security:account-deletion` against staging. Both must exit 0. The purge check is the first real end-to-end purge.
+  - **You:** in the staging dashboard, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google returns to the Site URL and the return path is lost.
+  - **You:** on web against staging, delete an email account and a Google account. Google shows its chooser, and choosing a different account signs it out and deletes nothing. A second browser signed in as another member no longer sees the deleted one. Signing back in shows the restore screen, and Restore brings everything back. Moving a test account's date into the past with the service role shows "Your account is being deleted".
+  - **You:** on a phone with a dev build, run `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`, then repeat the Google wrong-account, second-device and past-date checks above.
 - [ ] **Code:** Sign in with Apple on iOS (Supabase Apple provider).
 - [ ] **Code:** Mobile auth hardening (mobile plan Step 1):
   - OAuth callback state and origin validation

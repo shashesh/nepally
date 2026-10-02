@@ -1,6 +1,6 @@
 ---
 title: In-app account deletion
-status: in-progress
+status: implemented
 created: 2026-09-28
 spec: docs/specs/2026-09-28-account-deletion.md
 ---
@@ -11,7 +11,7 @@ spec: docs/specs/2026-09-28-account-deletion.md
 
 **Goal:** Members can delete their account from web and mobile. The account is hidden for 29 days, can be restored by signing in until then, and is then purged with all its data and photos, within the privacy policy's 30 days.
 
-**Architecture:** Migration 048 adds `users.deletion_scheduled_for`, the request and cancel functions, and RLS changes that hide a pending account. An edge function run by pg_cron (migration 049, made hourly by 050) removes the user's photos through the Storage API and deletes the auth user, whose cascades remove every row. Migration 050 also closes restore at the date and shortens the grace period to 29 days. Migration 051 adds the missing `comments_count` delete trigger. Web and mobile add a three-step delete flow, a restore screen shown to pending accounts, and a chat fallback for accounts that are gone. See the [spec](../../specs/2026-09-28-account-deletion.md).
+**Architecture:** Migration 048 adds `users.deletion_scheduled_for`, the request and cancel functions, and RLS changes that hide a pending account. An edge function run by pg_cron (migration 049, made hourly by 050) removes the user's photos through the Storage API and deletes the auth user, whose cascades remove every row. Migration 050 also closes restore at the date and shortens the grace period to 29 days. Migration 051 adds the missing `comments_count` delete trigger. Web and mobile add a three-step delete flow, a restore screen shown to pending accounts, and a chat fallback for accounts that are gone. See the [spec](../specs/2026-09-28-account-deletion.md).
 
 **Tech Stack:** Supabase Postgres 17 (RLS, pg_cron, pg_net, Vault), Supabase Edge Functions (Deno), `@nepally/shared` (Supabase JS), Next.js 16 Pages Router with Mantine and Vitest (web), Expo SDK 57 with React Navigation 7 and Jest (mobile), `tsx` security checks in `scripts/security/`.
 
@@ -1958,10 +1958,10 @@ git commit -m "docs: document the account purge job and its secrets (049)"
 Each step runs only when the user asks for it directly.
 
 - [x] **Step 1: Deploy the function.** Run `npx supabase functions deploy purge-deleted-accounts --project-ref tlusiongalvszftnzpoq`. The Supabase CLI is already logged in on this machine.
-- [ ] **Step 2: The user sets the secrets**, following the runbook in `supabase-setup.md` §5. That's the function secret, the two Vault secrets, and `ACCOUNT_PURGE_SECRET` in `scripts/.env`. The secret value must not pass through the chat.
+- [ ] **Step 2: The user sets the secrets** (moved to the launch plan's W3 on 2026-10-02), following the runbook in `supabase-setup.md` §5. That's the function secret, the two Vault secrets, and `ACCOUNT_PURGE_SECRET` in `scripts/.env`. The secret value must not pass through the chat.
 - [x] **Step 3: Apply 049** with `apply_migration`, name `purge_deleted_accounts_cron`. Realign its tracker row to `049`. Check that `SELECT jobname, schedule, active FROM cron.job;` lists `purge-deleted-accounts | 0 9 * * * | t`.
-- [ ] **Step 4: Run the live checks.** `npm run test:security:account-purge` and `npm run test:security:account-deletion` must both exit 0.
-- [ ] **Step 5: Record it.** Note in this plan and in memory that 049 is applied and the function deployed. The next migration number is 050.
+- [ ] **Step 4: Run the live checks** (moved to the launch plan's W3 on 2026-10-02). `npm run test:security:account-purge` and `npm run test:security:account-deletion` must both exit 0.
+- [x] **Step 5: Record it.** Note in this plan and in memory that 049 is applied and the function deployed. The next migration number is 050.
 
 **Progress 2026-09-28:** the function is deployed; the CLI bundled it server-side, with no Docker needed. A POST without a secret gets the handler's `500 Server misconfigured`, and GET gets 405, so `verify_jwt = false` is live and the function fails closed. 049 is applied and realigned to `049`. `cron.job` lists `purge-deleted-accounts | 0 9 * * * | active`, running as `postgres`, which can read `vault.decrypted_secrets`. Waiting on the user for the secrets (Step 2). Until then the 09:00 UTC run fails harmlessly.
 
@@ -5295,12 +5295,12 @@ git commit -m "docs: re-auth by provider sign-in; the account deletion component
   Then `npm run ci:local`, since drafts run no CI.
 
 - [x] **Step 2: Review the whole PR.** Run a `code-reviewer`, a `security-reviewer` (redirects, re-auth, the gate) and a `pr-test-analyzer` on `git diff master...HEAD`. Fix CRITICAL and HIGH in one `fix: address PR 3 review` commit; the rest go to Follow-ups.
-- [ ] **Step 3: Check staging's redirect allow-list.** In the Supabase dashboard for `tlusiongalvszftnzpoq`, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google falls back to the Site URL. This needs the user.
+- [ ] **Step 3: Check staging's redirect allow-list** (moved to the launch plan's W3 on 2026-10-02). In the Supabase dashboard for `tlusiongalvszftnzpoq`, Authentication → URL Configuration must list `http://localhost:3000/**`, or the exact `/auth/callback` and `/delete-account` URLs. Otherwise Google falls back to the Site URL. This needs the user.
 - [x] **Step 4: Ship the draft.**
   - Push with `git push -u origin feat/account-deletion-web`.
   - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
   - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
-- [ ] **Step 5: Manual check on staging with the web app (needs the user).**
+- [ ] **Step 5: Manual check on staging with the web app (needs the user; moved to the launch plan's W3 on 2026-10-02).**
   - Delete an email account and a Google account. Check the one-time Google account chooser, and that a different Google account is signed out.
   - A second browser signed in as another member no longer sees the deleted member.
   - Signing back in shows the restore screen, and Restore brings everything back.
@@ -7977,7 +7977,7 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
   - Push with `git push -u origin feat/account-deletion-mobile`.
   - Open a **draft** PR against `master` from `.github/pull_request_template.md`.
   - Request Copilot's review with `gh pr edit <n> --add-reviewer @copilot`.
-- [ ] **Step 4: Check on a device (needs the user, on a dev build).**
+- [ ] **Step 4: Check on a device (needs the user, on a dev build; moved to the launch plan's W3 on 2026-10-02).**
   - Run the Maestro flow: `npm run test:e2e --workspace=apps/mobile -- flows/07-delete-and-restore.yaml`, or `maestro test apps/mobile/.maestro/flows/07-delete-and-restore.yaml`. If it isn't stable, drop the file from the PR and record why here.
   - Delete a Google account: Google shows its chooser. Choosing a different Google account signs it out of the device, says "You signed in as a different account", and deletes nothing.
   - A second device signed in as another member sees "Unavailable account" in their chat with the deleted member, and no Block.
@@ -7989,10 +7989,15 @@ git commit -m "docs: unavailable chat partners on both apps; a Maestro flow for 
 
 ## PR 5 — Ship docs
 
-- Add `docs/product/features/account-deletion.md`: what the feature is today (flow, grace period, hiding, purge, public page), and add it to `docs/INDEX.md`.
-- Set `status: implemented` on the spec and this plan, `git mv` both into `docs/archive/`, and fix links and INDEX.
-- Tick the W3 account-deletion row in `docs/plans/active/2026-09-18-production-launch.md`. Note that the `/delete-account` URL goes into the Play Console's data-deletion field once the domain is live.
-- Update `docs/product/roadmap.md` §"Remaining" item 5.
+Done 2026-10-02 on `docs/account-deletion-shipped`. PRs 1–4 were merged as #111–#115 (2026-09-30 → 2026-10-02).
+
+- [x] Add `docs/product/features/account-deletion.md`: what the feature is today (flow, grace period, hiding, purge, public page), and add it to `docs/INDEX.md`.
+- [x] Set `status: implemented` on the spec and this plan, `git mv` both into `docs/archive/`, and fix links and INDEX.
+- [x] Tick the W3 account-deletion row in `docs/plans/active/2026-09-18-production-launch.md`. Note that the `/delete-account` URL goes into the Play Console's data-deletion field once the domain is live.
+- [x] Update `docs/product/roadmap.md` §"Remaining" item 5.
+- [x] Also: `sign-up-and-log-in.md` describes `?redirect=` and the restore screen, and `moderation.md` describes reported members and listings that are gone (from the PR 3 reviews).
+
+The user steps still open were moved to the launch plan's W3 as one item, so they stay tracked: Task 2.7 Steps 2 and 4 (the purge secrets, then the live checks), Task 3.21 Steps 3 and 5 (staging's redirect allow-list, the web check) and Task 4.11 Step 4 (the device check). On 2026-10-02 the hourly purge job was still failing on staging with a null URL, so the secrets weren't set yet. The production launch plan's W1 also gained the purge function's secrets and migrations `048`–`052`, as Risks asks. Code comments that cite `docs/specs/2026-09-28-account-deletion.md` keep that path, as earlier archived specs' do.
 
 ---
 

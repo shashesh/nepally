@@ -1,7 +1,7 @@
 # Nepally App: Product Roadmap
 
 **Version:** 1.5
-**Last Updated:** 2026-09-24 (web UI overhaul, global search and mobile parity added to Shipped)
+**Last Updated:** 2026-10-02 (in-app account deletion moved to Shipped)
 
 ---
 
@@ -556,6 +556,7 @@ See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 - Web UI overhaul (2026-09-14 → 2026-09-24, PRs #62–#93 and the 10c parity PR): Ink & Marigold tokens on a Mantine component library, responsive shell with phone bottom tabs, every web page rebuilt on shared primitives, visual-regression and axe baselines with no known serious or critical violations, and friendly error copy instead of raw server text. See [architecture/web-ui-system.md](../architecture/web-ui-system.md)
 - Global search (migrations 037–038): one search box across posts, events, listings and people, with a phone overlay and a results page. See [features/search.md](features/search.md)
 - Mobile parity with the overhaul's shared logic (2026-09-24): events paged upcoming then past, Interested / Going on event detail, public names in chat, shared day labels, profile and auth screens on the shared validation and error sentences
+- In-app account deletion (migrations 048–052, PRs #111–#115, 2026-09-30 → 2026-10-02): a delete flow on web and mobile that confirms it's the member, a 29-day grace period with the account hidden and a restore screen on sign-in, an hourly purge of the account, its photos and the copies of its words, and the public `/delete-account` page for the Play Console. See [features/account-deletion.md](features/account-deletion.md). Still to do before launch: the purge secrets in each environment, and the staging and device checks (launch plan W3)
 
 ### Remaining (Phase 1)
 
@@ -563,7 +564,6 @@ See [TECH-VERSIONS.md](../../TECH-VERSIONS.md) for exact versions.
 2. **Full notifications system** — DB (009–012), shared API, token registration, and the push edge function exist; live delivery validation (function secrets, `app.settings.*` DB settings for the trigger) is pending (see `docs/plans/active/notifications-feature.md`)
 3. **Legal pages (draft, needs counsel review)** — `/privacy`, `/terms` (911 disclaimer, notice-board framing), `/guidelines`, and `/help` shipped 2026-09-04 and are linked from the web footers, the signup form, and the mobile welcome screen. Governing-law/venue wording and the refund language for promotions must be confirmed by a lawyer; `support@nepally.us` must exist before launch
 4. **Mobile store configuration (code done, accounts pending)** — `app.json` now uses slug `nepally`, scheme `nepally`, and `us.nepally.app` ids; `eas.json` committed (2026-09-04). Still manual: `eas init` (writes the EAS project id, required for push tokens), EAS env vars, Supabase redirect URL `nepally://**`, Apple Developer + Play Console accounts, store listings and screenshots
-5. **In-app account deletion** — Apple requires it for apps with account creation; today deletion is by emailing support (documented in `/help`)
 
 **Shipped since the previous update (verified 2026-09-04):** profile photo upload (web + mobile); chat RLS (migration 008); reporting end-to-end (submission, one open report per reporter/target, auto-hide at 3 reports, moderator queue); Emergency post moderation flow (pending → approve/remove); server-side trust-level promotion and a privileged-column guard on `users` (migration 034); Trust Level 0→1 via email verification or Google sign-in.
 
