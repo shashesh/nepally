@@ -346,6 +346,39 @@ describe('AuthContext', () => {
     expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(2);
   });
 
+  it('drops a profile that arrives after sign-out', async () => {
+    signedInAs(profile(null));
+    mockAuth.signOut.mockResolvedValue({ error: null } as SignOutResult);
+    const { result } = renderHook(() => React.useContext(AuthContext), { wrapper });
+    await settle();
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+
+    // A refresh's profile read is still out when the member signs out.
+    let resolveProfile: (value: { data: ReturnType<typeof profile> }) => void = () => {};
+    mockGetMyProfile.mockReturnValue(
+      new Promise((resolve) => {
+        resolveProfile = resolve;
+      })
+    );
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refreshUser();
+    });
+    await act(async () => {
+      await result.current.signOut();
+    });
+    let refreshed: unknown = 'unset';
+    await act(async () => {
+      resolveProfile({ data: profile(null) });
+      refreshed = await refreshing;
+    });
+
+    expect(refreshed).toBeNull();
+    expect(result.current.user).toBeNull();
+    expect(await AsyncStorage.getAllKeys()).toEqual([]);
+    expect(mockRegisterForPushNotificationsAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('refreshUser resolves with null when nobody is signed in', async () => {
     mockAuth.getUser.mockResolvedValue({
       data: { user: null },

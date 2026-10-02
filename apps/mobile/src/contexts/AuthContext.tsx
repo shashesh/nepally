@@ -74,6 +74,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const authPausedRef = useRef(false);
   const pushRegistrationAttemptedUserIdRef = useRef<string | null>(null);
+  // Bumped on every sign-out. A refreshUser that started before one drops its
+  // result, so a profile read still in flight can't bring the signed-out
+  // member back into state or storage, or register their push token.
+  const authGenerationRef = useRef(0);
 
   const registerPushTokenForUser = useCallback(async (userId: string) => {
     if (pushRegistrationAttemptedUserIdRef.current === userId) {
@@ -97,12 +101,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
+    const generation = authGenerationRef.current;
+    const signedOutSinceStart = () => generation !== authGenerationRef.current;
     try {
       const {
         data: { user: supabaseUser },
       } = await supabase.auth.getUser();
 
-      if (!supabaseUser) {
+      if (!supabaseUser || signedOutSinceStart()) {
         // Don't clear user here — transient auth operations (e.g. signInWithPassword
         // during password change) can briefly return null. Only signOut should clear user.
         return null;
@@ -112,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // zip_code are not readable via the REST column grant (migration 036).
       const { data: userData, error } = await getMyProfile(supabase);
 
+      if (signedOutSinceStart()) return null;
       // Profile not yet created (e.g. auth state fires before createUserProfile completes during signup)
       if (error) throw error;
       if (!userData) {
@@ -141,6 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userProfile);
       await saveUserData(userProfile);
+      if (signedOutSinceStart()) return null;
       // Push waits for the profile: an account pending deletion gets no
       // token until it is restored (spec §6, "Push while pending").
       if (userProfile.deletion_scheduled_for) {
@@ -214,6 +222,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authPausedRef.current) return;
 
       if (event === 'SIGNED_OUT') {
+        authGenerationRef.current += 1;
         setSupabaseUser(null);
         setUser(null);
         pushRegistrationAttemptedUserIdRef.current = null;
@@ -237,6 +246,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async (options: SignOutOptions = {}) => {
+    // First, so a refresh that finishes while signing out is dropped too.
+    authGenerationRef.current += 1;
     try {
       await supabase.auth.signOut({ scope: options.scope ?? 'global' });
       await clearAllData();
