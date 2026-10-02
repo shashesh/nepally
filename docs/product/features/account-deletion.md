@@ -39,7 +39,7 @@ Failures are logged as `account_delete_failed`, `account_delete_reauth_failed` (
 ## The server side
 
 - **The request** is the `request_account_deletion()` function (migration 048, timing from 050). It needs a sign-in within the last 10 minutes, read from the token's `amr` claim, which a token refresh doesn't reset. It sets `users.deletion_scheduled_for` 29 days out, deletes the member's push tokens, and returns the date. Asking again returns the same date. Members can't set the column any other way.
-- **What is hidden.** While the date is set, the profile, posts, comments, listings, events, likes, RSVPs and follows are hidden from everyone but the member and moderators. That includes signed-out visitors and the views built on those tables. Counts such as followers and likes still include the member until the purge.
+- **What is hidden.** While the date is set, the profile, posts, comments, listings, events, likes and RSVPs are hidden from everyone but the member and moderators. That includes signed-out visitors and the views built on those tables. Moderators see a pending member's listings only while they're active, as with anyone's. Follows in either direction are hidden from the member too: only moderators see them. Counts such as followers and likes still include the member until the purge.
 - **What isn't hidden.** Chats keep their history, and other members can still send them messages, which the member sees if they restore. Their photos stay at their public URLs until the purge, so a saved link keeps working. The privacy policy says so.
 - **Restore** is `cancel_account_deletion()`. It needs no recent sign-in, because the request signed out every session. It works until the date. After that it refuses with `deletion_in_progress` and changes nothing.
 
@@ -51,7 +51,7 @@ Whatever the member opens, they see the restore screen first: web's `Layout` and
 
 - **Before the date:** "Your account is scheduled for deletion" and "It will be deleted on _date_. Restore it to keep using Nepally." **Restore my account** clears the date and reloads the profile, and the app carries on as normal. **Keep deletion and sign out** signs out.
 - **After the date, before the purge runs:** "Your account is being deleted" and "Its deletion date has passed, so it can no longer be restored." Only **Sign out** is offered. A screen left open past the date switches by itself, and so does a Restore the server refuses.
-- **If the restore went through but the profile didn't reload,** web says "We couldn't confirm the restore. Please refresh the page." and mobile says "…Close and reopen the app." A failed restore says "Couldn't restore your account. Please try again." These are logged as `account_restore_reload_failed` and `account_restore_failed`.
+- **If the restore went through but the profile didn't reload,** web says "We couldn't confirm the restore. Please refresh the page." and mobile says "…Close and reopen the app." A failed restore says "Couldn't restore your account. Please try again." on mobile. Web shows the error's own message, which for an unexpected server error can be the raw database text (a Follow-up in the archived plan). These are logged as `account_restore_reload_failed` and `account_restore_failed`.
 - **Push.** Neither app registers a push token for a pending account. Restoring registers it again, on every device the member opens.
 
 ## The public page (`/delete-account`)
@@ -76,7 +76,7 @@ The job's URL and secret live in Vault, and the function's secret is set by hand
 
 - **Content** from a pending member disappears from feeds, search, profiles, events and the marketplace, and comes back if they restore.
 - **Chat:** the partner shows as "Unavailable account", with an initials avatar and no profile link or Block. After the purge the thread keeps the messages sent to them, and says "This account has been deleted, so it can't get new messages." in place of the composer. See [in-app chat](in-app-chat.md).
-- **Moderation:** moderators still see a pending member's profile and content. Once a reported member or listing is gone, the report card says "Member no longer available" or "Listing no longer available", with no link and no Ban user. See [moderation](moderation.md).
+- **Moderation:** moderators still see a pending member's profile, content and active listings. Once a reported member or listing is gone, the report card says "Member no longer available" or "Listing no longer available", with no link and no Ban user. See [moderation](moderation.md).
 
 ## Known limits
 
@@ -93,6 +93,6 @@ These are deliberate, or recorded in the plan's Follow-ups:
 
 - **Shared:** `constants/accountDeletion.test.ts`, `logic/accountDeletion.test.ts`, `api/accountDeletion.test.ts`, `utils/redirect.test.ts` and `api/conversations.test.ts` (unavailable partners).
 - **Web:** `components/account/DeleteAccountFlow.test.tsx` and `AccountRestoreScreen.test.tsx`, `pages/delete-account.test.tsx` and `components/Layout.test.tsx` (the gate).
-- **Mobile:** `screens/profile/DeleteAccountScreen.test.tsx` and `AccountRestoreScreen.test.tsx`, `navigation/RootNavigator.test.tsx` (the gate), and the Maestro flow `.maestro/flows/07-delete-and-restore.yaml`, which needs a dev build.
+- **Mobile:** `screens/profile/DeleteAccountScreen.test.tsx` and `AccountRestoreScreen.test.tsx`, `navigation/RootNavigator.test.tsx` (the gate), and the Maestro flow `apps/mobile/.maestro/flows/07-delete-and-restore.yaml`, which needs a dev build.
 - **Edge function:** `npm run functions:test` runs the purge's unit tests with injected clients.
 - **Live checks on staging:** `npm run test:security:account-deletion` (request, hiding, restore) and `npm run test:security:account-purge` (a real purge, refused on any project but staging). See [setup-and-testing.md](../../guides/setup-and-testing.md).
